@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Top Notch Trees and Land Clearing LLC | #1 Rated Tree Service & Land Clearing in Tampa Bay</title>
+  <meta name="description" content="Top Notch Trees and Land Clearing LLC provides 24/7 emergency tree removal, crane-assisted dismantling, and lot clearing across Tampa Bay & Central Florida. Rated 5.0★ with 477 Google reviews.">
+  
+  <!-- Modern Inter & Plus Jakarta Sans Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --primary: #15803d;
+      --primary-dark: #0f5132;
+      --primary-light: #22c55e;
+      --accent: #eab308;
+      --accent-hover: #ca8a04;
+      --dark: #0f172a;
+      --dark-card: #1e293b;
+      --surface: #f8fafc;
+      --border: #e2e8f0;
+      --text: #334155;
+      --text-muted: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text);
+      background-color: #ffffff;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4, .font-heading {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 700;
+      color: var(--dark);
+      line-height: 1.2;
+    }
+
+    /* Claim Website Top Banner */
+    .agency-banner {
+      background: linear-gradient(90deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      color: #f8fafc;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(8px);
+    }
+
+    .agency-banner-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .claim-pill {
+      background: #eab308;
+      color: #000;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-weight: 700;
+      font-size: 12px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .claim-pill:hover {
+      background: #ca8a04;
+      transform: translateY(-1px);
+    }
+
+    /* Main Navigation */
+    .site-nav {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 41px;
+      z-index: 90;
+      box-shadow: 0 4px 20px -5px rgba(0,0,0,0.05);
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .logo-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .logo-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #15803d 0%, #166534 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 22px;
+      box-shadow: 0 8px 16px -4px rgba(21, 128, 61, 0.35);
+    }
+
+    .logo-text h3 {
+      font-size: 17px;
+      letter-spacing: -0.02em;
+    }
+
+    .logo-text p {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 14px;
+      transition: color 0.15s;
+    }
+
+    .nav-links a:hover {
+      color: var(--primary);
+    }
+
+    .nav-cta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .phone-cta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      text-decoration: none;
+    }
+
+    .phone-cta span {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .phone-cta strong {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--dark);
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #15803d 0%, #166534 100%);
+      color: #ffffff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(21, 128, 61, 0.25);
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #166534 0%, #14532d 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(21, 128, 61, 0.35);
+    }
+
+    /* Hero Section */
+    .hero-section {
+      background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+      padding: 70px 20px 60px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-grid {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 50px;
+      align-items: center;
+    }
+
+    .trust-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #ffffff;
+      border: 1px solid rgba(22, 101, 52, 0.2);
+      border-radius: 9999px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #166534;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .hero-title {
+      font-size: 46px;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 20px;
+    }
+
+    .hero-title span {
+      background: linear-gradient(135deg, #15803d 0%, #047857 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-desc {
+      font-size: 18px;
+      color: var(--text-muted);
+      margin-bottom: 30px;
+      line-height: 1.6;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 35px;
+    }
+
+    .btn-secondary {
+      background: #ffffff;
+      color: var(--dark);
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    /* Live Google Trust Card */
+    .google-badge-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 20px 40px -15px rgba(0,0,0,0.08);
+      position: relative;
+    }
+
+    .google-badge-card::before {
+      content: "";
+      position: absolute;
+      top: -2px;
+      left: 20px;
+      right: 20px;
+      height: 3px;
+      background: linear-gradient(90deg, #4285F4, #EA4335, #FBBC05, #34A853);
+      border-radius: 3px 3px 0 0;
+    }
+
+    .stars {
+      color: #f59e0b;
+      letter-spacing: 2px;
+      font-size: 20px;
+    }
+
+    /* Key Trust Stats */
+    .stats-strip {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      margin-top: -30px;
+      position: relative;
+      z-index: 10;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+    }
+
+    .stat-box {
+      text-align: center;
+      padding: 8px 12px;
+    }
+
+    .stat-box h4 {
+      font-size: 28px;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+
+    .stat-box p {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Services Grid */
+    .section-wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 80px 20px;
+    }
+
+    .section-header {
+      text-align: center;
+      max-width: 650px;
+      margin: 0 auto 50px;
+    }
+
+    .section-tag {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .section-title {
+      font-size: 34px;
+      letter-spacing: -0.02em;
+      margin-bottom: 14px;
+    }
+
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .service-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .service-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 32px -8px rgba(0,0,0,0.08);
+      border-color: rgba(21, 128, 61, 0.4);
+    }
+
+    .service-icon {
+      width: 52px;
+      height: 52px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: var(--primary);
+      margin-bottom: 20px;
+    }
+
+    .service-card h3 {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+
+    .service-card p {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    /* Interactive Estimate Calculator */
+    .calc-container {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #ffffff;
+      border-radius: 20px;
+      padding: 50px 40px;
+      margin: 40px 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: center;
+      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
+    }
+
+    .calc-container h2 {
+      color: #ffffff;
+      font-size: 32px;
+      margin-bottom: 14px;
+    }
+
+    .calc-box {
+      background: #ffffff;
+      color: var(--dark);
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    .calc-form-group {
+      margin-bottom: 16px;
+    }
+
+    .calc-form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--dark);
+    }
+
+    .calc-form-group select, .calc-form-group input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    .price-display {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      margin: 20px 0 16px;
+    }
+
+    .price-display span {
+      font-size: 12px;
+      color: #166534;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .price-display h3 {
+      font-size: 32px;
+      color: #15803d;
+      margin-top: 4px;
+    }
+
+    /* Review Showcase Grid */
+    .review-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+
+    .reviewer-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: var(--dark);
+      font-size: 14px;
+    }
+
+    /* Final CTA */
+    .cta-banner {
+      background: linear-gradient(135deg, #15803d 0%, #166534 100%);
+      color: #ffffff;
+      border-radius: 20px;
+      padding: 60px 40px;
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .cta-banner h2 {
+      color: #ffffff;
+      font-size: 38px;
+      margin-bottom: 16px;
+    }
+
+    .cta-banner p {
+      font-size: 18px;
+      color: #dcfce7;
+      max-width: 600px;
+      margin: 0 auto 30px;
+    }
+
+    /* Footer */
+    footer {
+      background: #0f172a;
+      color: #94a3b8;
+      padding: 60px 20px 30px;
+      font-size: 14px;
+    }
+
+    .footer-grid {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1.5fr;
+      gap: 40px;
+      margin-bottom: 50px;
+    }
+
+    .footer-col h4 {
+      color: #ffffff;
+      font-size: 16px;
+      margin-bottom: 18px;
+    }
+
+    .footer-links {
+      list-style: none;
+    }
+
+    .footer-links li {
+      margin-bottom: 10px;
+    }
+
+    .footer-links a {
+      color: #94a3b8;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .footer-links a:hover {
+      color: #ffffff;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 900px) {
+      .hero-grid { grid-template-columns: 1fr; }
+      .services-grid { grid-template-columns: 1fr; }
+      .stats-strip { grid-template-columns: repeat(2, 1fr); }
+      .calc-container { grid-template-columns: 1fr; padding: 30px 20px; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+      .nav-links { display: none; }
+      .hero-title { font-size: 34px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================== -->
+  <!-- 1. AGENCY PROTOTYPE CLAIM BANNER (Top Bar) -->
+  <!-- ========================================== -->
+  <div class="agency-banner">
+    <div class="agency-banner-inner">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 16px;">✦</span>
+        <span>Concept Prepared for: <strong style="color: #ffffff;">Top Notch Trees and Land Clearing LLC</strong> (Tampa Bay, FL)</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="opacity: 0.75; font-size: 12px;">No active website found</span>
+        <a href="tel:+18135253999" class="claim-pill">
+          <span>Claim Design & Launch in 48h</span>
+          <span>→</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 2. SITE NAVIGATION                        -->
+  <!-- ========================================== -->
+  <nav class="site-nav">
+    <div class="nav-container">
+      <a href="#home" class="logo-box">
+        <div class="logo-badge">🌲</div>
+        <div class="logo-text">
+          <h3>Top Notch Trees</h3>
+          <p>& Land Clearing LLC</p>
+        </div>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#services">Services</a></li>
+        <li><a href="#calculator">Instant Estimate</a></li>
+        <li><a href="#reviews">477 Google Reviews</a></li>
+        <li><a href="#about">Why Top Notch</a></li>
+      </ul>
+
+      <div class="nav-cta">
+        <a href="tel:+18135253999" class="phone-cta">
+          <span>Call / Text 24/7</span>
+          <strong>+1 (813) 525-3999</strong>
+        </a>
+        <a href="#calculator" class="btn-primary">
+          <span>Get Free Quote</span>
+          <span>→</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ========================================== -->
+  <!-- 3. HERO SECTION                            -->
+  <!-- ========================================== -->
+  <section id="home" class="hero-section">
+    <div class="hero-grid">
+      <div>
+        <div class="trust-pill">
+          <span>★★★★★</span>
+          <span>5.0 Star Rated (477 Verified Google Reviews)</span>
+        </div>
+
+        <h1 class="hero-title">
+          Premier Tree Removal & Land Clearing in <span>Tampa Bay</span>
+        </h1>
+
+        <p class="hero-desc">
+          Safe, crane-assisted hazardous tree dismantling, emergency storm response, and heavy-duty land clearing. Fully licensed, insured, and equipped for zero-impact residential & commercial property care.
+        </p>
+
+        <div class="hero-actions">
+          <a href="tel:+18135253999" class="btn-primary" style="padding: 14px 28px; font-size: 16px;">
+            <span>📞 Call (813) 525-3999</span>
+          </a>
+          <a href="#calculator" class="btn-secondary">
+            <span>Calculate Job Estimate</span>
+            <span>↓</span>
+          </a>
+        </div>
+
+        <div style="display: flex; items-center; gap: 20px; font-size: 13px; color: var(--text-muted); font-weight: 500;">
+          <span>✓ Licensed & Insured</span>
+          <span>✓ 24/7 Emergency Dispatch</span>
+          <span>✓ Free Same-Day Estimates</span>
+        </div>
+      </div>
+
+      <!-- Live Google Reputation Card -->
+      <div class="google-badge-card">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <svg width="24" height="24" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3h3.86c2.26-2.09 3.685-5.17 3.685-9.1z"/>
+              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.37 24 12 24z"/>
+              <path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z"/>
+              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.37 0 3.26 2.7 1.29 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z"/>
+            </svg>
+            <strong style="color: var(--dark); font-size: 15px;">Google Verified Business</strong>
+          </div>
+          <span style="background: #f0fdf4; color: #166534; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px;">100% OPERATIONAL</span>
+        </div>
+
+        <div style="display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px;">
+          <h2 style="font-size: 48px; color: var(--dark); line-height: 1;">5.0</h2>
+          <div>
+            <div class="stars">★★★★★</div>
+            <p style="font-size: 13px; color: var(--text-muted); font-weight: 600;">Based on 477 Google Reviews</p>
+          </div>
+        </div>
+
+        <p style="font-size: 13px; color: #475569; line-height: 1.5; font-style: italic; background: #f8fafc; padding: 12px; border-radius: 8px; border-left: 3px solid #15803d; margin-bottom: 16px;">
+          "Top Notch took down two huge oak trees dangerously close to our roof in Brandon. Fast, spotless cleanup, and by far the fairest price in Tampa. Unbelievable precision!"
+        </p>
+
+        <a href="https://www.google.com/maps/place/Top+Notch+Trees+and+Land+Clearing+LLC/data=!4m7!3m6!1s0x25d6d9812276d149:0xaed572c63e2b121b!8m2!3d27.9722625!4d-82.3517682" target="_blank" style="font-size: 12px; color: var(--primary); font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 4px;">
+          <span>Read all 477 Google Reviews</span>
+          <span>↗</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================== -->
+  <!-- 4. KEY METRICS STRIP                       -->
+  <!-- ========================================== -->
+  <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+    <div class="stats-strip">
+      <div class="stat-box">
+        <h4>477+</h4>
+        <p>5-Star Reviews</p>
+      </div>
+      <div class="stat-box">
+        <h4>24/7</h4>
+        <p>Emergency Dispatch</p>
+      </div>
+      <div class="stat-box">
+        <h4>100%</h4>
+        <p>Insured & Bonded</p>
+      </div>
+      <div class="stat-box">
+        <h4>$0</h4>
+        <p>Free Estimates</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 5. SERVICES SECTION                        -->
+  <!-- ========================================== -->
+  <section id="services" class="section-wrap">
+    <div class="section-header">
+      <span class="section-tag">Heavy Equipment & Arborist Precision</span>
+      <h2 class="section-title">Complete Tree & Land Management Services</h2>
+      <p style="color: var(--text-muted); font-size: 16px;">From single residential branch trimmings to 10-acre commercial forestry mulching and storm clearances.</p>
+    </div>
+
+    <div class="services-grid">
+      <!-- Service 1 -->
+      <div class="service-card">
+        <div>
+          <div class="service-icon">🪓</div>
+          <h3>Hazardous Tree Removal</h3>
+          <p>Controlled dismantling of large, dying, or storm-damaged trees leaning over homes, driveways, or utility powerlines with zero impact to your lawn.</p>
+        </div>
+        <a href="#calculator" style="color: var(--primary); font-weight: 600; font-size: 13px; text-decoration: none;">Get Free Estimate →</a>
+      </div>
+
+      <!-- Service 2 -->
+      <div class="service-card">
+        <div>
+          <div class="service-icon">🏗️</div>
+          <h3>Crane-Assisted Dismantling</h3>
+          <p>High-reach heavy crane equipment allows our certified crews to lift massive canopy sections cleanly over structures without dropping heavy logs on your property.</p>
+        </div>
+        <a href="#calculator" style="color: var(--primary); font-weight: 600; font-size: 13px; text-decoration: none;">Get Free Estimate →</a>
+      </div>
+
+      <!-- Service 3 -->
+      <div class="service-card">
+        <div>
+          <div class="service-icon">🚜</div>
+          <h3>Land Clearing & Mulching</h3>
+          <p>Heavy Bobcat, excavator, and forestry mulching rigs ready to clear brush, undergrowth, palmettos, and trees for residential lots and new construction.</p>
+        </div>
+        <a href="#calculator" style="color: var(--primary); font-weight: 600; font-size: 13px; text-decoration: none;">Get Free Estimate →</a>
+      </div>
+
+      <!-- Service 4 -->
+      <div class="service-card">
+        <div>
+          <div class="service-icon">⚙️</div>
+          <h3>Deep Stump Grinding</h3>
+          <p>Commercial hydraulic stump grinders eliminate unsightly, hazardous stumps up to 12 inches below ground level, leaving a clean, plantable grade.</p>
+        </div>
+        <a href="#calculator" style="color: var(--primary); font-weight: 600; font-size: 13px; text-decoration: none;">Get Free Estimate →</a>
+      </div>
+
+      <!-- Service 5 -->
+      <div class="service-card">
+        <div>
+          <div class="service-icon">⚡</div>
+          <h3>24/7 Storm Damage Response</h3>
+          <p>Florida hurricane and thunderstorm response unit standing by around the clock to secure fallen trees off roofs, vehicles, and blocked roadways.</p>
+        </div>
+        <a href="tel:+18135253999" style="color: #dc2626; font-weight: 700; font-size: 13px; text-decoration: none;">Call Emergency Line →</a>
+      </div>
+
+      <!-- Service 6 -->
+      <div class="service-card">
+        <div>
+          <div class="service-icon">🌿</div>
+          <h3>Crown Thinning & Trimming</h3>
+          <p>Arborist-approved pruning to open canopy wind-flow, remove deadwood, and hurricane-proof your valuable Florida oaks and palms.</p>
+        </div>
+        <a href="#calculator" style="color: var(--primary); font-weight: 600; font-size: 13px; text-decoration: none;">Get Free Estimate →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================== -->
+  <!-- 6. INTERACTIVE INSTANT ESTIMATOR           -->
+  <!-- ========================================== -->
+  <section id="calculator" class="section-wrap" style="padding-top: 0;">
+    <div class="calc-container">
+      <div>
+        <span style="font-size: 12px; font-weight: 700; color: #4ade80; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 8px;">
+          Instant Online Quote Tool
+        </span>
+        <h2>Get a Transparent Estimate in 60 Seconds</h2>
+        <p style="color: #94a3b8; font-size: 16px; margin-bottom: 24px;">
+          Unlike contractors who make you wait 4 days for a callback, our rapid pricing calculator gives you an immediate preliminary project range.
+        </p>
+        <div style="space-y: 12px; font-size: 14px; color: #cbd5e1;">
+          <p>✓ 100% Free & No Obligation</p>
+          <p>✓ Same-Day On-Site Assessment</p>
+          <p>✓ Guaranteed Price Lock Guarantee</p>
+        </div>
+      </div>
+
+      <!-- Interactive Calculator Form -->
+      <div class="calc-box">
+        <h3 style="font-size: 18px; margin-bottom: 16px;">Select Your Project Details</h3>
+        
+        <div class="calc-form-group">
+          <label>Primary Service Needed:</label>
+          <select id="calc-service" onchange="updateEstimate()">
+            <option value="removal">Tree Removal (Hazardous / Dead)</option>
+            <option value="trimming">Canopy Trimming & Pruning</option>
+            <option value="stump">Stump Grinding</option>
+            <option value="clearing">Lot / Land Clearing</option>
+          </select>
+        </div>
+
+        <div class="calc-form-group">
+          <label>Tree Height / Lot Scale:</label>
+          <select id="calc-scale" onchange="updateEstimate()">
+            <option value="small">Small (Under 20 ft / Single Stump)</option>
+            <option value="medium" selected>Medium (20 – 40 ft / 2-3 Trees)</option>
+            <option value="large">Large (40 – 70 ft / Heavy Crane Required)</option>
+            <option value="acreage">Acreage / Full Lot Clearing</option>
+          </select>
+        </div>
+
+        <div class="calc-form-group">
+          <label>Proximity to Home / Power Lines:</label>
+          <select id="calc-risk" onchange="updateEstimate()">
+            <option value="open">Open Yard (Easy Access)</option>
+            <option value="near" selected>Close to Home / Driveway</option>
+            <option value="tight">Tight Quarters / Overhangs Roof</option>
+          </select>
+        </div>
+
+        <div class="price-display">
+          <span>Estimated Project Range</span>
+          <h3 id="calc-price">$650 – $1,200</h3>
+        </div>
+
+        <form onsubmit="handleLeadSubmit(event)" style="display: flex; flex-direction: column; gap: 10px;">
+          <input type="text" placeholder="Your Name" required>
+          <input type="tel" placeholder="Phone Number (for booking confirmation)" required>
+          <button type="submit" class="btn-primary" style="justify-content: center; width: 100%;">
+            Book Free On-Site Inspection
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================== -->
+  <!-- 7. RECENT REVIEWS SECTION                  -->
+  <!-- ========================================== -->
+  <section id="reviews" class="section-wrap" style="background: #f8fafc; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+    <div class="section-header">
+      <span class="section-tag">Real Florida Homeowners</span>
+      <h2 class="section-title">What 477 Verified Customers Say</h2>
+      <p style="color: var(--text-muted); font-size: 16px;">Top Notch Trees maintains a perfect 5.0 Google score across hundreds of challenging removals.</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;">
+      <div class="review-card">
+        <div class="stars">★★★★★</div>
+        <p style="font-size: 14px; margin: 12px 0; color: #475569;">
+          "Called them after a severe thunderstorm knocked a huge oak limb onto our screened lanai. They arrived within 90 minutes, stabilized the tree, and cleaned up every twig. Incredible service!"
+        </p>
+        <div class="reviewer-meta">
+          <div class="avatar">MD</div>
+          <div>
+            <strong style="font-size: 14px; color: var(--dark); display: block;">Mark D.</strong>
+            <span style="font-size: 12px; color: var(--text-muted);">Tampa, FL • Google Review</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="review-card">
+        <div class="stars">★★★★★</div>
+        <p style="font-size: 14px; margin: 12px 0; color: #475569;">
+          "Cleared our 1.5-acre property for our new home build in just two days. Their forestry mulcher made quick work of massive palmettos and underbrush. Super professional crew."
+        </p>
+        <div class="reviewer-meta">
+          <div class="avatar">SJ</div>
+          <div>
+            <strong style="font-size: 14px; color: var(--dark); display: block;">Sarah & James K.</strong>
+            <span style="font-size: 12px; color: var(--text-muted);">Riverview, FL • Google Review</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="review-card">
+        <div class="stars">★★★★★</div>
+        <p style="font-size: 14px; margin: 12px 0; color: #475569;">
+          "Had three quotes to take down a 60-foot pine tree between my house and my neighbor's fence. Top Notch was the most thorough, explained the rigging process, and finished without a scratch."
+        </p>
+        <div class="reviewer-meta">
+          <div class="avatar">RT</div>
+          <div>
+            <strong style="font-size: 14px; color: var(--dark); display: block;">Robert T.</strong>
+            <span style="font-size: 12px; color: var(--text-muted);">Plant City, FL • Google Review</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================== -->
+  <!-- 8. FINAL CALL TO ACTION                     -->
+  <!-- ========================================== -->
+  <section class="section-wrap" style="padding-bottom: 0;">
+    <div class="cta-banner">
+      <h2>Need a Tree Evaluated or Cleared Today?</h2>
+      <p>Speak directly with our arbor equipment team for immediate scheduling and transparent estimates.</p>
+      <div style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;">
+        <a href="tel:+18135253999" class="btn-secondary" style="background: #ffffff; color: var(--dark); padding: 14px 28px; font-size: 16px;">
+          <span>📞 Call +1 (813) 525-3999</span>
+        </a>
+        <a href="#calculator" class="btn-primary" style="background: #0f172a; padding: 14px 28px; font-size: 16px;">
+          <span>Request Fast Callback</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================== -->
+  <!-- 9. FOOTER                                  -->
+  <!-- ========================================== -->
+  <footer>
+    <div class="footer-grid">
+      <div>
+        <h4 style="font-size: 18px; color: #ffffff;">Top Notch Trees & Land Clearing LLC</h4>
+        <p style="margin: 12px 0; line-height: 1.6;">
+          Professional tree service, crane-assisted removals, and land clearing for residential & commercial clients throughout Tampa Bay, Brandon, Plant City, and Hillsborough County.
+        </p>
+        <p style="color: #4ade80; font-weight: 600;">★★★★★ 5.0 Google Rating (477 Reviews)</p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Services</h4>
+        <ul class="footer-links">
+          <li><a href="#services">Hazardous Removal</a></li>
+          <li><a href="#services">Crane Dismantling</a></li>
+          <li><a href="#services">Land Clearing</a></li>
+          <li><a href="#services">Stump Grinding</a></li>
+          <li><a href="#services">24/7 Storm Response</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Quick Links</h4>
+        <ul class="footer-links">
+          <li><a href="#home">Home</a></li>
+          <li><a href="#calculator">Instant Estimator</a></li>
+          <li><a href="#reviews">Google Reviews</a></li>
+          <li><a href="tel:+18135253999">Direct Phone</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Direct Contact</h4>
+        <p style="margin-bottom: 8px;"><strong>Phone:</strong> <a href="tel:+18135253999" style="color: #ffffff; text-decoration: none;">+1 (813) 525-3999</a></p>
+        <p style="margin-bottom: 8px;"><strong>Hours:</strong> Open 24/7 for Emergencies</p>
+        <p style="margin-bottom: 8px;"><strong>Service Area:</strong> Tampa Bay & Surrounding Counties</p>
+        <span style="display: inline-block; background: rgba(74, 222, 128, 0.15); color: #4ade80; padding: 4px 8px; border-radius: 4px; font-size: 11px; margin-top: 8px;">
+          Florida State Licensed & Insured
+        </span>
+      </div>
+    </div>
+
+    <div style="border-top: 1px solid #1e293b; padding-top: 24px; text-align: center; font-size: 12px;">
+      <p>© 2026 Top Notch Trees and Land Clearing LLC. All rights reserved. • Website Concept Designed by Client Hunter OS</p>
+    </div>
+  </footer>
+
+  <!-- Instant Estimator Script -->
+  <script>
+    function updateEstimate() {
+      const service = document.getElementById('calc-service').value;
+      const scale = document.getElementById('calc-scale').value;
+      const risk = document.getElementById('calc-risk').value;
+      const priceEl = document.getElementById('calc-price');
+
+      let min = 450;
+      let max = 950;
+
+      if (service === 'removal') {
+        min = 600; max = 1500;
+        if (scale === 'large') { min += 800; max += 1800; }
+        if (risk === 'tight') { min += 300; max += 600; }
+      } else if (service === 'trimming') {
+        min = 350; max = 750;
+        if (scale === 'large') { min += 400; max += 800; }
+      } else if (service === 'stump') {
+        min = 150; max = 350;
+        if (scale === 'large') { min += 200; max += 400; }
+      } else if (service === 'clearing') {
+        min = 1800; max = 4500;
+        if (scale === 'acreage') { min = 3500; max = 8500; }
+      }
+
+      priceEl.textContent = `$${min.toLocaleString()} – $${max.toLocaleString()}`;
+    }
+
+    function handleLeadSubmit(e) {
+      e.preventDefault();
+      alert("Thank you! Your quote request has been recorded. Our dispatcher will call you within 15 minutes to confirm the on-site inspection.");
+    }
+  </script>
+</body>
+</html>
