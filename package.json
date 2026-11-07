@@ -1,0 +1,18 @@
+{
+  "name": "quarry",
+  "version": "1.0.0",
+  "description": "Quarry - Autonomous Local Business Client Hunting, OSINT Intelligence & Pitch Engine",
+  "private": true,
+  "scripts": {
+    "install:all": "npm --prefix server install && npm --prefix client install",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"cyan,magenta\" \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
+    "build:client": "npm --prefix client run build",
+    "start": "npm --prefix server start",
+    "test:server": "node server/test/run-all.js"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
