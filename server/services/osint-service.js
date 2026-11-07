@@ -25,6 +25,7 @@ function spawnKill(cmd, timeoutMs) {
 const Lead = require('../models/Lead');
 const Contact = require('../models/Contact');
 const phoneService = require('./phone-service');
+const stealthService = require('./stealth-service');
 const db = require('../db/database');
 
 const BLOCKED_EMAIL_DOMAINS = [
@@ -965,7 +966,20 @@ class OsintService {
         });
       }
     } catch (err) {
-      if (!textContent) {
+      const isBlockOrGated = isSocialGated || err.response?.status === 403 || err.response?.status === 503;
+      if (isBlockOrGated && !textContent && stealthService.isAvailable()) {
+        try {
+          const stealth = await stealthService.fetch(profileUrl, { timeout: 8000 });
+          if (stealth && stealth.html) {
+            htmlContent = stealth.html;
+            delete result.error;
+          } else {
+            result.error = err.message || 'Inspection failed';
+          }
+        } catch {
+          result.error = err.message || 'Inspection failed';
+        }
+      } else if (!textContent) {
         result.error = err.message || 'Inspection failed';
       }
     }
@@ -1060,15 +1074,47 @@ class OsintService {
       });
 
       verification.httpStatus = response.status;
-      if (response.status >= 400) {
+      const isCfBlocked = response.status === 403 || response.status === 503 ||
+        (typeof response.data === 'string' && (response.data.includes('cf-browser-verification') || response.data.includes('challenge-platform')));
+
+      if (isCfBlocked && stealthService.isAvailable()) {
+        const stealth = await stealthService.fetch(url);
+        if (stealth && stealth.html && stealth.status < 400) {
+          html = stealth.html;
+          verification.httpStatus = stealth.status;
+          verification.stealthBypass = true;
+          verification.stealthEngine = stealth.engine;
+        } else if (response.status >= 400) {
+          verification.reason = `HTTP status ${response.status} returned`;
+          return verification;
+        }
+      } else if (response.status >= 400) {
         verification.reason = `HTTP status ${response.status} returned`;
         return verification;
+      } else {
+        html = typeof response.data === 'string' ? response.data : '';
       }
-
-      html = typeof response.data === 'string' ? response.data : '';
     } catch (httpErr) {
-      verification.reason = `Connection failed: ${httpErr.message}`;
-      return verification;
+      const isBlockOrTls = httpErr.code === 'ERR_TLS_CERT_ALTNAME_INVALID' ||
+        httpErr.code === 'ECONNRESET' ||
+        httpErr.response?.status === 403 ||
+        httpErr.response?.status === 503;
+
+      if (isBlockOrTls && stealthService.isAvailable()) {
+        const stealth = await stealthService.fetch(url, { timeout: 8000 });
+        if (stealth && stealth.html && stealth.status < 400) {
+          html = stealth.html;
+          verification.httpStatus = stealth.status;
+          verification.stealthBypass = true;
+          verification.stealthEngine = stealth.engine;
+        } else {
+          verification.reason = `Connection failed: ${httpErr.message}`;
+          return verification;
+        }
+      } else {
+        verification.reason = `Connection failed: ${httpErr.message}`;
+        return verification;
+      }
     }
 
     // 3. Parked Domain Check

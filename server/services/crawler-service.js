@@ -6,6 +6,7 @@ const util = require('util');
 const execPromise = util.promisify(exec);
 
 const { isSocialOrAggregator } = require('./social-domains');
+const stealthService = require('./stealth-service');
 
 /**
  * Crawler Service: Discovers business prospects via search engines / Google Maps,
@@ -83,13 +84,25 @@ class CrawlerService {
         } catch {}
       });
     } catch (err) {
-      try {
-        const chromiumQuery = encodeURIComponent(query);
-        const { stdout } = await execPromise(
-          `/snap/bin/chromium --headless --disable-gpu --dump-dom "https://html.duckduckgo.com/html/?q=${chromiumQuery}"`,
-          { timeout: 15000 }
-        );
-        const $ = cheerio.load(stdout);
+      let fallbackHtml = '';
+      if (stealthService.isAvailable()) {
+        try {
+          const stealth = await stealthService.fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`);
+          if (stealth && stealth.html) fallbackHtml = stealth.html;
+        } catch {}
+      }
+      if (!fallbackHtml) {
+        try {
+          const chromiumQuery = encodeURIComponent(query);
+          const { stdout } = await execPromise(
+            `/snap/bin/chromium --headless --disable-gpu --dump-dom "https://html.duckduckgo.com/html/?q=${chromiumQuery}"`,
+            { timeout: 15000 }
+          );
+          fallbackHtml = stdout;
+        } catch {}
+      }
+      if (fallbackHtml) {
+        const $ = cheerio.load(fallbackHtml);
         $('.result').each((i, el) => {
           if (leads.length >= limit) return false;
           const title = $(el).find('.result__title a').text().trim();
@@ -123,7 +136,7 @@ class CrawlerService {
             }
           } catch {}
         });
-      } catch (chromiumErr) {}
+      }
     }
 
     return leads;

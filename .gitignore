@@ -48,3 +48,10 @@ Thumbs.db
 # Local agent & Cursor cache
 .claude/
 .cursor/
+
+# Python Virtual Environments & Cache
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo

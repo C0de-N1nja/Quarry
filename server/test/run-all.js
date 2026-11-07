@@ -1818,6 +1818,18 @@ async function run() {
     db.prepare('DELETE FROM runs WHERE id = ?').run(runRes.lastInsertRowid);
   });
 
+  await test('StealthService integrates Scrapling and fetches target pages with TLS/anti-bot bypass', async () => {
+    const stealthService = require('../services/stealth-service');
+    assert.strictEqual(stealthService.isAvailable(), true, 'stealth_fetcher.py must exist');
+
+    const res = await stealthService.fetch('https://httpbin.org/html', { timeout: 15000 });
+    assert.strictEqual(res !== null, true, 'Stealth fetch should return response');
+    assert.strictEqual(res.success, true, 'Stealth fetch success flag must be true');
+    assert.strictEqual(res.status, 200, 'HTTP status should be 200');
+    assert.strictEqual(res.html.includes('Herman Melville'), true, 'Should extract full HTML content');
+    assert.strictEqual(['fast_http', 'stealth_browser'].includes(res.engine), true, 'Engine must be fast_http or stealth_browser');
+  });
+
   // Cleanup test lead
   Mockup.deleteByLeadId(testLeadId);
   db.prepare('DELETE FROM leads WHERE id = ?').run(testLeadId);
