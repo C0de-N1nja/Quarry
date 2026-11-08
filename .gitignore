@@ -49,6 +49,11 @@ Thumbs.db
 .claude/
 .cursor/
 
+# Bundled tools caches & scan results
+server/tools/**/__pycache__/
+server/tools/**/results/
+server/tools/**/*.pyc
+
 # Python Virtual Environments & Cache
 .venv/
 venv/

@@ -8,12 +8,18 @@ Combines:
 """
 
 import sys
+import os
 import json
 import re
 import urllib.parse
 
-# Inject local facebook-page-info-scraper library
-sys.path.insert(0, '/home/beast/github-tools/facebook-page-info-scraper')
+# Inject local facebook-page-info-scraper library (bundled in repo first, then env/system fallback)
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+_bundled_fb = os.path.abspath(os.path.join(_script_dir, '../tools/facebook-page-info-scraper'))
+if os.path.exists(_bundled_fb):
+    sys.path.insert(0, _bundled_fb)
+elif os.path.exists('/home/beast/github-tools/facebook-page-info-scraper'):
+    sys.path.insert(0, '/home/beast/github-tools/facebook-page-info-scraper')
 
 EMAIL_REGEX = re.compile(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}')
 PHONE_REGEX = re.compile(r'(?:\+?1[-.\s]?)?\(?[2-9]\d{2}\)?[-.\s]?[2-9]\d{2}[-.\s]?\d{4}\b')

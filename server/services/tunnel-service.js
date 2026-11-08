@@ -1,5 +1,6 @@
 const { spawn } = require('child_process');
 const fs = require('fs');
+const path = require('path');
 const Setting = require('../models/Setting');
 
 /**
@@ -19,10 +20,13 @@ class TunnelService {
 
   resolveBinary() {
     const candidates = [
+      process.env.CLOUDFLARED_PATH,
+      path.resolve(__dirname, '../tools/cloudflared'),
+      path.resolve(__dirname, '../bin/cloudflared'),
       '/home/beast/github-tools/cloudflared',
       '/usr/local/bin/cloudflared',
       '/usr/bin/cloudflared'
-    ];
+    ].filter(Boolean);
     for (const p of candidates) {
       if (fs.existsSync(p)) return p;
     }
