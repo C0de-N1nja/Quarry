@@ -7,9 +7,29 @@ const db = require('../db/database');
 
 class BlackbirdService {
   constructor() {
-    this.pythonPath = '/home/beast/Projects/Quarry/server/.venv/bin/python';
-    this.blackbirdScript = '/home/beast/github-tools/blackbird/blackbird.py';
-    this.blackbirdDir = '/home/beast/github-tools/blackbird';
+    this._initPaths();
+  }
+
+  _initPaths() {
+    const defaultPython = path.resolve(__dirname, '../.venv/bin/python');
+    this.pythonPath = process.env.PYTHON_PATH || (fs.existsSync(defaultPython) ? defaultPython : 'python3');
+
+    const candidateDirs = [
+      process.env.BLACKBIRD_PATH,
+      path.resolve(__dirname, '../../../github-tools/blackbird'),
+      '/home/beast/github-tools/blackbird'
+    ].filter(Boolean);
+
+    this.blackbirdDir = null;
+    this.blackbirdScript = null;
+    for (const dir of candidateDirs) {
+      const script = path.join(dir, 'blackbird.py');
+      if (fs.existsSync(script)) {
+        this.blackbirdDir = dir;
+        this.blackbirdScript = script;
+        break;
+      }
+    }
   }
 
   /**
@@ -25,6 +45,17 @@ class BlackbirdService {
    * Run Blackbird OSINT scan on a username handle
    */
   async scanHandle(handle, leadId = null, options = {}) {
+    this._initPaths();
+    if (!this.blackbirdScript || !this.blackbirdDir) {
+      return {
+        success: false,
+        handle: handle,
+        total_found: 0,
+        accounts: [],
+        error: 'Blackbird OSINT engine not detected. Configure BLACKBIRD_PATH in .env or install blackbird in github-tools/blackbird'
+      };
+    }
+
     const cleanHandle = this.sanitizeHandle(handle);
     if (!cleanHandle) {
       return {

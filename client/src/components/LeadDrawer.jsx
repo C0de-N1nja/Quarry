@@ -35,6 +35,7 @@ import {
   RiSearchLine, RiSearchLine as Search,
   RiFingerprintLine,
   RiServerLine,
+  RiLockLine,
   RiArrowDownSLine
 } from '@remixicon/react';
 import { Drawer } from '@/components/base/drawer/drawer';
@@ -616,6 +617,52 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
   const harvesterSubdomains = Array.isArray(harvesterIntel?.subdomains) ? harvesterIntel.subdomains : [];
   const harvesterEmails = Array.isArray(harvesterIntel?.emails) ? harvesterIntel.emails : [];
 
+  // Pipeline Dependency DAG & Gating States
+  const hasDomain = Boolean(currentLead.website && !isNoWebsiteLead);
+  const hasPhone = Boolean(currentLead.phone || contact?.phone);
+  const hasOwner = Boolean(contact?.contact_name || ownerDossier?.owner_name);
+  const hasEmail = Boolean(contact?.email || currentLead.email);
+  const hasHandle = Boolean((contact?.email && contact.email.includes('@')) || hasOwner);
+  const hasVerifiedChannel = Boolean(contact?.is_mx_valid || isWhatsAppVerified || hasPhone);
+
+  const pipelineSteps = [
+    {
+      id: 'domain',
+      label: 'Domain / Web',
+      status: hasDomain ? (harvesterSubdomains.length > 0 ? 'completed' : 'ready') : (isNoWebsiteLead ? 'completed' : 'ready')
+    },
+    {
+      id: 'phone',
+      label: 'Phone Intel',
+      status: !hasPhone ? 'locked' : (currentLead.phone_type && currentLead.phone_type !== 'unknown' ? 'completed' : 'ready')
+    },
+    {
+      id: 'whatsapp',
+      label: 'WhatsApp',
+      status: !hasPhone ? 'locked' : (isWhatsAppVerified ? 'completed' : 'ready')
+    },
+    {
+      id: 'owner',
+      label: 'Decision Maker',
+      status: hasOwner ? 'completed' : 'ready'
+    },
+    {
+      id: 'email',
+      label: 'Email & Inboxes',
+      status: !hasEmail ? 'locked' : (parsedHolehe.length > 0 ? 'completed' : 'ready')
+    },
+    {
+      id: 'social',
+      label: 'Social Footprint',
+      status: !hasHandle ? 'locked' : (blackbirdAccounts.length > 0 ? 'completed' : 'ready')
+    },
+    {
+      id: 'outreach',
+      label: 'Pitch Ready',
+      status: (renderedPitch?.subject && hasVerifiedChannel) ? 'completed' : (hasVerifiedChannel ? 'ready' : 'locked')
+    }
+  ];
+
   return (
     <Drawer
       isOpen={true}
@@ -746,6 +793,45 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
             OSINT {contact?.email || currentLead.website_status ? '(Verified)' : ''}
           </PillTab>
         </PillTabList>
+      </div>
+
+      {/* Pipeline Dependency Flow Tracker */}
+      <div className="px-4 py-2 bg-background-primary-default border-b border-separator-border/60 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-1.5 text-[11px] font-sans min-w-max">
+          <span className="text-[10px] uppercase font-mono tracking-wider text-text-tertiary mr-1 font-semibold">
+            Pipeline:
+          </span>
+          {pipelineSteps.map((step, idx) => (
+            <React.Fragment key={step.id}>
+              {idx > 0 && <span className="text-text-tertiary/40">›</span>}
+              <div 
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${
+                  step.status === 'completed'
+                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                    : step.status === 'ready'
+                    ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                    : 'bg-background-tertiary-default text-text-tertiary/60 border border-separator-border/40'
+                }`}
+                title={
+                  step.status === 'completed' 
+                    ? `${step.label}: Verified & Complete` 
+                    : step.status === 'ready' 
+                    ? `${step.label}: Prerequisites Met (Ready to Run)` 
+                    : `${step.label}: Locked (Prerequisites pending)`
+                }
+              >
+                {step.status === 'completed' ? (
+                  <Check className="size-2.5 text-emerald-400" />
+                ) : step.status === 'ready' ? (
+                  <RiFlashlightFill className="size-2.5 text-blue-400" />
+                ) : (
+                  <RiLockLine className="size-2.5 opacity-60" />
+                )}
+                <span>{step.label}</span>
+              </div>
+            </React.Fragment>
+          ))}
+        </div>
       </div>
 
       {/* Alerts */}
@@ -1958,7 +2044,7 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
                   <ShieldCheck className="h-4 w-4 text-accent-500" />
                   <span>Holehe Account Verification</span>
                 </p>
-                {(contact?.email || currentLead.email) && (
+                {hasEmail ? (
                   <Button
                     onClick={handleScanHolehe}
                     disabled={holeheScanning}
@@ -1967,6 +2053,16 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
                     leadingIcon={holeheScanning ? Loader2 : RefreshCw}
                   >
                     {parsedHolehe.length > 0 ? 'Re-Scan Accounts' : 'Scan Accounts'}
+                  </Button>
+                ) : (
+                  <Button
+                    disabled={true}
+                    variant="secondary"
+                    size="small"
+                    leadingIcon={RiLockLine}
+                    title="Locked: Discover or enter decision-maker email first"
+                  >
+                    Locked (Needs Email)
                   </Button>
                 )}
               </div>
@@ -2000,15 +2096,27 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
                     </Chip>
                   )}
                 </div>
-                <Button
-                  onClick={handleScanBlackbird}
-                  disabled={blackbirdScanning}
-                  variant="secondary"
-                  size="small"
-                  leadingIcon={blackbirdScanning ? Loader2 : RefreshCw}
-                >
-                  {blackbirdAccounts.length > 0 ? 'Re-Scan Blackbird' : 'Scan Blackbird'}
-                </Button>
+                {hasHandle ? (
+                  <Button
+                    onClick={handleScanBlackbird}
+                    disabled={blackbirdScanning}
+                    variant="secondary"
+                    size="small"
+                    leadingIcon={blackbirdScanning ? Loader2 : RefreshCw}
+                  >
+                    {blackbirdAccounts.length > 0 ? 'Re-Scan Blackbird' : 'Scan Blackbird'}
+                  </Button>
+                ) : (
+                  <Button
+                    disabled={true}
+                    variant="secondary"
+                    size="small"
+                    leadingIcon={RiLockLine}
+                    title="Locked: Owner name or email handle required to derive candidate username"
+                  >
+                    Locked (Needs Handle)
+                  </Button>
+                )}
               </div>
               <p className="text-[11px] text-text-secondary">
                 Autonomous multi-network enumeration of owner personal accounts across 574+ social and tech platforms:
@@ -2036,20 +2144,24 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
             </div>
 
             {/* 7. theHarvester Domain & Infrastructure Recon */}
-            {currentLead.website && !isNoWebsiteLead && (
-              <div className="p-4 rounded-xl bg-background-secondary-default border border-separator-border space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <RiServerLine className="h-4 w-4 text-cyan-400" />
-                    <span className="text-xs font-semibold text-text-primary">
-                      theHarvester Domain Infrastructure
-                    </span>
-                    {harvesterSubdomains.length > 0 && (
-                      <Chip variant="subtle" color="cyan" size="sm">
-                        {harvesterSubdomains.length} Subdomains
-                      </Chip>
-                    )}
-                  </div>
+            <div className="p-4 rounded-xl bg-background-secondary-default border border-separator-border space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <RiServerLine className="h-4 w-4 text-cyan-400" />
+                  <span className="text-xs font-semibold text-text-primary">
+                    theHarvester Domain Infrastructure
+                  </span>
+                  {harvesterSubdomains.length > 0 ? (
+                    <Chip variant="subtle" color="cyan" size="sm">
+                      {harvesterSubdomains.length} Subdomains
+                    </Chip>
+                  ) : !hasDomain ? (
+                    <Chip variant="subtle" color="gray" size="sm">
+                      No Domain (Locked)
+                    </Chip>
+                  ) : null}
+                </div>
+                {hasDomain ? (
                   <Button
                     onClick={handleScanHarvester}
                     disabled={harvesterScanning}
@@ -2059,7 +2171,18 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
                   >
                     {harvesterSubdomains.length > 0 ? 'Re-Run theHarvester' : 'Run theHarvester'}
                   </Button>
-                </div>
+                ) : (
+                  <Button
+                    disabled={true}
+                    variant="secondary"
+                    size="small"
+                    leadingIcon={RiLockLine}
+                    title="Locked: Prospect has no custom domain to enumerate"
+                  >
+                    Locked (Needs Domain)
+                  </Button>
+                )}
+              </div>
                 <p className="text-[11px] text-text-secondary">
                   Passive certificate transparency and DNS enumeration for target domain infrastructure:
                 </p>
@@ -2096,7 +2219,6 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
                   </span>
                 )}
               </div>
-            )}
           </div>
         )}
 

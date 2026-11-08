@@ -18,12 +18,19 @@ class WhatsAppService {
     if (process.env.RAPIDAPI_KEY) return process.env.RAPIDAPI_KEY;
 
     try {
-      const dotenvPath = '/home/beast/github-tools/whatslookup/.env';
-      if (fs.existsSync(dotenvPath)) {
-        const content = fs.readFileSync(dotenvPath, 'utf8');
-        const match = content.match(/^RAPIDAPI_KEY=(.+)$/m);
-        if (match && match[1]) {
-          return match[1].trim();
+      const candidates = [
+        process.env.WHATSLOOKUP_PATH ? path.join(process.env.WHATSLOOKUP_PATH, '.env') : null,
+        path.resolve(__dirname, '../../../github-tools/whatslookup/.env'),
+        '/home/beast/github-tools/whatslookup/.env'
+      ].filter(Boolean);
+
+      for (const dotenvPath of candidates) {
+        if (fs.existsSync(dotenvPath)) {
+          const content = fs.readFileSync(dotenvPath, 'utf8');
+          const match = content.match(/^RAPIDAPI_KEY=(.+)$/m);
+          if (match && match[1]) {
+            return match[1].trim();
+          }
         }
       }
     } catch (e) {}

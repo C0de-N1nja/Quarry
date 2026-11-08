@@ -9,8 +9,25 @@ const { isSocialOrAggregator } = require('./social-domains');
 
 class HarvesterService {
   constructor() {
-    this.uvPath = '/home/beast/.local/bin/uv';
-    this.harvesterDir = '/home/beast/github-tools/theHarvester';
+    this._initPaths();
+  }
+
+  _initPaths() {
+    this.uvPath = process.env.UV_PATH || (fs.existsSync('/home/beast/.local/bin/uv') ? '/home/beast/.local/bin/uv' : 'uv');
+
+    const candidateDirs = [
+      process.env.HARVESTER_PATH,
+      path.resolve(__dirname, '../../../github-tools/theHarvester'),
+      '/home/beast/github-tools/theHarvester'
+    ].filter(Boolean);
+
+    this.harvesterDir = null;
+    for (const dir of candidateDirs) {
+      if (fs.existsSync(path.join(dir, 'pyproject.toml')) || fs.existsSync(path.join(dir, 'README.md'))) {
+        this.harvesterDir = dir;
+        break;
+      }
+    }
   }
 
   /**
@@ -40,6 +57,18 @@ class HarvesterService {
    * Run theHarvester passive recon on target domain
    */
   async scanDomain(domainInput, leadId = null, options = {}) {
+    this._initPaths();
+    if (!this.harvesterDir) {
+      return {
+        success: false,
+        error: 'theHarvester engine not detected. Configure HARVESTER_PATH in .env or clone theHarvester into github-tools/theHarvester',
+        domain: domainInput,
+        subdomains: [],
+        emails: [],
+        ips: []
+      };
+    }
+
     const domain = this.cleanDomain(domainInput);
     if (!domain) {
       return {

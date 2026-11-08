@@ -86,8 +86,11 @@ class PhoneService {
     // Run local phoneinfoga binary only when not in fast mode
     if (!options || !options.fast) {
       try {
+        const fs = require('fs');
+        const defaultBin = '/home/beast/.local/bin/phoneinfoga';
+        const binCmd = process.env.PHONEINFOGA_PATH || (fs.existsSync(defaultBin) ? defaultBin : 'phoneinfoga');
         const { stdout } = await execPromise(
-          `/home/beast/.local/bin/phoneinfoga scan -n "${normalized}" --disable ovh,numverify`,
+          `${binCmd} scan -n "${normalized}" --disable ovh,numverify`,
           { timeout: 3000 }
         );
 

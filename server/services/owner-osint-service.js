@@ -456,7 +456,10 @@ class OwnerOsintService {
   async runSherlock(handle) {
     if (!handle || handle.length < 3) return [];
     try {
-      const { stdout } = await execPromise(`/home/beast/.local/bin/sherlock --timeout 5 --print-found "${handle}"`, { timeout: 15000 });
+      const fs = require('fs');
+      const defaultBin = '/home/beast/.local/bin/sherlock';
+      const binCmd = process.env.SHERLOCK_PATH || (fs.existsSync(defaultBin) ? defaultBin : 'sherlock');
+      const { stdout } = await execPromise(`${binCmd} --timeout 5 --print-found "${handle}"`, { timeout: 15000 });
       const foundUrls = [];
       for (const line of stdout.split('\n')) {
         if (line.includes('http://') || line.includes('https://')) {
