@@ -33,6 +33,7 @@ import {
   RiWhatsappLine, RiWhatsappLine as MessageCircle,
   RiVipCrownLine, RiVipCrownLine as Crown,
   RiSearchLine, RiSearchLine as Search,
+  RiFingerprintLine,
   RiArrowDownSLine
 } from '@remixicon/react';
 import { Drawer } from '@/components/base/drawer/drawer';
@@ -80,6 +81,8 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
   const [iframeKey, setIframeKey] = useState(Date.now());
   const [phoneScanning, setPhoneScanning] = useState(false);
   const [holeheScanning, setHoleheScanning] = useState(false);
+  const [whatsappVerifying, setWhatsappVerifying] = useState(false);
+  const [blackbirdScanning, setBlackbirdScanning] = useState(false);
   const [socialResolveLoading, setSocialResolveLoading] = useState(false);
   const [socialResolveReport, setSocialResolveReport] = useState(null);
 
@@ -306,6 +309,48 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
       setErrorMsg(err.message || 'Failed to scan Holehe accounts');
     } finally {
       setHoleheScanning(false);
+    }
+  };
+
+  const handleVerifyWhatsApp = async () => {
+    setWhatsappVerifying(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch(`/api/leads/${lead.id}/verify-whatsapp`, { method: 'POST' });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+
+      if (data.whatsapp?.is_whatsapp_registered) {
+        setActionMsg(`WhatsApp verified: Active account${data.whatsapp.is_business ? ' (Business)' : ''}`);
+      } else {
+        setActionMsg(`WhatsApp status: ${data.whatsapp?.phone_e164 || 'Ready for outreach'}`);
+      }
+      await fetchLeadDetail();
+      if (onRefreshLead) onRefreshLead();
+      setTimeout(() => setActionMsg(null), 3500);
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to verify WhatsApp');
+    } finally {
+      setWhatsappVerifying(false);
+    }
+  };
+
+  const handleScanBlackbird = async () => {
+    setBlackbirdScanning(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch(`/api/leads/${lead.id}/scan-blackbird`, { method: 'POST' });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+
+      setActionMsg(`Blackbird scan complete: ${data.blackbird?.total_found || 0} social accounts discovered.`);
+      await fetchLeadDetail();
+      if (onRefreshLead) onRefreshLead();
+      setTimeout(() => setActionMsg(null), 3500);
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to scan Blackbird accounts');
+    } finally {
+      setBlackbirdScanning(false);
     }
   };
 
@@ -541,6 +586,11 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
   const sherlockProfiles = Array.isArray(ownerDossier?.sherlock_profiles)
     ? ownerDossier.sherlock_profiles
     : [];
+  const blackbirdAccounts = Array.isArray(parsedOsintEvidence?.blackbird_results?.accounts)
+    ? parsedOsintEvidence.blackbird_results.accounts
+    : (Array.isArray(ownerDossier?.blackbird_profiles) ? ownerDossier.blackbird_profiles : []);
+  const whatsAppIntel = parsedOsintEvidence?.whatsapp_intel || ownerDossier?.whatsapp || null;
+  const isWhatsAppVerified = !!(whatsAppIntel?.is_whatsapp_registered || contact?.whatsapp);
 
   return (
     <Drawer
@@ -1784,22 +1834,45 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
                 )}
               </div>
 
-              {/* 1-Click WhatsApp Quick Action */}
+              {/* 1-Click WhatsApp Quick Action & WhatsLookup Verification */}
               {(currentLead.phone || contact?.phone) && (
-                <div className="pt-2 border-t border-separator-border/60 flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-xs text-success-primary font-medium">
-                    <MessageSquare className="h-3.5 w-3.5" />
-                    <span>WhatsApp Direct</span>
+                <div className="pt-2 border-t border-separator-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5 text-xs text-success-primary font-medium">
+                      <RiWhatsappLine className="h-3.5 w-3.5 text-emerald-400" />
+                      <span>WhatsApp Intel</span>
+                    </div>
+                    {isWhatsAppVerified ? (
+                      <Chip variant="subtle" color="emerald" size="sm">
+                        {whatsAppIntel?.is_business ? 'Business Verified' : 'Registered / Active'}
+                      </Chip>
+                    ) : (
+                      <Chip variant="subtle" color="gray" size="sm">
+                        Unverified
+                      </Chip>
+                    )}
                   </div>
-                  <Button
-                    type="button"
-                    onClick={handleShareWhatsApp}
-                    variant="whatsapp"
-                    size="small"
-                    leadingIcon={ExternalLink}
-                  >
-                    Chat on WhatsApp
-                  </Button>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      type="button"
+                      onClick={handleVerifyWhatsApp}
+                      disabled={whatsappVerifying}
+                      variant="secondary"
+                      size="small"
+                      leadingIcon={whatsappVerifying ? Loader2 : RefreshCw}
+                    >
+                      {isWhatsAppVerified ? 'Re-Verify (WhatsLookup)' : 'Verify (WhatsLookup)'}
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleShareWhatsApp}
+                      variant="whatsapp"
+                      size="small"
+                      leadingIcon={ExternalLink}
+                    >
+                      Chat on WhatsApp
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
@@ -1885,6 +1958,55 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
                   ))
                 ) : (
                   <span className="text-xs text-text-tertiary italic">No external accounts verified via holehe</span>
+                )}
+              </div>
+            </div>
+
+            {/* 6. Blackbird OSINT Footprint (574+ Networks) */}
+            <div className="p-4 rounded-xl bg-background-secondary-default border border-separator-border space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <RiFingerprintLine className="h-4 w-4 text-purple-400" />
+                  <span className="text-xs font-semibold text-text-primary">
+                    Blackbird Social Footprint (574+ Networks)
+                  </span>
+                  {blackbirdAccounts.length > 0 && (
+                    <Chip variant="subtle" color="emerald" size="sm">
+                      {blackbirdAccounts.length} Discovered
+                    </Chip>
+                  )}
+                </div>
+                <Button
+                  onClick={handleScanBlackbird}
+                  disabled={blackbirdScanning}
+                  variant="secondary"
+                  size="small"
+                  leadingIcon={blackbirdScanning ? Loader2 : RefreshCw}
+                >
+                  {blackbirdAccounts.length > 0 ? 'Re-Scan Blackbird' : 'Scan Blackbird'}
+                </Button>
+              </div>
+              <p className="text-[11px] text-text-secondary">
+                Autonomous multi-network enumeration of owner personal accounts across 574+ social and tech platforms:
+              </p>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {blackbirdAccounts.length > 0 ? (
+                  blackbirdAccounts.map((acc, idx) => (
+                    <a
+                      key={idx}
+                      href={acc.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-background-primary-default border border-separator-border hover:border-purple-500/50 text-[11px] font-medium text-text-primary hover:text-purple-400 transition-colors"
+                    >
+                      <span>{acc.platform}</span>
+                      <ExternalLink className="h-2.5 w-2.5 opacity-60" />
+                    </a>
+                  ))
+                ) : (
+                  <span className="text-xs text-text-tertiary italic">
+                    No Blackbird profiles scanned yet (Click 'Scan Blackbird' to enumerate)
+                  </span>
                 )}
               </div>
             </div>

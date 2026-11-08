@@ -16,5 +16,7 @@ router.patch('/:id/stage', leadController.updateStage);
 router.post('/:id/resolve-website', leadController.resolveWebsite);
 router.post('/:id/scan-phone', leadController.scanPhone);
 router.post('/:id/scan-holehe', leadController.scanHolehe);
+router.post('/:id/verify-whatsapp', leadController.verifyWhatsApp);
+router.post('/:id/scan-blackbird', leadController.scanBlackbird);
 
 module.exports = router;

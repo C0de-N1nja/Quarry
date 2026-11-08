@@ -1936,6 +1936,46 @@ async function run() {
     assert.strictEqual(['AMBIGUOUS', 'UNMATCHED'].includes(ambigScore.verdict), true, 'Uncorroborated common handle must be ambiguous or unmatched');
   });
 
+  // Test 61: WhatsApp Service & WhatsLookup Integration
+  await testAsync('WhatsAppService normalizes international digits, generates wa.me links, and records WhatsApp intel', async () => {
+    const whatsappService = require('../services/whatsapp-service');
+    assert.strictEqual(whatsappService.normalizeDigits('+1 (408) 841-9485'), '14088419485');
+    assert.strictEqual(whatsappService.normalizeDigits('(650) 564-7667', 'US'), '16505647667');
+
+    const result = await whatsappService.verifyWhatsApp('(408) 841-9485', testLeadId, { country: 'US' });
+    assert(result.phone_digits.includes('14088419485'), 'Digits must match');
+    assert.strictEqual(result.phone_e164, '+14088419485', 'E.164 must be +14088419485');
+    assert(result.direct_url.includes('wa.me/14088419485'), 'Direct wa.me URL must be present');
+
+    const contactRow = db.prepare('SELECT whatsapp FROM contacts WHERE lead_id = ?').get(testLeadId);
+    assert.strictEqual(contactRow?.whatsapp, '+14088419485', 'Contacts table must store verified E.164 WhatsApp');
+
+    const leadRow = db.prepare('SELECT osint_evidence FROM leads WHERE id = ?').get(testLeadId);
+    assert(leadRow?.osint_evidence && leadRow.osint_evidence.includes('whatsapp_intel'), 'Lead osint_evidence must record whatsapp_intel');
+  });
+
+  // Test 62: Blackbird Social Footprint Integration
+  await testAsync('BlackbirdService sanitizes handles, scans multi-platform accounts, and persists social footprints', async () => {
+    const blackbirdService = require('../services/blackbird-service');
+    assert.strictEqual(blackbirdService.sanitizeHandle('@torvalds'), 'torvalds');
+    assert.strictEqual(blackbirdService.sanitizeHandle(' invalid$$handle! '), 'invalidhandle');
+    assert.strictEqual(blackbirdService.sanitizeHandle('a'), null); // too short
+
+    // Run quick scan with timeout=2 on known handle
+    const scanResult = await blackbirdService.scanHandle('torvalds', testLeadId, {
+      category: 'tech',
+      timeout: 3,
+      maxWaitMs: 8000
+    });
+
+    assert.strictEqual(scanResult.success, true, 'Blackbird scan should report success');
+    assert.strictEqual(scanResult.handle, 'torvalds', 'Handle must match');
+    assert(Array.isArray(scanResult.accounts), 'Accounts must be an array');
+
+    const contactRow = db.prepare('SELECT social_links FROM contacts WHERE lead_id = ?').get(testLeadId);
+    assert(contactRow?.social_links, 'Contacts must have social_links');
+  });
+
   // Cleanup test lead
   Mockup.deleteByLeadId(testLeadId);
   db.prepare('DELETE FROM leads WHERE id = ?').run(testLeadId);

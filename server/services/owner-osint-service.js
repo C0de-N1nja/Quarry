@@ -13,6 +13,8 @@ const Contact = require('../models/Contact');
 const phoneService = require('./phone-service');
 const osintService = require('./osint-service');
 const stealthService = require('./stealth-service');
+const whatsappService = require('./whatsapp-service');
+const blackbirdService = require('./blackbird-service');
 
 class OwnerOsintService {
   /**
@@ -554,6 +556,13 @@ class OwnerOsintService {
         } else {
           dossier.phone_type = `${phoneIntel.phone_type || 'Landline'} (Office Line)`;
         }
+
+        // Actively verify WhatsApp presence via WhatsLookup
+        const targetWaPhone = dossier.personal_mobile || lead.phone;
+        if (targetWaPhone) {
+          const waIntel = await whatsappService.verifyWhatsApp(targetWaPhone, lead.id, { country: lead.country || 'US' });
+          dossier.whatsapp = waIntel;
+        }
       } catch {}
     }
 
@@ -576,11 +585,25 @@ class OwnerOsintService {
       } catch {}
     }
 
-    // 7. Optional Sherlock scan if handle available
+    // 7. Social Footprint Scanners (Sherlock & Blackbird 574+ sites)
     const candidateHandle = dossier.primary_email ? dossier.primary_email.split('@')[0] : null;
     if (candidateHandle && !candidateHandle.includes('.') && candidateHandle.length >= 4) {
       const sherlockResults = await this.runSherlock(candidateHandle);
       dossier.sherlock_profiles = sherlockResults.slice(0, 5);
+
+      try {
+        const bbResults = await blackbirdService.scanHandle(candidateHandle, lead.id, { timeout: 4 });
+        dossier.blackbird_profiles = bbResults.accounts || [];
+        // Merge any high-confidence social matches into personal_socials
+        (bbResults.accounts || []).forEach(acc => {
+          const p = acc.platform.toLowerCase();
+          if (p.includes('linkedin') && !dossier.personal_socials.linkedin) dossier.personal_socials.linkedin = acc.url;
+          else if ((p.includes('twitter') || p.includes('x')) && !dossier.personal_socials.twitter) dossier.personal_socials.twitter = acc.url;
+          else if (p.includes('instagram') && !dossier.personal_socials.instagram) dossier.personal_socials.instagram = acc.url;
+          else if (p.includes('facebook') && !dossier.personal_socials.facebook) dossier.personal_socials.facebook = acc.url;
+          else if (p.includes('github') && !dossier.personal_socials.github) dossier.personal_socials.github = acc.url;
+        });
+      } catch {}
     }
 
     dossier.confidence = (dossier.primary_email && dossier.owner_name) ? 'high' : 'medium';

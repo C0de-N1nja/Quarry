@@ -245,6 +245,77 @@ class LeadController {
       res.status(500).json({ success: false, error: err.message });
     }
   }
+
+  async verifyWhatsApp(req, res) {
+    try {
+      const id = req.params.id;
+      const lead = Lead.findById(id);
+      if (!lead) return res.status(404).json({ success: false, error: 'Lead not found' });
+
+      const Contact = require('../models/Contact');
+      const contact = Contact.findByLeadId(id);
+      const targetPhone = contact?.phone || lead.phone;
+      if (!targetPhone) return res.status(400).json({ success: false, error: 'No phone number available to verify on WhatsApp' });
+
+      const whatsappService = require('../services/whatsapp-service');
+      const intel = await whatsappService.verifyWhatsApp(targetPhone, id, { country: lead.country || 'US' });
+      const updatedLead = Lead.findById(id);
+      const updatedContact = Contact.findByLeadId(id);
+
+      res.json({
+        success: true,
+        whatsapp: intel,
+        lead: updatedLead,
+        contact: updatedContact
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
+  async scanBlackbird(req, res) {
+    try {
+      const id = req.params.id;
+      const lead = Lead.findById(id);
+      if (!lead) return res.status(404).json({ success: false, error: 'Lead not found' });
+
+      const Contact = require('../models/Contact');
+      const contact = Contact.findByLeadId(id);
+
+      let candidateHandle = req.body?.handle;
+      if (!candidateHandle) {
+        if (contact?.email && contact.email.includes('@')) {
+          candidateHandle = contact.email.split('@')[0];
+        } else if (lead.email && lead.email.includes('@')) {
+          candidateHandle = lead.email.split('@')[0];
+        } else if (contact?.contact_name) {
+          candidateHandle = contact.contact_name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        }
+      }
+
+      if (!candidateHandle) {
+        return res.status(400).json({ success: false, error: 'No username handle or email local-part available to scan with Blackbird' });
+      }
+
+      const blackbirdService = require('../services/blackbird-service');
+      const intel = await blackbirdService.scanHandle(candidateHandle, id, {
+        category: req.query.category || req.body?.category || null,
+        timeout: 4
+      });
+
+      const updatedLead = Lead.findById(id);
+      const updatedContact = Contact.findByLeadId(id);
+
+      res.json({
+        success: true,
+        blackbird: intel,
+        lead: updatedLead,
+        contact: updatedContact
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  }
 }
 
 module.exports = new LeadController();
