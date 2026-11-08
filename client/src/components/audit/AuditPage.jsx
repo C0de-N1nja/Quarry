@@ -16,10 +16,12 @@ import {
   RiComputerLine,
   RiSparklingLine,
   RiTimeLine,
-  RiFileTextLine
+  RiFileTextLine,
+  RiPrinterLine
 } from '@remixicon/react';
 import { Button } from '@/components/base/buttons/button';
 import { Chip } from '@/components/base/badges/chip';
+import { toast } from '@/components/base/toast/toast';
 
 export default function AuditPage({ leadId, onBack, onOpenPitch }) {
   const [lead, setLead] = useState(null);
@@ -89,6 +91,9 @@ export default function AuditPage({ leadId, onBack, onOpenPitch }) {
     const text = `Subject: ${audit.pitch_draft.subject}\n\n${audit.pitch_draft.body}`;
     navigator.clipboard.writeText(text);
     setCopiedPitch(true);
+    toast.success('Website audit pitch report copied to clipboard!', {
+      description: 'Ready to send to the business owner via email or proposal'
+    });
     setTimeout(() => setCopiedPitch(false), 2500);
   };
 
@@ -197,6 +202,16 @@ export default function AuditPage({ leadId, onBack, onOpenPitch }) {
               className={copiedPitch ? 'text-emerald-400 border-emerald-500/40' : ''}
             >
               {copiedPitch ? 'Pitch Copied!' : 'Copy Pitch Report'}
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="small"
+              onClick={() => window.print()}
+              leadingIcon={RiPrinterLine}
+              title="Print or export client audit report to PDF"
+            >
+              Print / PDF
             </Button>
 
             {onOpenPitch && (

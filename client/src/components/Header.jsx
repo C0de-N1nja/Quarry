@@ -18,6 +18,7 @@ import { Button } from '@/components/base/buttons/button';
 import { IconButton } from '@/components/base/buttons/icon-button';
 import { Chip } from '@/components/base/badges/chip';
 import { StatusDot } from '@/components/base/badges/status-dot';
+import { Kbd } from '@/components/base/kbd/kbd';
 
 export default function Header({ 
   stats, 
@@ -27,7 +28,8 @@ export default function Header({
   onOpenSettings, 
   theme, 
   onToggleTheme, 
-  onExportExcel 
+  onExportExcel,
+  onOpenCommandPalette
 }) {
   const [tunnel, setTunnel] = useState(null);
 
@@ -66,6 +68,21 @@ export default function Header({
             )}
           </div>
         </div>
+
+        {/* Universal Command Palette Trigger (BoardUI Pill) */}
+        {onOpenCommandPalette && (
+          <button
+            onClick={onOpenCommandPalette}
+            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-separator-border bg-background-secondary-default hover:bg-background-secondary-hover text-text-tertiary hover:text-text-primary text-xs transition-colors cursor-pointer max-w-xs w-64 justify-between shadow-xs"
+            title="Open Command Palette (⌘K / Ctrl+K)"
+          >
+            <span className="flex items-center gap-2 truncate">
+              <RiSearch2Line className="size-3.5 text-text-tertiary shrink-0" />
+              <span className="truncate">Search leads, actions...</span>
+            </span>
+            <Kbd className="text-[10px] shrink-0">⌘K</Kbd>
+          </button>
+        )}
 
         {/* Global Action Buttons using Official BoardUI */}
         <div className="flex items-center gap-2 shrink-0">

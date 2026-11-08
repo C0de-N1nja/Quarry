@@ -12,6 +12,9 @@ import SettingsModal from './components/SettingsModal';
 import AutoPilotModal from './components/AutoPilotModal';
 import OsintRunModal from './components/OsintRunModal';
 import AuditPage from './components/audit/AuditPage';
+import CommandPalette from './components/boardui/CommandPalette';
+import KeyboardShortcutsModal from './components/boardui/KeyboardShortcutsModal';
+import { Toaster, toast } from '@/components/base/toast/toast';
 
 export default function App() {
   const [theme, setTheme] = useState(() => {
@@ -58,6 +61,23 @@ export default function App() {
     return localStorage.getItem('viewMode') || 'table';
   });
   const [toast, setToast] = useState(null); // { message, time, type }
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+
+  // Global Keyboard Shortcuts (Cmd+K / Ctrl+K for Command Palette, ? for Cheatsheet)
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
+      } else if (e.key === '?' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
+        e.preventDefault();
+        setIsShortcutsOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
   const [auditLeadId, setAuditLeadId] = useState(() => {
     const path = window.location.pathname;
     if (path.startsWith('/audit/')) {
@@ -289,6 +309,9 @@ export default function App() {
   const handleExportExcel = (format = 'excel') => {
     const filter = activeFilter || 'all';
     const url = `/api/export/${format}?filter=${encodeURIComponent(filter)}`;
+    toast.success(`Exporting ${format.toUpperCase()} file...`, {
+      description: `Downloading full prospect list filtered by "${filter}"`
+    });
     window.location.href = url;
   };
 
@@ -419,6 +442,7 @@ export default function App() {
           onOpenQueue={() => setActiveModal('queue')}
           onOpenSettings={() => setActiveModal('settings')}
           onExportExcel={() => handleExportExcel('excel')}
+          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         />
 
         {/* Main Content Area */}
@@ -527,6 +551,9 @@ export default function App() {
             fetchLeads();
             fetchStats();
             if (meta && meta.found !== undefined) {
+              toast.success(`Harvested ${meta.found} places (${meta.inserted} fresh leads)!`, {
+                description: `Keyword: "${meta.keyword || 'Target'}" in ${meta.time || 'few seconds'}`
+              });
               setToast({
                 message: `Harvested ${meta.found} authentic places (${meta.inserted} new leads) for "${meta.keyword || 'Target'}"!`,
                 time: meta.time,
@@ -623,6 +650,38 @@ export default function App() {
           <CloseButton size="sm" onClick={() => setToast(null)} aria-label="Dismiss Notification" />
         </div>
       )}
+      {/* Global Universal Command Palette (⌘K) */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        leads={leads}
+        onSelectLead={(lead) => {
+          setSelectedLead(lead);
+          setActiveModal('drawer');
+        }}
+        onOpenAudit={(leadId) => handleOpenAudit(leadId)}
+        onOpenAutoPilot={(selected) => {
+          setAutoPilotSelectedLeads(selected || null);
+          setActiveModal('autopilot');
+        }}
+        onOpenSearch={(tab) => setActiveModal(tab)}
+        onOpenQueue={() => setActiveModal('queue')}
+        onOpenSettings={() => setActiveModal('settings')}
+        onExportExcel={() => handleExportExcel('excel')}
+        onToggleTheme={toggleTheme}
+        theme={theme}
+        viewMode={viewMode}
+        onViewModeChange={handleViewModeChange}
+      />
+
+      {/* Global Keyboard Shortcuts Cheatsheet (?) */}
+      <KeyboardShortcutsModal
+        isOpen={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
+      />
+
+      {/* Official BoardUI Toaster Stack */}
+      <Toaster position="bottom-end" limit={4} />
     </div>
   );
 }

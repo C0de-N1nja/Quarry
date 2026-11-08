@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import FloatingBatchDock from './FloatingBatchDock';
 import {
   RiSearchLine,
   RiShieldCheckLine,
@@ -128,54 +129,50 @@ export default function BoardLeadTable({
     });
   };
 
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+
+  // Keyboard navigation (J/K/Space/Enter/Esc/A)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Don't hijack keystrokes if the user is typing in an input/textarea/select
+      const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
+      if (isInput) return;
+
+      if (e.key === 'j' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedIndex(prev => Math.min(displayedLeads.length - 1, prev + 1));
+      } else if (e.key === 'k' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedIndex(prev => Math.max(0, prev - 1));
+      } else if (e.key === ' ' || e.key === 'x') {
+        if (focusedIndex >= 0 && displayedLeads[focusedIndex]) {
+          e.preventDefault();
+          handleToggleLead(displayedLeads[focusedIndex].id);
+        }
+      } else if (e.key === 'Enter') {
+        if (focusedIndex >= 0 && displayedLeads[focusedIndex]) {
+          e.preventDefault();
+          onOpenLeadDrawer && onOpenLeadDrawer(displayedLeads[focusedIndex]);
+        }
+      } else if (e.key === 'a' || e.key === 'A') {
+        if (focusedIndex >= 0 && displayedLeads[focusedIndex]?.website) {
+          e.preventDefault();
+          onOpenAudit && onOpenAudit(displayedLeads[focusedIndex].id);
+        }
+      } else if (e.key === 'Escape') {
+        if (selectedLeadIds.size > 0) {
+          e.preventDefault();
+          setSelectedLeadIds(new Set());
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [displayedLeads, focusedIndex, selectedLeadIds, onOpenLeadDrawer, onOpenAudit]);
+
   return (
     <div className="flex w-full flex-col gap-4">
-      {/* Batch Actions Bar (Revealed when rows are selected) */}
-      {selectedLeadIds.size > 0 && (
-        <div className="flex items-center justify-between rounded-2xl border border-accent-300/40 bg-accent-50/70 dark:bg-accent-950/40 px-4 py-2.5 backdrop-blur-md transition-all animate-in fade-in">
-          <div className="flex items-center gap-3">
-            <span className="flex size-6 items-center justify-center rounded-full bg-accent-600 text-caption-1-bold text-white">
-              {selectedLeadIds.size}
-            </span>
-            <span className="text-body-medium font-medium text-text-primary">
-              {selectedLeadIds.size === 1 ? '1 prospect selected' : `${selectedLeadIds.size} prospects selected`}
-            </span>
-            <Button
-              variant="link"
-              size="small"
-              onClick={() => setSelectedLeadIds(new Set())}
-              className="text-caption-1-regular text-text-tertiary hover:text-text-primary p-0 h-auto"
-            >
-              Deselect all
-            </Button>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              size="small"
-              variant="secondary"
-              leadingIcon={RiShieldCheckLine}
-              onClick={() => onOpenOsintRun && onOpenOsintRun({
-                leadIds: Array.from(selectedLeadIds),
-                category: activeNiche,
-                filter: activeFilter,
-                focusTier,
-                contactChannel,
-                searchTerm
-              })}
-            >
-              Run OSINT ({selectedLeadIds.size})
-            </Button>
-            <Button
-              size="small"
-              variant="primary"
-              leadingIcon={RiFlashlightFill}
-              onClick={() => onOpenAutoPilot && onOpenAutoPilot(Array.from(selectedLeadIds))}
-            >
-              Launch Auto-Pilot
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Main BoardUI Table Card Container (Figma Node 3731:3201) */}
       <section className="flex w-full flex-col rounded-3xl border border-border-button-default bg-background-primary-default p-4 shadow-xs sm:p-6">
@@ -438,9 +435,10 @@ export default function BoardLeadTable({
                 </div>
               )}
             >
-              {displayedLeads.map((lead) => {
+              {displayedLeads.map((lead, index) => {
                 const isSelected = selectedLeadIds.has(lead.id);
                 const isCurrentlyActive = selectedLead?.id === lead.id;
+                const isFocused = focusedIndex === index;
                 const businessName = lead.business_name || lead.company_name || 'Prospect';
                 const category = lead.category || lead.niche || 'General';
                 const hasWebsite = lead.website && lead.website.trim() !== '' && lead.website !== 'None';
@@ -450,10 +448,15 @@ export default function BoardLeadTable({
                   <TableRow
                     key={lead.id}
                     id={String(lead.id)}
+                    onClick={() => {
+                      setFocusedIndex(index);
+                      onOpenLeadDrawer && onOpenLeadDrawer(lead);
+                    }}
                     className={cx(
                       "cursor-pointer transition-colors duration-150 hover:bg-background-secondary-hover",
                       isSelected && "bg-accent-50/40 dark:bg-accent-950/30",
-                      isCurrentlyActive && "ring-1 ring-inset ring-accent-500/50"
+                      isCurrentlyActive && "ring-1 ring-inset ring-accent-500/50",
+                      isFocused && "ring-2 ring-inset ring-accent-500/80 bg-accent-50/20 dark:bg-accent-950/20"
                     )}
                   >
                     {/* Checkbox Cell */}
@@ -666,6 +669,22 @@ export default function BoardLeadTable({
           </div>
         )}
       </section>
+
+      {/* Floating Batch Action Dock (Linear / Vercel-Style Speed Triage) */}
+      <FloatingBatchDock
+        selectedCount={selectedLeadIds.size}
+        onClearSelection={() => setSelectedLeadIds(new Set())}
+        onLaunchAutoPilot={() => onOpenAutoPilot && onOpenAutoPilot(Array.from(selectedLeadIds))}
+        onRunOsint={() => onOpenOsintRun && onOpenOsintRun({
+          leadIds: Array.from(selectedLeadIds),
+          category: activeNiche,
+          filter: activeFilter,
+          focusTier,
+          contactChannel,
+          searchTerm
+        })}
+        onExportExcel={onExportExcel ? () => onExportExcel(Array.from(selectedLeadIds)) : undefined}
+      />
     </div>
   );
 }

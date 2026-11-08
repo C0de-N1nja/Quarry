@@ -705,6 +705,10 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
     }
   ];
 
+  const completedStepsCount = pipelineSteps.filter(s => s.status === 'completed').length;
+  const readinessPercent = Math.round((completedStepsCount / pipelineSteps.length) * 100);
+  const readinessColor = readinessPercent >= 75 ? 'lime' : readinessPercent >= 50 ? 'indigo' : 'yellow';
+
   return (
     <Drawer
       isOpen={true}
@@ -738,6 +742,14 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
             </div>
             <Chip variant="bold" color="lime">
               ${(dealValue || 1000).toLocaleString()}
+            </Chip>
+            <Chip 
+              variant="bold" 
+              color={readinessColor} 
+              className="font-mono text-[10px]" 
+              title={`${completedStepsCount} of ${pipelineSteps.length} pipeline steps verified`}
+            >
+              {readinessPercent}% Pitch Ready
             </Chip>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 text-xs text-text-secondary mt-1 flex-wrap">
@@ -2636,6 +2648,48 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
             </div>
           </div>
         )}
+      </div>
+
+      {/* Sticky Bottom Action Dock (BoardUI 1-Click Operations) */}
+      <div className="p-3 border-t border-separator-border bg-background-secondary-default/95 backdrop-blur-md flex items-center justify-between gap-2 shrink-0">
+        <div className="flex items-center gap-2">
+          {currentLead.website && onOpenAudit && (
+            <Button
+              size="small"
+              variant="secondary"
+              leadingIcon={RiGlobalLine}
+              onClick={() => onOpenAudit(currentLead.id)}
+              title="Open full Website Health, ADA & SEO Audit page"
+            >
+              Audit Site
+            </Button>
+          )}
+          {hasEmail && (
+            <Button
+              size="small"
+              variant="secondary"
+              leadingIcon={RiCheckboxCircleLine}
+              onClick={handleVerifyEmail}
+              disabled={emailVerifying}
+              title="Verify email deliverability via MX & SMTP"
+            >
+              {emailVerifying ? 'Verifying...' : 'Verify Email'}
+            </Button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            size="small"
+            variant="primary"
+            leadingIcon={RiSendPlaneFill}
+            onClick={() => handleQueueInOutbox(false)}
+            disabled={loading || !hasEmail}
+            title={hasEmail ? "Queue pitch into Outbox for dispatch" : "Cannot queue: No recipient email discovered"}
+          >
+            Queue Pitch
+          </Button>
+        </div>
       </div>
     </Drawer>
   );
