@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   RiFlashlightFill, RiDashboardLine, RiKanbanView2, 
   RiLayoutGridLine, RiRadarLine, RiMailSendLine, 
-  RiSettings4Line, RiSunLine, RiMoonLine, RiSearch2Line,
+  RiSettings4Line, RiSunLine, RiMoonClearLine, RiSearch2Line,
   RiDatabase2Line, RiShieldCheckLine, RiArrowLeftSLine,
   RiArrowRightSLine, RiUserLine, RiUploadCloud2Line, RiDownload2Line
 } from '@remixicon/react';
@@ -250,25 +250,15 @@ export default function DashboardSidebar({
       {/* Bottom Footer: Theme, Settings & Status */}
       <div className="p-3 border-t border-separator-border bg-background-secondary-default space-y-2">
         <div className="flex items-center justify-between gap-1">
-          {/* Theme Toggle Button */}
-          <button
-            onClick={onToggleTheme}
-            className={`p-2 rounded-xl text-text-secondary hover:bg-background-tertiary-default transition-colors cursor-pointer flex items-center gap-2 ${
-              collapsed ? 'w-full justify-center' : ''
-            }`}
+          {/* Theme Toggle Button (BoardUI Moon-Star / Sun Icon Button) */}
+          <IconButton
+            size="small"
+            icon={theme === 'dark' ? RiSunLine : RiMoonClearLine}
+            aria-label={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
             title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
-          >
-            {theme === 'dark' ? (
-              <RiSunLine className="h-4 w-4 text-warning-primary" />
-            ) : (
-              <RiMoonLine className="h-4 w-4 text-indigo-500" />
-            )}
-            {!collapsed && (
-              <span className="text-xs font-medium">
-                {theme === 'dark' ? 'Light Theme' : 'Dark Theme'}
-              </span>
-            )}
-          </button>
+            onClick={onToggleTheme}
+            className={theme === 'dark' ? "text-warning-primary hover:text-warning-hover" : "text-indigo-500 hover:text-indigo-600"}
+          />
 
           {!collapsed && (
             <IconButton

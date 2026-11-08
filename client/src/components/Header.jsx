@@ -9,14 +9,15 @@ import {
   RiGlobalLine,
   RiShieldCheckLine,
   RiSparklingLine,
-  RiCheckboxCircleLine
+  RiCheckboxCircleLine,
+  RiMoonClearLine,
+  RiSunLine
 } from '@remixicon/react';
 
 import { Button } from '@/components/base/buttons/button';
 import { IconButton } from '@/components/base/buttons/icon-button';
 import { Chip } from '@/components/base/badges/chip';
 import { StatusDot } from '@/components/base/badges/status-dot';
-import { ThemeToggle } from '@/components/application/theme/theme-toggle';
 
 export default function Header({ 
   stats, 
@@ -129,10 +130,15 @@ export default function Header({
 
           <div className="mx-1 h-4 w-px bg-separator-border" />
 
-          {/* Theme Toggle (BoardUI Official Segmented Control) */}
-          <div className="hidden sm:block">
-            <ThemeToggle variant="segmented" small />
-          </div>
+          {/* Theme Toggle (BoardUI Moon-Star / Sun Icon Button) */}
+          <IconButton
+            size="small"
+            icon={theme === 'dark' ? RiSunLine : RiMoonClearLine}
+            aria-label={theme === 'dark' ? "Switch to Light Theme" : "Switch to Dark Theme"}
+            title={theme === 'dark' ? "Switch to Light Theme" : "Switch to Dark Theme"}
+            onClick={onToggleTheme}
+            className={theme === 'dark' ? "text-warning-primary hover:text-warning-hover" : "text-indigo-500 hover:text-indigo-600"}
+          />
 
           {/* Settings Trigger */}
           <div className="relative">
