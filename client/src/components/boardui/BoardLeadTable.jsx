@@ -46,11 +46,6 @@ function getInitials(name = '') {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-function formatCurrency(num) {
-  const n = Number(num) || 2500;
-  return `$${n.toLocaleString()}`;
-}
-
 export default function BoardLeadTable({
   leads = [],
   totalCount = 0,
@@ -380,22 +375,12 @@ export default function BoardLeadTable({
               </TableColumn>
 
               {/* Contact Channels */}
-              <TableColumn id="contact" className="w-36 px-2.5 py-3">
+              <TableColumn id="contact" className="w-44 px-3 py-3">
                 <span className="text-body-medium font-medium text-text-tertiary">Contact Channels</span>
               </TableColumn>
 
-              {/* Pipeline Stage */}
-              <TableColumn id="stage" className="w-28 px-2 py-3">
-                <span className="text-body-medium font-medium text-text-tertiary">Stage</span>
-              </TableColumn>
-
-              {/* Est. Deal Value */}
-              <TableColumn id="value" className="w-24 px-2 py-3 text-right">
-                <span className="text-body-medium font-medium text-text-tertiary">Est. Value</span>
-              </TableColumn>
-
               {/* Actions */}
-              <TableColumn id="actions" className="w-24 px-2 py-3 text-right">
+              <TableColumn id="actions" className="w-28 px-3 py-3 text-right">
                 <span className="text-body-medium font-medium text-text-tertiary">Actions</span>
               </TableColumn>
             </TableHeader>
@@ -544,7 +529,7 @@ export default function BoardLeadTable({
                     </TableCell>
 
                     {/* Contact Channels Cell */}
-                    <TableCell className="w-36 px-2.5 py-3" onClick={() => onSelectLead && onSelectLead(lead)}>
+                    <TableCell className="w-44 px-3 py-3" onClick={() => onSelectLead && onSelectLead(lead)}>
                       <div className="flex flex-col gap-0.5">
                         {lead.phone ? (
                           <div className="flex items-center gap-1 text-[11px] font-mono text-text-secondary">
@@ -564,34 +549,8 @@ export default function BoardLeadTable({
                       </div>
                     </TableCell>
 
-                    {/* Pipeline Stage Cell */}
-                    <TableCell className="w-28 px-2.5 py-3" onClick={() => onSelectLead && onSelectLead(lead)}>
-                      <div className="flex items-center gap-1.5">
-                        {lead.pipeline_stage === 'won' ? (
-                          <Chip variant="bold" color="lime" size="sm">Won</Chip>
-                        ) : lead.pipeline_stage === 'sent' ? (
-                          <Chip variant="bold" color="cyan" size="sm">Sent</Chip>
-                        ) : lead.pipeline_stage === 'replied' ? (
-                          <Chip variant="bold" color="yellow" size="sm">In Discussion</Chip>
-                        ) : lead.pipeline_stage === 'pitched' ? (
-                          <Chip variant="subtle" color="yellow" size="sm">Pitched</Chip>
-                        ) : lead.pipeline_stage === 'enriched' ? (
-                          <Chip variant="subtle" color="blue" size="sm">Enriched</Chip>
-                        ) : (
-                          <Chip variant="subtle" color="gray" size="sm">Discovered</Chip>
-                        )}
-                      </div>
-                    </TableCell>
-
-                    {/* Est. Value Cell */}
-                    <TableCell className="w-24 px-2 py-3 text-right" onClick={() => onSelectLead && onSelectLead(lead)}>
-                      <Chip variant="subtle" color="gray" size="sm" className="tabular-nums font-mono text-[11px]">
-                        {formatCurrency(lead.estimated_value)}
-                      </Chip>
-                    </TableCell>
-
                     {/* Row Action Buttons */}
-                    <TableCell className="w-24 px-2 py-3 text-right">
+                    <TableCell className="w-28 px-3 py-3 text-right">
                       <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                         <IconButton
                           icon={RiEditLine}
