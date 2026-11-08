@@ -316,7 +316,7 @@ export default function BoardLeadTable({
             />
           </div>
 
-          {/* Right: Select Dropdowns & View Switcher */}
+          {/* Right: Select Dropdowns (Category and Channel) */}
           <div className="flex w-full flex-wrap items-center gap-2.5 sm:w-auto sm:justify-end">
             {/* Niche Filter */}
             <Select
@@ -330,24 +330,6 @@ export default function BoardLeadTable({
               {nicheOptions.map((n) => (
                 <SelectItem key={n} id={n} textValue={n}>{n}</SelectItem>
               ))}
-            </Select>
-
-            {/* Pipeline Stage Filter */}
-            <Select
-              aria-label="Filter by pipeline stage"
-              className="shrink-0"
-              popoverClassName="min-w-44"
-              selectedKey={activeFilter}
-              onSelectionChange={(k) => onFilterChange && onFilterChange(String(k))}
-            >
-              <SelectItem id="all" textValue="All Stages">All Stages</SelectItem>
-              <SelectItem id="no_website" textValue="No Website">No Website</SelectItem>
-              <SelectItem id="discovered" textValue="Discovered">Discovered</SelectItem>
-              <SelectItem id="enriched" textValue="Enriched">Enriched</SelectItem>
-              <SelectItem id="pitched" textValue="Pitched">Pitched</SelectItem>
-              <SelectItem id="sent" textValue="Sent">Sent</SelectItem>
-              <SelectItem id="replied" textValue="In Discussion">In Discussion</SelectItem>
-              <SelectItem id="won" textValue="Won">Won</SelectItem>
             </Select>
 
             {/* Contact Channel Filter */}
@@ -364,29 +346,15 @@ export default function BoardLeadTable({
               <SelectItem id="has_social" textValue="Social Profiles">Social Profiles</SelectItem>
               <SelectItem id="phone_only" textValue="Phone Only">Phone Only</SelectItem>
             </Select>
-
-            {/* View Switcher: Split / Table / Kanban */}
-            <SegmentedControl
-              aria-label="View mode"
-              selectedKeys={new Set([viewMode])}
-              onSelectionChange={(keys) => {
-                const next = [...keys][0];
-                if (next && onViewModeChange) onViewModeChange(next);
-              }}
-            >
-              <SegmentedControlItem id="split">Split</SegmentedControlItem>
-              <SegmentedControlItem id="table">Table</SegmentedControlItem>
-              <SegmentedControlItem id="kanban">Kanban</SegmentedControlItem>
-            </SegmentedControl>
           </div>
         </div>
 
         {/* BoardUI Table Primitive Container */}
         <div className="mt-2 w-full overflow-x-auto">
-          <Table aria-label="Prospects Vault" size="md" selectionMode="none" className="min-w-[1050px]">
+          <Table aria-label="Prospects Vault" size="md" selectionMode="none" className="w-full min-w-[960px]">
             <TableHeader>
               {/* Checkbox Column */}
-              <TableColumn id="select" className="w-12 px-3 py-3 text-center">
+              <TableColumn id="select" className="w-10 px-2 py-3 text-center">
                 <Checkbox
                   slot={null}
                   aria-label="Select all on this page"
@@ -397,37 +365,37 @@ export default function BoardLeadTable({
               </TableColumn>
 
               {/* Company & Niche Column */}
-              <TableColumn id="company" isRowHeader className="w-72 px-3 py-3">
+              <TableColumn id="company" isRowHeader className="min-w-[190px] px-3 py-3">
                 <span className="text-body-medium font-medium text-text-tertiary">Company & Niche</span>
               </TableColumn>
 
               {/* Website & Digital Audit */}
-              <TableColumn id="website" className="w-48 px-3 py-3">
+              <TableColumn id="website" className="w-36 px-2.5 py-3">
                 <span className="text-body-medium font-medium text-text-tertiary">Website Audit</span>
               </TableColumn>
 
               {/* Verified Owner & Decision Maker */}
-              <TableColumn id="decision_maker" className="w-56 px-3 py-3">
+              <TableColumn id="decision_maker" className="w-40 px-2.5 py-3">
                 <span className="text-body-medium font-medium text-text-tertiary">Decision Maker</span>
               </TableColumn>
 
               {/* Contact Channels */}
-              <TableColumn id="contact" className="w-44 px-3 py-3">
+              <TableColumn id="contact" className="w-36 px-2.5 py-3">
                 <span className="text-body-medium font-medium text-text-tertiary">Contact Channels</span>
               </TableColumn>
 
               {/* Pipeline Stage */}
-              <TableColumn id="stage" className="w-40 px-3 py-3">
-                <span className="text-body-medium font-medium text-text-tertiary">Pipeline Stage</span>
+              <TableColumn id="stage" className="w-28 px-2 py-3">
+                <span className="text-body-medium font-medium text-text-tertiary">Stage</span>
               </TableColumn>
 
               {/* Est. Deal Value */}
-              <TableColumn id="value" className="w-32 px-3 py-3 text-right">
+              <TableColumn id="value" className="w-24 px-2 py-3 text-right">
                 <span className="text-body-medium font-medium text-text-tertiary">Est. Value</span>
               </TableColumn>
 
               {/* Actions */}
-              <TableColumn id="actions" className="w-32 px-3 py-3 text-right">
+              <TableColumn id="actions" className="w-24 px-2 py-3 text-right">
                 <span className="text-body-medium font-medium text-text-tertiary">Actions</span>
               </TableColumn>
             </TableHeader>
@@ -483,7 +451,7 @@ export default function BoardLeadTable({
                     )}
                   >
                     {/* Checkbox Cell */}
-                    <TableCell className="w-12 px-3 py-3.5 text-center">
+                    <TableCell className="w-10 px-2 py-3 text-center">
                       <div onClick={(e) => e.stopPropagation()}>
                         <Checkbox
                           slot={null}
@@ -495,25 +463,25 @@ export default function BoardLeadTable({
                     </TableCell>
 
                     {/* Company & Niche Cell */}
-                    <TableCell className="w-72 px-3 py-3.5" onClick={() => onSelectLead && onSelectLead(lead)}>
-                      <div className="flex items-center gap-3">
+                    <TableCell className="min-w-[190px] px-3 py-3" onClick={() => onSelectLead && onSelectLead(lead)}>
+                      <div className="flex items-center gap-2.5">
                         <Avatar
                           initials={getInitials(businessName)}
-                          size="md"
+                          size="sm"
                           className={hasWebsite ? "bg-background-tertiary-default text-text-secondary" : "bg-accent-500/15 text-accent-500 font-semibold"}
                         />
                         <div className="flex min-w-0 flex-col">
-                          <p className="truncate text-body-medium font-medium text-text-primary group-hover:text-accent-600">
+                          <p className="truncate text-body-small font-medium text-text-primary group-hover:text-accent-600">
                             {businessName}
                           </p>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="truncate text-caption-1-regular text-text-tertiary">
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span className="truncate text-[11px] text-text-tertiary">
                               {category}
                             </span>
                             {(lead.city || lead.state) && (
                               <>
-                                <span className="text-text-tertiary">•</span>
-                                <span className="truncate text-caption-1-regular text-text-tertiary">
+                                <span className="text-text-tertiary text-[10px]">•</span>
+                                <span className="truncate text-[11px] text-text-tertiary">
                                   {[lead.city, lead.state].filter(Boolean).join(', ')}
                                 </span>
                               </>
@@ -524,18 +492,18 @@ export default function BoardLeadTable({
                     </TableCell>
 
                     {/* Website Audit Cell with BoardUI StatusDot + Chip */}
-                    <TableCell className="w-48 px-3 py-3.5" onClick={() => onSelectLead && onSelectLead(lead)}>
+                    <TableCell className="w-36 px-2.5 py-3" onClick={() => onSelectLead && onSelectLead(lead)}>
                       {!hasWebsite ? (
                         <div className="flex items-center gap-1.5">
                           <StatusDot color="indigo" />
-                          <Chip variant="bold" color="rose">
-                            Verified: No Site
+                          <Chip variant="bold" color="rose" size="sm">
+                            No Website
                           </Chip>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1.5">
                           <StatusDot color="green" />
-                          <Chip variant="bold" color="lime">
+                          <Chip variant="bold" color="lime" size="sm">
                             Site Active
                           </Chip>
                           <a
@@ -546,84 +514,84 @@ export default function BoardLeadTable({
                             className="text-text-tertiary hover:text-text-primary transition-colors ml-0.5"
                             title={lead.website}
                           >
-                            <RiExternalLinkLine className="size-4" />
+                            <RiExternalLinkLine className="size-3.5" />
                           </a>
                         </div>
                       )}
                     </TableCell>
 
                     {/* Decision Maker Cell */}
-                    <TableCell className="w-56 px-3 py-3.5" onClick={() => onSelectLead && onSelectLead(lead)}>
+                    <TableCell className="w-40 px-2.5 py-3" onClick={() => onSelectLead && onSelectLead(lead)}>
                       {hasOwner ? (
-                        <div className="flex items-center gap-2">
-                          <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent-100 text-accent-700 dark:bg-accent-900/50 dark:text-accent-300">
-                            <RiShieldCheckLine className="size-4" />
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-accent-100 text-accent-700 dark:bg-accent-900/50 dark:text-accent-300">
+                            <RiShieldCheckLine className="size-3.5" />
                           </div>
                           <div className="flex flex-col min-w-0">
-                            <span className="truncate text-body-medium font-medium text-text-primary">
+                            <span className="truncate text-body-small font-medium text-text-primary">
                               {lead.decision_maker_name}
                             </span>
-                            <span className="truncate text-caption-1-regular text-text-tertiary">
+                            <span className="truncate text-[10px] text-text-tertiary">
                               {lead.decision_maker_title || 'Owner / Founder'}
                             </span>
                           </div>
                         </div>
                       ) : (
-                        <span className="text-caption-1-regular text-text-tertiary">
+                        <span className="text-[11px] text-text-tertiary">
                           Not verified yet
                         </span>
                       )}
                     </TableCell>
 
                     {/* Contact Channels Cell */}
-                    <TableCell className="w-44 px-3 py-3.5" onClick={() => onSelectLead && onSelectLead(lead)}>
-                      <div className="flex flex-col gap-1">
+                    <TableCell className="w-36 px-2.5 py-3" onClick={() => onSelectLead && onSelectLead(lead)}>
+                      <div className="flex flex-col gap-0.5">
                         {lead.phone ? (
-                          <div className="flex items-center gap-1.5 text-caption-1-regular font-mono text-text-secondary">
-                            <RiPhoneLine className="size-3.5 text-text-tertiary shrink-0" />
+                          <div className="flex items-center gap-1 text-[11px] font-mono text-text-secondary">
+                            <RiPhoneLine className="size-3 text-text-tertiary shrink-0" />
                             <span className="truncate">{lead.phone}</span>
                           </div>
                         ) : null}
                         {lead.email ? (
-                          <div className="flex items-center gap-1.5 text-caption-1-regular text-text-secondary">
-                            <RiMailLine className="size-3.5 text-text-tertiary shrink-0" />
+                          <div className="flex items-center gap-1 text-[11px] text-text-secondary">
+                            <RiMailLine className="size-3 text-text-tertiary shrink-0" />
                             <span className="truncate">{lead.email}</span>
                           </div>
                         ) : null}
                         {!lead.phone && !lead.email && (
-                          <span className="text-caption-1-regular text-text-tertiary">None listed</span>
+                          <span className="text-[11px] text-text-tertiary">None listed</span>
                         )}
                       </div>
                     </TableCell>
 
                     {/* Pipeline Stage Cell */}
-                    <TableCell className="w-40 px-3 py-3.5" onClick={() => onSelectLead && onSelectLead(lead)}>
-                      <div className="flex items-center gap-2">
+                    <TableCell className="w-28 px-2.5 py-3" onClick={() => onSelectLead && onSelectLead(lead)}>
+                      <div className="flex items-center gap-1.5">
                         {lead.pipeline_stage === 'won' ? (
-                          <Chip variant="bold" color="lime">Won</Chip>
+                          <Chip variant="bold" color="lime" size="sm">Won</Chip>
                         ) : lead.pipeline_stage === 'sent' ? (
-                          <Chip variant="bold" color="cyan">Sent</Chip>
+                          <Chip variant="bold" color="cyan" size="sm">Sent</Chip>
                         ) : lead.pipeline_stage === 'replied' ? (
-                          <Chip variant="bold" color="yellow">In Discussion</Chip>
+                          <Chip variant="bold" color="yellow" size="sm">In Discussion</Chip>
                         ) : lead.pipeline_stage === 'pitched' ? (
-                          <Chip variant="subtle" color="yellow">Pitched</Chip>
+                          <Chip variant="subtle" color="yellow" size="sm">Pitched</Chip>
                         ) : lead.pipeline_stage === 'enriched' ? (
-                          <Chip variant="subtle" color="blue">Enriched</Chip>
+                          <Chip variant="subtle" color="blue" size="sm">Enriched</Chip>
                         ) : (
-                          <Chip variant="subtle" color="gray">Discovered</Chip>
+                          <Chip variant="subtle" color="gray" size="sm">Discovered</Chip>
                         )}
                       </div>
                     </TableCell>
 
                     {/* Est. Value Cell */}
-                    <TableCell className="w-32 px-3 py-3.5 text-right" onClick={() => onSelectLead && onSelectLead(lead)}>
-                      <Chip variant="subtle" color="gray" className="tabular-nums">
+                    <TableCell className="w-24 px-2 py-3 text-right" onClick={() => onSelectLead && onSelectLead(lead)}>
+                      <Chip variant="subtle" color="gray" size="sm" className="tabular-nums font-mono text-[11px]">
                         {formatCurrency(lead.estimated_value)}
                       </Chip>
                     </TableCell>
 
                     {/* Row Action Buttons */}
-                    <TableCell className="w-32 px-3 py-3.5 text-right">
+                    <TableCell className="w-24 px-2 py-3 text-right">
                       <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                         <IconButton
                           icon={RiEditLine}

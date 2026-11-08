@@ -36,7 +36,7 @@ export default function DailyFocusHero({
               <h2 className="text-body-large font-bold tracking-tight text-text-primary">
                 Daily Outreach Cockpit
               </h2>
-              <Chip variant="bold" color="lime" className="font-mono text-[10px]">
+              <Chip variant="bold" color="emerald" className="font-mono text-[10px]">
                 {readyToPitchCount} Ready to Pitch
               </Chip>
               {activeFollowUps > 0 && (
