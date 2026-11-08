@@ -34,6 +34,7 @@ import {
   RiVipCrownLine, RiVipCrownLine as Crown,
   RiSearchLine, RiSearchLine as Search,
   RiFingerprintLine,
+  RiServerLine,
   RiArrowDownSLine
 } from '@remixicon/react';
 import { Drawer } from '@/components/base/drawer/drawer';
@@ -83,6 +84,7 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
   const [holeheScanning, setHoleheScanning] = useState(false);
   const [whatsappVerifying, setWhatsappVerifying] = useState(false);
   const [blackbirdScanning, setBlackbirdScanning] = useState(false);
+  const [harvesterScanning, setHarvesterScanning] = useState(false);
   const [socialResolveLoading, setSocialResolveLoading] = useState(false);
   const [socialResolveReport, setSocialResolveReport] = useState(null);
 
@@ -354,6 +356,25 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
     }
   };
 
+  const handleScanHarvester = async () => {
+    setHarvesterScanning(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch(`/api/leads/${lead.id}/scan-harvester`, { method: 'POST' });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+
+      setActionMsg(`theHarvester recon complete: ${data.harvester?.subdomains_count || 0} subdomains and ${data.harvester?.emails_count || 0} emails discovered.`);
+      await fetchLeadDetail();
+      if (onRefreshLead) onRefreshLead();
+      setTimeout(() => setActionMsg(null), 3500);
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to scan domain with theHarvester');
+    } finally {
+      setHarvesterScanning(false);
+    }
+  };
+
   // Re-run OSINT
   const handleRunOsint = async () => {
     setLoading(true);
@@ -591,6 +612,9 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
     : (Array.isArray(ownerDossier?.blackbird_profiles) ? ownerDossier.blackbird_profiles : []);
   const whatsAppIntel = parsedOsintEvidence?.whatsapp_intel || ownerDossier?.whatsapp || null;
   const isWhatsAppVerified = !!(whatsAppIntel?.is_whatsapp_registered || contact?.whatsapp);
+  const harvesterIntel = parsedOsintEvidence?.harvester_intel || null;
+  const harvesterSubdomains = Array.isArray(harvesterIntel?.subdomains) ? harvesterIntel.subdomains : [];
+  const harvesterEmails = Array.isArray(harvesterIntel?.emails) ? harvesterIntel.emails : [];
 
   return (
     <Drawer
@@ -2010,6 +2034,69 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
                 )}
               </div>
             </div>
+
+            {/* 7. theHarvester Domain & Infrastructure Recon */}
+            {currentLead.website && !isNoWebsiteLead && (
+              <div className="p-4 rounded-xl bg-background-secondary-default border border-separator-border space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <RiServerLine className="h-4 w-4 text-cyan-400" />
+                    <span className="text-xs font-semibold text-text-primary">
+                      theHarvester Domain Infrastructure
+                    </span>
+                    {harvesterSubdomains.length > 0 && (
+                      <Chip variant="subtle" color="cyan" size="sm">
+                        {harvesterSubdomains.length} Subdomains
+                      </Chip>
+                    )}
+                  </div>
+                  <Button
+                    onClick={handleScanHarvester}
+                    disabled={harvesterScanning}
+                    variant="secondary"
+                    size="small"
+                    leadingIcon={harvesterScanning ? Loader2 : RefreshCw}
+                  >
+                    {harvesterSubdomains.length > 0 ? 'Re-Run theHarvester' : 'Run theHarvester'}
+                  </Button>
+                </div>
+                <p className="text-[11px] text-text-secondary">
+                  Passive certificate transparency and DNS enumeration for target domain infrastructure:
+                </p>
+                {harvesterSubdomains.length > 0 ? (
+                  <div className="space-y-1.5 pt-1">
+                    <div className="flex flex-wrap gap-1.5">
+                      {harvesterSubdomains.map((sub, idx) => (
+                        <span
+                          key={idx}
+                          className="px-2 py-0.5 rounded-md bg-background-primary-default border border-separator-border text-[11px] font-mono text-cyan-300"
+                        >
+                          {sub}
+                        </span>
+                      ))}
+                    </div>
+                    {harvesterEmails.length > 0 && (
+                      <div className="pt-2 border-t border-separator-border/60">
+                        <span className="text-[10px] uppercase font-mono text-text-tertiary block mb-1">
+                          Passive Domain Inboxes
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {harvesterEmails.map((em, idx) => (
+                            <span key={idx} className="px-2 py-0.5 rounded-md bg-background-primary-default border border-separator-border text-[11px] font-mono text-text-primary">
+                              {em}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-xs text-text-tertiary italic">
+                    No passive domain recon executed yet (Click 'Run theHarvester')
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         )}
 

@@ -18,5 +18,6 @@ router.post('/:id/scan-phone', leadController.scanPhone);
 router.post('/:id/scan-holehe', leadController.scanHolehe);
 router.post('/:id/verify-whatsapp', leadController.verifyWhatsApp);
 router.post('/:id/scan-blackbird', leadController.scanBlackbird);
+router.post('/:id/scan-harvester', leadController.scanHarvester);
 
 module.exports = router;

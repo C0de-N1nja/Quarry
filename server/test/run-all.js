@@ -1976,6 +1976,29 @@ async function run() {
     assert(contactRow?.social_links, 'Contacts must have social_links');
   });
 
+  // Test 63: theHarvester Domain Intelligence Integration
+  await testAsync('HarvesterService cleans domains, rejects generic aggregators, and extracts infrastructure intel', async () => {
+    const harvesterService = require('../services/harvester-service');
+    assert.strictEqual(harvesterService.cleanDomain('https://www.gulfcoasttree.biz/about/'), 'gulfcoasttree.biz');
+    assert.strictEqual(harvesterService.cleanDomain('https://facebook.com/company'), null);
+    assert.strictEqual(harvesterService.cleanDomain('http://invalid'), null);
+    assert.strictEqual(harvesterService.cleanDomain('user@gmail.com'), null);
+
+    // Scan test lead domain or fallback fast
+    const result = await harvesterService.scanDomain('gulfcoasttree.biz', testLeadId, {
+      sources: 'hackertarget',
+      limit: 10,
+      timeoutMs: 8000
+    });
+
+    assert.strictEqual(result.success, true, 'theHarvester scan should return success');
+    assert.strictEqual(result.domain, 'gulfcoasttree.biz', 'Domain must match');
+    assert(Array.isArray(result.intel.subdomains), 'Subdomains must be an array');
+
+    const leadRow = db.prepare('SELECT osint_evidence FROM leads WHERE id = ?').get(testLeadId);
+    assert(leadRow?.osint_evidence && leadRow.osint_evidence.includes('harvester_intel'), 'Lead osint_evidence must record harvester_intel');
+  });
+
   // Cleanup test lead
   Mockup.deleteByLeadId(testLeadId);
   db.prepare('DELETE FROM leads WHERE id = ?').run(testLeadId);

@@ -316,6 +316,43 @@ class LeadController {
       res.status(500).json({ success: false, error: err.message });
     }
   }
+
+  async scanHarvester(req, res) {
+    try {
+      const id = req.params.id;
+      const lead = Lead.findById(id);
+      if (!lead) return res.status(404).json({ success: false, error: 'Lead not found' });
+
+      const domainInput = req.body?.domain || lead.website;
+      if (!domainInput) {
+        return res.status(400).json({ success: false, error: 'Lead has no custom website domain for theHarvester recon' });
+      }
+
+      const harvesterService = require('../services/harvester-service');
+      const result = await harvesterService.scanDomain(domainInput, id, {
+        sources: req.body?.sources || 'crtsh,certspotter,hackertarget',
+        limit: 50,
+        timeoutMs: 25000
+      });
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      const updatedLead = Lead.findById(id);
+      const Contact = require('../models/Contact');
+      const updatedContact = Contact.findByLeadId(id);
+
+      res.json({
+        success: true,
+        harvester: result,
+        lead: updatedLead,
+        contact: updatedContact
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  }
 }
 
 module.exports = new LeadController();
