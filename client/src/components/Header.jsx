@@ -1,10 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Search, UploadCloud, Mail, Settings, Zap, Users, 
-  CheckCircle2, AlertTriangle, ShieldCheck, Sun, Moon, 
-  Globe, Download, Sparkles 
-} from 'lucide-react';
-import { RiFlashlightFill, RiSearch2Line, RiMailSendLine, RiSettings4Line } from '@remixicon/react';
+  RiFlashlightFill, 
+  RiSearch2Line, 
+  RiFileUploadLine, 
+  RiDownloadLine, 
+  RiMailSendLine, 
+  RiSettings4Line,
+  RiGlobalLine,
+  RiShieldCheckLine,
+  RiSparklingLine,
+  RiCheckboxCircleLine
+} from '@remixicon/react';
+
+import { Button } from '@/components/base/buttons/button';
+import { IconButton } from '@/components/base/buttons/icon-button';
+import { Chip } from '@/components/base/badges/chip';
+import { StatusDot } from '@/components/base/badges/status-dot';
+import { ThemeToggle } from '@/components/application/theme/theme-toggle';
 
 export default function Header({ 
   stats, 
@@ -35,132 +47,139 @@ export default function Header({
   }, []);
 
   return (
-    <header className="border-b border-border-subtle bg-surface-0/80 dark:bg-surface-0/85 backdrop-blur-md sticky top-0 z-40 transition-colors">
-      <div className="max-w-(--breakpoint-2xl) mx-auto px-3 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-4">
-        {/* Brand Logo & Clean Title with BoardUI styling */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          <div className="h-8 w-8 rounded-lg bg-linear-to-tr from-brand to-indigo-500 flex items-center justify-center text-white shadow-xs shrink-0 ring-1 ring-white/20">
-            <RiFlashlightFill className="h-4 w-4" />
+    <header className="sticky top-0 z-40 border-b border-separator-border bg-background-primary-default/90 backdrop-blur-md transition-colors">
+      <div className="mx-auto flex max-w-(--breakpoint-2xl) items-center justify-between gap-4 px-3 py-2.5 sm:px-6 lg:px-8">
+        {/* Brand Logo & Clean Title */}
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="flex size-9 items-center justify-center rounded-xl bg-accent-600 text-white shadow-xs ring-1 ring-white/20">
+            <RiFlashlightFill className="size-5" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-sm font-semibold text-gray-900 dark:text-white tracking-tight">
-                Quarry <span className="text-brand font-mono text-xs">OS</span>
-              </h1>
-              {stats && stats.noWebsite > 0 && (
-                <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-                  {stats.noWebsite} No-Website
-                </span>
-              )}
-            </div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-body-medium font-semibold tracking-tight text-text-primary">
+              Quarry <span className="font-mono text-caption-1-medium text-accent-500">OS</span>
+            </h1>
+            {stats && stats.noWebsite > 0 && (
+              <Chip variant="bold" color="rose">
+                {stats.noWebsite} No-Website
+              </Chip>
+            )}
           </div>
         </div>
 
-        {/* Global Action Buttons */}
+        {/* Global Action Buttons using Official BoardUI */}
         <div className="flex items-center gap-2 shrink-0">
-          <button
+          <Button
+            size="small"
+            variant="primary"
+            leadingIcon={RiFlashlightFill}
             onClick={onOpenAutoPilot}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-brand hover:bg-brand-hover text-white transition-all shadow-xs cursor-pointer touch-manipulation hover:shadow-card"
-            title="Launch 1-Click Automated Batch Pipeline (143/Day)"
+            title="Launch 1-Click Automated Batch Pipeline"
           >
-            <Zap className="h-3.5 w-3.5 fill-current" />
             <span className="hidden sm:inline">Auto-Pilot</span>
-          </button>
+          </Button>
 
-          <button
-            onClick={() => onOpenSearch('search')}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-surface-1 hover:bg-surface-2 border border-border-subtle text-gray-800 dark:text-gray-200 transition-colors touch-manipulation cursor-pointer"
+          <Button
+            size="small"
+            variant="secondary"
+            leadingIcon={RiSearch2Line}
+            onClick={() => onOpenSearch && onOpenSearch('search')}
           >
-            <RiSearch2Line className="h-3.5 w-3.5 text-gray-400" />
-            <span className="hidden sm:inline">Find</span><span>Leads</span>
-          </button>
+            <span className="hidden sm:inline">Find Leads</span>
+            <span className="sm:hidden">Find</span>
+          </Button>
 
-          <button
-            onClick={() => onOpenSearch('csv')}
-            className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg bg-surface-1 hover:bg-surface-2 border border-border-subtle text-gray-700 dark:text-gray-200 transition-colors touch-manipulation cursor-pointer"
-            title="Import CSV"
-          >
-            <UploadCloud className="h-3.5 w-3.5 text-gray-400" />
-            <span>CSV</span>
-          </button>
+          <div className="hidden md:inline-flex">
+            <Button
+              size="small"
+              variant="secondary"
+              leadingIcon={RiFileUploadLine}
+              onClick={() => onOpenSearch && onOpenSearch('csv')}
+              title="Import CSV"
+            >
+              CSV
+            </Button>
+          </div>
 
-          <button
-            onClick={onExportExcel}
-            className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg bg-surface-1 hover:bg-surface-2 border border-border-subtle text-gray-700 dark:text-gray-200 transition-colors touch-manipulation cursor-pointer"
-            title="Export to Excel (.xlsx)"
-          >
-            <Download className="h-3.5 w-3.5 text-gray-400" />
-            <span>Export</span>
-          </button>
+          <div className="hidden md:inline-flex">
+            <Button
+              size="small"
+              variant="secondary"
+              leadingIcon={RiDownloadLine}
+              onClick={onExportExcel}
+              title="Export to Excel (.xlsx)"
+            >
+              Export
+            </Button>
+          </div>
 
-          <button
+          <Button
+            size="small"
+            variant="secondary"
+            leadingIcon={RiMailSendLine}
             onClick={onOpenQueue}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg bg-surface-1 hover:bg-surface-2 border border-border-subtle text-gray-700 dark:text-gray-200 transition-colors touch-manipulation cursor-pointer relative"
+            title="Outbox Delivery Queue"
           >
-            <Mail className="h-3.5 w-3.5 text-gray-400" />
-            <span className="hidden sm:inline">Queue</span>
+            <span>Queue</span>
             {stats && stats.pitched > 0 && (
-              <span className="px-1.5 py-0.2 text-[10px] bg-brand text-white rounded-full font-mono font-bold">
+              <span className="ml-1 rounded-full bg-accent-600 px-1.5 py-0.2 font-mono text-[10px] font-bold text-white">
                 {stats.pitched}
               </span>
             )}
-          </button>
+          </Button>
 
-          <div className="h-4 w-px bg-border-subtle mx-0.5" />
+          <div className="mx-1 h-4 w-px bg-separator-border" />
 
-          {/* Theme Toggle Button */}
-          <button
-            onClick={onToggleTheme}
-            className="p-1.5 text-gray-600 dark:text-gray-300 hover:text-brand dark:hover:text-white rounded-lg bg-surface-1 hover:bg-surface-2 border border-border-subtle transition-colors touch-manipulation cursor-pointer"
-            title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
-          >
-            {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-indigo-500" />}
-          </button>
+          {/* Theme Toggle (BoardUI Official Segmented Control) */}
+          <div className="hidden sm:block">
+            <ThemeToggle variant="segmented" small />
+          </div>
 
-          <button
-            onClick={onOpenSettings}
-            className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg bg-surface-1 hover:bg-surface-2 border border-border-subtle transition-colors relative touch-manipulation cursor-pointer"
-            title="Settings & SMTP"
-          >
-            <RiSettings4Line className="h-4 w-4" />
+          {/* Settings Trigger */}
+          <div className="relative">
+            <IconButton
+              size="small"
+              variant="secondary"
+              icon={RiSettings4Line}
+              aria-label="Settings & SMTP"
+              onClick={onOpenSettings}
+            />
             {tunnel && tunnel.isRunning && (
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-surface-0" />
+              <span className="absolute top-1 right-1 size-2 rounded-full bg-green-500 ring-2 ring-background-primary-default" />
             )}
-          </button>
+          </div>
         </div>
       </div>
 
-      {/* KPI Stats Strip */}
+      {/* KPI Stats Strip using BoardUI Tokens & Status Indicators */}
       {stats && (
-        <div className="border-t border-border-subtle/50 bg-surface-1/40 px-3 sm:px-6 lg:px-8 py-1.5">
-          <div className="max-w-(--breakpoint-2xl) mx-auto flex items-center justify-between gap-4 text-xs">
-            <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-              <span className="font-mono text-gray-500 dark:text-gray-400 text-[11px]">
-                Vault: <strong className="text-gray-900 dark:text-white font-semibold">{stats.totalLeads}</strong>
+        <div className="border-t border-separator-border/60 bg-background-secondary-default/50 px-3 py-1.5 sm:px-6 lg:px-8">
+          <div className="mx-auto flex max-w-(--breakpoint-2xl) items-center justify-between gap-4 text-caption-1-regular">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-5">
+              <span className="font-mono text-text-tertiary">
+                Vault: <strong className="font-semibold text-text-primary">{(stats.totalLeads || 0).toLocaleString()}</strong>
               </span>
-              <span className="text-border-subtle hidden sm:inline">•</span>
-              <span className="font-mono text-[11px] text-rose-600 dark:text-rose-400">
-                No-Website: <strong className="font-semibold">{stats.noWebsite}</strong>
+              <span className="hidden text-text-tertiary sm:inline">•</span>
+              <span className="flex items-center gap-1.5 font-mono text-status-rose-text">
+                <StatusDot color="indigo" />
+                <span>No-Website: <strong>{(stats.noWebsite || 0).toLocaleString()}</strong></span>
               </span>
-              <span className="text-border-subtle hidden sm:inline">•</span>
-              <span className="font-mono text-[11px] text-amber-600 dark:text-amber-400">
-                Gold: <strong className="font-semibold">{stats.goldLeads}</strong>
+              <span className="hidden text-text-tertiary sm:inline">•</span>
+              <span className="flex items-center gap-1.5 font-mono text-status-yellow-text">
+                <StatusDot color="yellow" />
+                <span>Gold: <strong>{(stats.goldLeads || 0).toLocaleString()}</strong></span>
               </span>
-              <span className="text-border-subtle hidden sm:inline">•</span>
-              <span className="font-mono text-[11px] text-purple-600 dark:text-purple-400">
-                Enriched: <strong className="font-semibold">{stats.enriched || 0}</strong>
-              </span>
-              <span className="text-border-subtle hidden sm:inline">•</span>
-              <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-400">
-                Won: <strong className="font-semibold">{stats.won}</strong>
+              <span className="hidden text-text-tertiary sm:inline">•</span>
+              <span className="flex items-center gap-1.5 font-mono text-status-lime-text">
+                <StatusDot color="green" />
+                <span>Won: <strong>{(stats.won || 0).toLocaleString()}</strong></span>
               </span>
             </div>
 
             {tunnel && tunnel.publicUrl && (
-              <span className="hidden md:inline-flex items-center gap-1.5 text-[10px] font-mono text-emerald-600 dark:text-emerald-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>HTTPS Live</span>
-              </span>
+              <div className="hidden items-center gap-1.5 font-mono text-status-lime-text md:flex">
+                <StatusDot color="green" className="animate-pulse" />
+                <span className="text-caption-1-medium">HTTPS Live Tunnel</span>
+              </div>
             )}
           </div>
         </div>

@@ -101,7 +101,7 @@ class ExportService {
       { header: 'WhatsApp Link', key: 'contact_whatsapp', width: 28 },
       { header: 'Social Profiles', key: 'social_profiles', width: 34 },
       { header: 'MX Valid', key: 'is_mx_valid', width: 14 },
-      { header: 'Rating ★', key: 'rating', width: 10 },
+      { header: 'Rating', key: 'rating', width: 10 },
       { header: 'Reviews', key: 'reviews_count', width: 12 },
       { header: 'Showcase Niche', key: 'showcase_niche', width: 18 },
       { header: 'Showcase Prototype Link', key: 'showcase_url', width: 36 },
@@ -137,20 +137,20 @@ class ExportService {
 
       let phoneTypeFormatted = row.phone_type ? row.phone_type.toUpperCase() : 'UNKNOWN';
       if (phoneTypeFormatted.includes('MOBILE')) {
-        phoneTypeFormatted = '📱 MOBILE (WhatsApp Ready)';
+        phoneTypeFormatted = 'MOBILE (WhatsApp Ready)';
       } else if (phoneTypeFormatted.includes('LANDLINE')) {
-        phoneTypeFormatted = '☎️ LANDLINE';
+        phoneTypeFormatted = 'LANDLINE';
       }
 
       let mxFormatted = 'N/A';
-      if (row.is_mx_valid === 1) mxFormatted = '✅ VALID MX';
-      else if (row.is_mx_valid === 0) mxFormatted = '❌ INVALID';
+      if (row.is_mx_valid === 1) mxFormatted = 'VALID MX';
+      else if (row.is_mx_valid === 0) mxFormatted = 'INVALID';
 
       let websiteStatusFormatted = 'Official Domain';
       if (isNoWebsite) {
-        if (row.website_status === 'social_only') websiteStatusFormatted = '🌐❌ Social Only';
-        else if (row.website_status === 'dead_dns') websiteStatusFormatted = '🌐❌ Dead Domain';
-        else websiteStatusFormatted = '🌐❌ NO WEBSITE';
+        if (row.website_status === 'social_only') websiteStatusFormatted = 'Social Only';
+        else if (row.website_status === 'dead_dns') websiteStatusFormatted = 'Dead Domain';
+        else websiteStatusFormatted = 'NO WEBSITE';
       }
 
       const rowData = {

@@ -405,12 +405,12 @@ if (!checkNoWeb) {
     `{Quick question regarding {{business_name}}'s online quotes in {{city}}|Question for {{first_name}} about {{business_name}}|{{business_name}} - {{city}} clients & website question}`,
     `{Hi|Hello} {{first_name}},
 
-{I was looking up|I came across} top-rated {{category}} services in {{city}} and noticed {{business_name}} has an impressive {{rating}}★ rating across {{reviews_count}} reviews on Google.
+{I was looking up|I came across} top-rated {{category}} services in {{city}} and noticed {{business_name}} has an impressive {{rating}} star rating across {{reviews_count}} reviews on Google.
 
 However, {when homeowners and clients search for your services|when local clients search for you online}, there is no official website where they can view your previous work or request an instant quote online. Most customers in {{city}} who can't book or get a quick price estimate online end up clicking the next local contractor on Google.
 
 We recently built a high-converting, mobile-first prototype specifically for {{category}} companies:
-👉 {{showcase_url}}
+{{showcase_url}}
 
 We can customize this exact layout with your branding, phone number, and service areas, and have it live in under 48 hours.
 

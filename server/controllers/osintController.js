@@ -1,6 +1,7 @@
 const os = require('os');
 const osintService = require('../services/osint-service');
 const ownerOsintService = require('../services/owner-osint-service');
+const socialResolverService = require('../services/social-resolver-service');
 const osintTelemetryService = require('./../services/osint-telemetry-service');
 const notificationService = require('../services/notification-service');
 const Lead = require('../models/Lead');
@@ -58,6 +59,34 @@ class OsintController {
       });
     } catch (err) {
       console.error('[enrichOwner Error]', err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
+  /**
+   * Run Social Account Resolution from an email address
+   */
+  async resolveSocialAccounts(req, res) {
+    try {
+      const email = req.body?.email || req.query.email;
+      if (!email) {
+        return res.status(400).json({ success: false, error: 'Target email is required' });
+      }
+
+      const leadId = req.body?.leadId ? Number(req.body.leadId) : null;
+      const groundTruth = req.body?.groundTruth || {};
+
+      const report = await socialResolverService.resolveSocialAccounts(email, {
+        leadId,
+        groundTruth
+      });
+
+      res.json({
+        success: true,
+        report
+      });
+    } catch (err) {
+      console.error('[resolveSocialAccounts Error]', err);
       res.status(500).json({ success: false, error: err.message });
     }
   }

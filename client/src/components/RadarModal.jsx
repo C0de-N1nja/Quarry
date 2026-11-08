@@ -1,9 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  X, Radio, Search, ExternalLink, Sparkles, UserPlus, Check, Copy, 
-  Globe, Briefcase, Clock, Tag, RefreshCw, ChevronRight, ChevronDown, 
-  Terminal, ShieldCheck
-} from 'lucide-react';
+  RiBroadcastLine, 
+  RiSearchLine, 
+  RiExternalLinkLine, 
+  RiSparklingLine, 
+  RiUserAddLine, 
+  RiCheckLine, 
+  RiFileCopyLine, 
+  RiGlobalLine, 
+  RiBriefcaseLine, 
+  RiTimeLine, 
+  RiPriceTag3Line, 
+  RiRefreshLine, 
+  RiArrowRightSLine, 
+  RiArrowDownSLine, 
+  RiTerminalBoxLine, 
+  RiShieldCheckLine,
+  RiCloseLine
+} from '@remixicon/react';
+import { Modal, ModalBody } from '@/components/base/modal/modal';
+import { CloseButton } from '@/components/base/buttons/close-button';
+import { Button } from '@/components/base/buttons/button';
+import { ButtonGroup, ButtonGroupItem } from '@/components/base/buttons/button-group';
+import { Chip } from '@/components/base/badges/chip';
 
 export default function RadarModal({ onClose, onLeadCreated }) {
   const [query, setQuery] = useState('node backend');
@@ -80,96 +99,116 @@ export default function RadarModal({ onClose, onLeadCreated }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface-1 border border-border-subtle rounded-2xl w-full max-w-5xl h-[88vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-        
-        {/* Top Header */}
-        <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between bg-surface-2/40">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-md shadow-cyan-500/20">
-              <Radio className="h-5 w-5 animate-pulse" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-semibold text-gray-900 dark:text-white">International Gig & Intent Radar</h2>
-                <span className="px-2 py-0.5 text-[10px] font-mono rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
-                  Zero-API-Key Live Scanner
-                </span>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Live contract opportunities & hiring intent from HackerNews ("Who is hiring?") and WeWorkRemotely.
-              </p>
-            </div>
+    <Modal
+      isOpen={true}
+      onOpenChange={(open) => { if (!open) onClose(); }}
+      size="xl"
+      aria-label="International Gig & Intent Radar"
+      className="p-0 gap-0 overflow-hidden flex flex-col max-h-[88vh] bg-background-primary-default border border-separator-border text-text-primary shadow-2xl rounded-3xl"
+    >
+      {/* Top Header */}
+      <div className="px-6 py-4 border-b border-separator-border flex items-center justify-between bg-background-secondary-default shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-accent-500/15 text-accent-500 flex items-center justify-center border border-accent-500/30">
+            <RiBroadcastLine className="h-5 w-5 animate-pulse" />
           </div>
-          <button 
-            onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-white rounded-lg hover:bg-surface-3 transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-semibold text-text-primary">International Gig & Intent Radar</h2>
+              <Chip variant="bold" color="blue">
+                Zero-API-Key Live Scanner
+              </Chip>
+            </div>
+            <p className="text-xs text-text-secondary">
+              Live contract opportunities & hiring intent from HackerNews ("Who is hiring?") and WeWorkRemotely.
+            </p>
+          </div>
         </div>
+        <CloseButton 
+          size="md"
+          onClick={onClose}
+          aria-label="Close Radar"
+        />
+      </div>
+
+      <ModalBody className="p-0 gap-0 flex-1 overflow-hidden flex flex-col bg-background-primary-default text-text-primary">
 
         {/* Filter & Search Bar */}
-        <div className="px-6 py-3.5 border-b border-border-subtle bg-surface-1 flex flex-wrap items-center justify-between gap-3">
+        <div className="px-6 py-3.5 border-b border-separator-border bg-background-secondary-default flex flex-wrap items-center justify-between gap-3">
           <form 
             onSubmit={(e) => { e.preventDefault(); fetchGigs(query, source); }}
             className="flex-1 min-w-[280px] flex items-center gap-2"
           >
             <div className="relative flex-1">
-              <Search className="h-4 w-4 absolute left-3 top-2.5 text-gray-400" />
+              <RiSearchLine className="h-4 w-4 absolute left-3 top-2.5 text-text-tertiary" />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search tech stack, roles, or skills (e.g. 'node backend', 'api engineer')..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg bg-surface-2 border border-border-subtle text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:border-cyan-500"
+                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg bg-background-tertiary-default border border-separator-border text-text-primary placeholder-text-tertiary focus:outline-none focus:border-accent-500"
               />
             </div>
-            <button
+            <Button
               type="submit"
               disabled={isLoading}
-              className="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              variant="primary"
+              size="sm"
             >
-              {isLoading ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              <RiRefreshLine className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
               <span>Scan Radar</span>
-            </button>
+            </Button>
           </form>
 
           {/* Source Tabs */}
-          <div className="flex items-center gap-1 bg-surface-2 p-1 rounded-lg border border-border-subtle text-xs">
-            <button
+          <ButtonGroup size="small">
+            <ButtonGroupItem
+              size="small"
+              selected={source === 'all'}
               onClick={() => setSource('all')}
-              className={`px-3 py-1 rounded-md transition-colors ${source === 'all' ? 'bg-surface-1 text-cyan-600 dark:text-cyan-400 shadow-sm font-medium' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
             >
               All Feeds
-            </button>
-            <button
+            </ButtonGroupItem>
+            <ButtonGroupItem
+              size="small"
+              selected={source === 'hn'}
               onClick={() => setSource('hn')}
-              className={`px-3 py-1 rounded-md transition-colors ${source === 'hn' ? 'bg-surface-1 text-cyan-600 dark:text-cyan-400 shadow-sm font-medium' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
             >
               HackerNews
-            </button>
-            <button
+            </ButtonGroupItem>
+            <ButtonGroupItem
+              size="small"
+              selected={source === 'wwr'}
               onClick={() => setSource('wwr')}
-              className={`px-3 py-1 rounded-md transition-colors ${source === 'wwr' ? 'bg-surface-1 text-cyan-600 dark:text-cyan-400 shadow-sm font-medium' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
             >
               WeWorkRemotely
-            </button>
-          </div>
+            </ButtonGroupItem>
+          </ButtonGroup>
         </div>
 
         {/* Quick Keyword Pills */}
-        <div className="px-6 py-2 border-b border-border-subtle/60 bg-surface-2/30 flex items-center gap-2 overflow-x-auto text-[11px]">
-          <span className="text-gray-400 font-mono uppercase text-[9px] mr-1">Quick Filters:</span>
+        <div className="px-6 py-2 border-b border-separator-border bg-background-secondary-default flex items-center gap-2 overflow-x-auto text-[11px]">
+          <span className="text-text-tertiary font-mono uppercase text-[9px] mr-1">Quick Filters:</span>
           {quickKeywords.map(kw => (
-            <button
+            <div
               key={kw}
               onClick={() => {
                 setQuery(kw);
                 fetchGigs(kw, source);
               }}
-              className="px-2.5 py-0.5 rounded-full bg-surface-2 hover:bg-surface-3 border border-border-subtle text-gray-600 dark:text-gray-300 transition-colors whitespace-nowrap"
+              className="cursor-pointer inline-flex"
             >
+              <Chip
+                variant="subtle"
+                color={query === kw ? "blue" : "gray"}
+                size="sm"
+                className="hover:opacity-80 transition-opacity whitespace-nowrap"
+              >
+                {kw}
+              </Chip>
+            </div>
+          ))}
+        </div>
               {kw}
             </button>
           ))}
@@ -179,16 +218,16 @@ export default function RadarModal({ onClose, onLeadCreated }) {
         <div className="flex-1 flex overflow-hidden">
           
           {/* Main Gigs Feed */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-3.5 divide-y divide-border-subtle/40">
+          <div className="flex-1 overflow-y-auto p-6 space-y-3.5 divide-y divide-separator-border/40">
             {isLoading ? (
-              <div className="h-64 flex flex-col items-center justify-center text-gray-400 gap-3">
-                <RefreshCw className="h-8 w-8 animate-spin text-cyan-500" />
+              <div className="h-64 flex flex-col items-center justify-center text-text-tertiary gap-3">
+                <RiRefreshLine className="h-8 w-8 animate-spin text-accent-500" />
                 <p className="text-sm">Sweeping international feeds for Node & Backend contracts...</p>
               </div>
             ) : gigs.length === 0 ? (
-              <div className="h-64 flex flex-col items-center justify-center text-gray-400 gap-2">
-                <Radio className="h-8 w-8 text-gray-500" />
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">No gigs matched your criteria</p>
+              <div className="h-64 flex flex-col items-center justify-center text-text-tertiary gap-2">
+                <RiBroadcastLine className="h-8 w-8 text-text-tertiary" />
+                <p className="text-sm font-medium text-text-primary">No gigs matched your criteria</p>
                 <p className="text-xs">Try searching for generic terms like "backend", "api", or "node".</p>
               </div>
             ) : (
@@ -198,30 +237,30 @@ export default function RadarModal({ onClose, onLeadCreated }) {
                 return (
                   <div 
                     key={gig.id} 
-                    className="pt-3.5 first:pt-0 group hover:bg-surface-2/40 -mx-3 px-3 py-3 rounded-xl transition-colors"
+                    className="pt-3.5 first:pt-0 group hover:bg-background-secondary-default/50 -mx-3 px-3 py-3 rounded-xl transition-colors"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                       <div>
                         <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <h3 className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
+                          <h3 className="text-sm font-semibold text-text-primary group-hover:text-accent-500 transition-colors">
                             {gig.company}
                           </h3>
-                          <span className="px-2 py-0.5 text-[10px] font-medium rounded-md bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+                          <Chip variant="subtle" color="blue" size="sm">
                             {gig.role}
-                          </span>
-                          <span className={`px-2 py-0.5 text-[10px] rounded-md font-mono ${gig.source === 'HackerNews' ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'}`}>
+                          </Chip>
+                          <Chip variant="subtle" color={gig.source === 'HackerNews' ? 'amber' : 'emerald'} size="sm">
                             {gig.source}
-                          </span>
+                          </Chip>
                         </div>
 
-                        <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mb-2">
+                        <div className="flex items-center gap-3 text-xs text-text-secondary mb-2">
                           <span className="flex items-center gap-1">
-                            <Globe className="h-3 w-3 text-gray-400" />
+                            <RiGlobalLine className="h-3 w-3 text-text-tertiary" />
                             {gig.location}
                           </span>
                           <span>•</span>
                           <span className="flex items-center gap-1 font-mono text-[11px]">
-                            <Clock className="h-3 w-3 text-gray-400" />
+                            <RiTimeLine className="h-3 w-3 text-text-tertiary" />
                             {new Date(gig.posted_at).toLocaleDateString()}
                           </span>
                         </div>
@@ -230,7 +269,7 @@ export default function RadarModal({ onClose, onLeadCreated }) {
                         {gig.tags && gig.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 mb-2.5">
                             {gig.tags.map(t => (
-                              <span key={t} className="px-2 py-0.5 text-[10px] font-mono rounded bg-surface-3 text-gray-700 dark:text-gray-300 border border-border-subtle">
+                              <span key={t} className="px-2 py-0.5 text-[10px] font-mono rounded bg-background-tertiary-default text-text-secondary border border-separator-border">
                                 {t}
                               </span>
                             ))}
@@ -238,57 +277,61 @@ export default function RadarModal({ onClose, onLeadCreated }) {
                         )}
 
                         {/* Summary / Snippet */}
-                        <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed max-w-3xl">
+                        <p className="text-xs text-text-secondary leading-relaxed max-w-3xl">
                           {isExpanded ? gig.raw_text : gig.summary}
                         </p>
 
                         {gig.raw_text && gig.raw_text.length > 240 && (
-                          <button
+                          <Button
+                            variant="link"
+                            size="sm"
                             onClick={() => setExpandedId(isExpanded ? null : gig.id)}
-                            className="mt-1 text-[11px] text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-0.5"
+                            className="mt-1 text-[11px] text-accent-500 hover:underline flex items-center gap-0.5 p-0 h-auto"
                           >
-                            {isExpanded ? 'Show less' : 'Read full posting'}
-                            {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                          </button>
+                            <span>{isExpanded ? 'Show less' : 'Read full posting'}</span>
+                            {isExpanded ? <RiArrowDownSLine className="h-3 w-3" /> : <RiArrowRightSLine className="h-3 w-3" />}
+                          </Button>
                         )}
                       </div>
 
                       {/* Action buttons */}
                       <div className="flex sm:flex-col items-center sm:items-end gap-2 shrink-0">
-                        <button
+                        <Button
                           onClick={() => handleGenerateProposal(gig)}
-                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-sm shadow-cyan-600/20 transition-all"
+                          variant="primary"
+                          size="sm"
                         >
-                          <Sparkles className="h-3 w-3" />
+                          <RiSparklingLine className="h-3 w-3" />
                           <span>1-Click Proposal</span>
-                        </button>
+                        </Button>
 
-                        <button
+                        <Button
                           onClick={() => handleConvertToLead(gig)}
                           disabled={isConverted}
-                          className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${isConverted ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400' : 'bg-surface-2 hover:bg-surface-3 border-border-subtle text-gray-700 dark:text-gray-200'}`}
+                          variant="secondary"
+                          size="sm"
                         >
                           {isConverted ? (
                             <>
-                              <Check className="h-3 w-3 text-emerald-500" />
+                              <RiCheckLine className="h-3 w-3 text-success-primary" />
                               <span>Added to Leads</span>
                             </>
                           ) : (
                             <>
-                              <UserPlus className="h-3 w-3 text-gray-400" />
+                              <RiUserAddLine className="h-3 w-3 text-text-tertiary" />
                               <span>Convert to Lead</span>
                             </>
                           )}
-                        </button>
+                        </Button>
 
                         <a
                           href={gig.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-cyan-500 transition-colors pt-1"
+                          className="flex items-center gap-1 text-[11px] text-text-tertiary hover:text-accent-500 transition-colors pt-1"
                         >
                           <span>Original Post</span>
-                          <ExternalLink className="h-2.5 w-2.5" />
+                          <RiExternalLinkLine className="h-2.5 w-2.5" />
                         </a>
                       </div>
                     </div>
@@ -300,36 +343,37 @@ export default function RadarModal({ onClose, onLeadCreated }) {
 
           {/* Proposal Preview Drawer (Slide in on right if active) */}
           {activeProposal && (
-            <div className="w-full sm:w-[420px] border-l border-border-subtle bg-surface-2/60 flex flex-col h-full animate-in slide-in-from-right duration-200">
-              <div className="p-4 border-b border-border-subtle flex items-center justify-between bg-surface-1">
+            <div className="w-full sm:w-[420px] border-l border-separator-border bg-background-secondary-default flex flex-col h-full animate-in slide-in-from-right duration-200">
+              <div className="p-4 border-b border-separator-border flex items-center justify-between bg-background-secondary-default">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-cyan-500" />
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-900 dark:text-white">
+                  <RiSparklingLine className="h-4 w-4 text-accent-500" />
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-text-primary">
                     Tailored Proposal
                   </h4>
                 </div>
-                <button
+                <CloseButton
                   onClick={() => setActiveProposal(null)}
-                  className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-white rounded-md"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+                  size="sm"
+                  aria-label="Close proposal preview"
+                />
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {/* Subject Line */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[11px] font-mono text-gray-500 dark:text-gray-400 uppercase">Subject Line</span>
-                    <button
+                    <span className="text-[11px] font-mono text-text-tertiary uppercase">Subject Line</span>
+                    <Button
                       onClick={() => copyToClipboard(activeProposal.subject, 'subject')}
-                      className="text-[11px] text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1"
+                      variant="ghost"
+                      size="sm"
+                      className="text-[11px] text-accent-500 h-auto py-0.5 px-1.5"
                     >
-                      {copiedField === 'subject' ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+                      {copiedField === 'subject' ? <RiCheckLine className="h-3 w-3 text-success-primary" /> : <RiFileCopyLine className="h-3 w-3" />}
                       <span>{copiedField === 'subject' ? 'Copied' : 'Copy'}</span>
-                    </button>
+                    </Button>
                   </div>
-                  <div className="p-2.5 rounded-lg bg-surface-1 border border-border-subtle text-xs text-gray-800 dark:text-gray-200 font-medium select-all">
+                  <div className="p-2.5 rounded-lg bg-background-primary-default border border-separator-border text-xs text-text-primary font-medium select-all">
                     {activeProposal.subject}
                   </div>
                 </div>
@@ -337,41 +381,43 @@ export default function RadarModal({ onClose, onLeadCreated }) {
                 {/* Pitch Body */}
                 <div className="flex-1 flex flex-col">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[11px] font-mono text-gray-500 dark:text-gray-400 uppercase">Tailored Message</span>
-                    <button
+                    <span className="text-[11px] font-mono text-text-tertiary uppercase">Tailored Message</span>
+                    <Button
                       onClick={() => copyToClipboard(activeProposal.body, 'body')}
-                      className="text-[11px] text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1"
+                      variant="ghost"
+                      size="sm"
+                      className="text-[11px] text-accent-500 h-auto py-0.5 px-1.5"
                     >
-                      {copiedField === 'body' ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+                      {copiedField === 'body' ? <RiCheckLine className="h-3 w-3 text-success-primary" /> : <RiFileCopyLine className="h-3 w-3" />}
                       <span>{copiedField === 'body' ? 'Copied' : 'Copy Body'}</span>
-                    </button>
+                    </Button>
                   </div>
                   <textarea
                     readOnly
                     value={activeProposal.body}
                     rows={14}
-                    className="w-full p-3 rounded-lg bg-surface-1 border border-border-subtle text-xs text-gray-800 dark:text-gray-200 font-sans leading-relaxed resize-none focus:outline-none"
+                    className="w-full p-3 rounded-lg bg-background-primary-default border border-separator-border text-xs text-text-primary font-sans leading-relaxed resize-none focus:outline-none"
                   />
                 </div>
               </div>
 
               {/* Bottom Drawer Actions */}
-              <div className="p-4 border-t border-border-subtle bg-surface-1 flex items-center justify-between">
-                <span className="text-[10px] text-gray-400">Address Rehan's strengths directly</span>
-                <button
+              <div className="p-4 border-t border-separator-border bg-background-secondary-default flex items-center justify-between">
+                <span className="text-[10px] text-text-tertiary">Address Rehan's strengths directly</span>
+                <Button
                   onClick={() => copyToClipboard(`${activeProposal.subject}\n\n${activeProposal.body}`, 'all')}
-                  className="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white flex items-center gap-1.5 transition-colors shadow-sm"
+                  variant="primary"
+                  size="sm"
                 >
-                  {copiedField === 'all' ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                  {copiedField === 'all' ? <RiCheckLine className="h-3.5 w-3.5" /> : <RiFileCopyLine className="h-3.5 w-3.5" />}
                   <span>{copiedField === 'all' ? 'All Copied!' : 'Copy Full Proposal'}</span>
-                </button>
+                </Button>
               </div>
             </div>
           )}
 
         </div>
-
-      </div>
-    </div>
+      </ModalBody>
+    </Modal>
   );
 }

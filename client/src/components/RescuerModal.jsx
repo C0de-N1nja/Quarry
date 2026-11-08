@@ -1,22 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  ShieldCheck, 
-  ShieldAlert, 
-  Inbox, 
-  RotateCw, 
-  Download, 
-  Sparkles, 
-  CheckCircle2, 
-  AlertCircle, 
-  Trash2, 
-  ExternalLink, 
-  Bell, 
-  Flame, 
-  Sliders, 
-  X,
-  FileCode,
-  ArrowRight
-} from 'lucide-react';
+  RiShieldCheckLine, 
+  RiShieldAlertLine, 
+  RiInboxLine, 
+  RiRefreshLine, 
+  RiDownloadLine, 
+  RiSparklingLine, 
+  RiCheckboxCircleLine, 
+  RiErrorWarningLine, 
+  RiDeleteBin6Line, 
+  RiExternalLinkLine, 
+  RiNotificationLine, 
+  RiFireLine, 
+  RiEqualizerLine, 
+  RiFileCodeLine,
+  RiArrowRightLine,
+  RiCloseLine,
+  RiArrowDownSLine
+} from '@remixicon/react';
+import { Modal, ModalBody, ModalFooter } from '@/components/base/modal/modal';
+import { CloseButton } from '@/components/base/buttons/close-button';
+import { Button } from '@/components/base/buttons/button';
+import { Switch } from '@/components/base/switch/switch';
+import { Chip } from '@/components/base/badges/chip';
 
 export default function RescuerModal({ onClose, leads = [], onSelectLead, onPipelineUpdated }) {
   const [status, setStatus] = useState(null);
@@ -167,7 +173,7 @@ export default function RescuerModal({ onClose, leads = [], onSelectLead, onPipe
         if (onPipelineUpdated) onPipelineUpdated();
         setScanMessage({
           type: 'success',
-          text: `🎉 Simulated reply successfully created! Lead advanced to "Replied / In Discussion" on Kanban and follow-up sequence paused.`
+          text: `Simulated reply successfully created! Lead advanced to "Replied / In Discussion" on Kanban and follow-up sequence paused.`
         });
       }
     } catch (err) {
@@ -191,120 +197,124 @@ export default function RescuerModal({ onClose, leads = [], onSelectLead, onPipe
   const getSentimentBadge = (sentiment) => {
     switch (sentiment) {
       case 'positive':
-        return <span className="px-2 py-0.5 text-[10px] font-mono rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">🔥 High Intent</span>;
+        return <Chip variant="subtle" color="emerald" size="sm">High Intent</Chip>;
       case 'question':
-        return <span className="px-2 py-0.5 text-[10px] font-mono rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">💬 Question / Inquiry</span>;
+        return <Chip variant="subtle" color="amber" size="sm">Question / Inquiry</Chip>;
       case 'negative':
-        return <span className="px-2 py-0.5 text-[10px] font-mono rounded-full bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/30">⛔ Opt-Out</span>;
+        return <Chip variant="subtle" color="rose" size="sm">Opt-Out</Chip>;
       default:
-        return <span className="px-2 py-0.5 text-[10px] font-mono rounded-full bg-surface-3 text-gray-600 dark:text-gray-300 border border-border-subtle">Neutral</span>;
+        return <Chip variant="subtle" color="gray" size="sm">Neutral</Chip>;
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-      <div className="relative w-full max-w-4xl bg-surface-1 rounded-2xl border border-border-subtle shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
-        
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between bg-surface-2/40">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-amber-500 to-rose-600 flex items-center justify-center text-white shadow-lg shadow-amber-500/20">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-semibold text-gray-900 dark:text-white">
-                  Gmail Spam Rescuer & Inbox Bridge
-                </h2>
-                <span className="px-2 py-0.5 text-[10px] font-mono rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-                  Zero Deal Drop-Off
-                </span>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Auto-monitors [Gmail]/Spam, rescues client replies to INBOX for phone notifications & advances Kanban.
-              </p>
-            </div>
+    <Modal
+      isOpen={true}
+      onOpenChange={(open) => { if (!open) onClose(); }}
+      size="xl"
+      aria-label="Gmail Spam Rescuer and Inbox Bridge"
+      className="p-0 gap-0 overflow-hidden flex flex-col max-h-[90vh] bg-background-primary-default border border-separator-border text-text-primary shadow-2xl rounded-3xl"
+    >
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-separator-border flex items-center justify-between bg-background-secondary-default shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-accent-500/15 text-accent-500 flex items-center justify-center border border-accent-500/30">
+            <RiShieldCheckLine className="h-5 w-5" />
           </div>
-
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-surface-3 transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-semibold text-text-primary">
+                Gmail Spam Rescuer & Inbox Bridge
+              </h2>
+              <Chip variant="bold" color="red">
+                Zero Deal Drop-Off
+              </Chip>
+            </div>
+            <p className="text-xs text-text-secondary">
+              Auto-monitors [Gmail]/Spam, rescues client replies to INBOX for phone notifications & advances Kanban.
+            </p>
+          </div>
         </div>
 
+        <CloseButton
+          size="md"
+          onClick={onClose}
+          aria-label="Close Modal"
+        />
+      </div>
+
+      <ModalBody className="p-0 gap-0 flex-1 overflow-y-auto bg-background-primary-default text-text-primary">
+
         {/* Action & Stats Ribbon */}
-        <div className="px-6 py-3 border-b border-border-subtle bg-surface-2/20 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="px-6 py-3 border-b border-separator-border bg-background-secondary-default flex flex-wrap items-center justify-between gap-3 text-xs">
           {/* Connection Status Pill */}
           <div className="flex items-center gap-2">
             {status?.configured ? (
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-mono">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-primary/10 text-success-primary border border-success-primary/30 text-xs font-mono">
+                <span className="h-2 w-2 rounded-full bg-success-primary animate-pulse" />
                 <span>Connected: {status.connectedAccount}</span>
               </span>
             ) : (
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-mono">
-                <AlertCircle className="h-3 w-3" />
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning-primary/10 text-warning-primary border border-warning-primary/30 text-xs font-mono">
+                <RiErrorWarningLine className="h-3 w-3" />
                 <span>IMAP Credentials Required in Settings</span>
               </span>
             )}
 
             {/* Background Polling Switch */}
-            <div className="flex items-center gap-1.5 pl-2 border-l border-border-subtle">
-              <span className="text-gray-500 dark:text-gray-400">Auto-Scan:</span>
-              <button
-                onClick={handleToggleAutoMonitor}
-                className={`px-2 py-0.5 rounded text-[11px] font-medium border transition-colors ${
-                  status?.enabled 
-                    ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/40' 
-                    : 'bg-surface-3 text-gray-400 border-border-subtle'
-                }`}
+            <div className="flex items-center pl-2 border-l border-separator-border">
+              <Switch
+                size="sm"
+                isSelected={Boolean(status?.enabled)}
+                onChange={handleToggleAutoMonitor}
               >
-                {status?.enabled ? 'Active (5m)' : 'Paused'}
-              </button>
+                <span className="text-text-tertiary text-xs">Auto-Scan (5m)</span>
+              </Switch>
             </div>
           </div>
 
           {/* Quick Trigger Buttons */}
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              variant="secondary"
+              size="small"
+              leadingIcon={RiRefreshLine}
               onClick={handleTestConnection}
               disabled={testing || !status?.configured}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-2 hover:bg-surface-3 border border-border-subtle text-gray-700 dark:text-gray-200 transition-colors disabled:opacity-50"
               title="Verify IMAP TLS authentication with imap.gmail.com"
             >
-              <RotateCw className={`h-3.5 w-3.5 ${testing ? 'animate-spin' : ''}`} />
-              <span>{testing ? 'Testing...' : 'Test IMAP'}</span>
-            </button>
+              {testing ? 'Testing...' : 'Test IMAP'}
+            </Button>
 
-            <button
+            <Button
+              variant="secondary"
+              size="small"
+              leadingIcon={RiSparklingLine}
               onClick={() => setShowSimulate(!showSimulate)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 transition-colors"
               title="Test the rescue pipeline using an existing lead"
             >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>Simulate Reply</span>
-            </button>
+              Simulate Reply
+            </Button>
 
             <a
               href="/api/rescuer/export-filter"
               download="client_hunter_mailFilters.xml"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium shadow-sm shadow-emerald-600/30 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-success-primary hover:bg-success-primary/90 text-white font-medium shadow-sm transition-all text-xs"
               title="Download Gmail Filter XML (Never Send to Spam rule for all leads)"
             >
-              <Download className="h-3.5 w-3.5" />
+              <RiDownloadLine className="h-3.5 w-3.5" />
               <span>Export Gmail Filter XML</span>
             </a>
 
-            <button
+            <Button
+              variant="primary"
+              size="small"
+              leadingIcon={RiRefreshLine}
               onClick={handleScanNow}
               disabled={scanning || !status?.configured}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand hover:bg-brand-hover text-white font-medium shadow-sm shadow-brand/30 transition-all disabled:opacity-50"
             >
-              <RotateCw className={`h-3.5 w-3.5 ${scanning ? 'animate-spin' : ''}`} />
-              <span>{scanning ? 'Scanning Spam...' : '⚡ Scan & Rescue Now'}</span>
-            </button>
+              {scanning ? 'Scanning Spam...' : 'Scan & Rescue Now'}
+            </Button>
           </div>
         </div>
 
@@ -312,80 +322,80 @@ export default function RescuerModal({ onClose, leads = [], onSelectLead, onPipe
         {scanMessage && (
           <div className={`px-6 py-2.5 text-xs flex items-center justify-between ${
             scanMessage.type === 'success' 
-              ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-b border-emerald-500/20' 
-              : 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-b border-rose-500/20'
+              ? 'bg-success-primary/10 text-success-primary border-b border-success-primary/20' 
+              : 'bg-danger-primary/10 text-danger-primary border-b border-danger-primary/20'
           }`}>
             <span className="flex items-center gap-2">
-              {scanMessage.type === 'success' ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+              {scanMessage.type === 'success' ? <RiCheckboxCircleLine className="h-4 w-4" /> : <RiErrorWarningLine className="h-4 w-4" />}
               <span>{scanMessage.text}</span>
             </span>
-            <button onClick={() => setScanMessage(null)} className="text-gray-400 hover:text-gray-600">
-              <X className="h-3.5 w-3.5" />
-            </button>
+            <CloseButton size="sm" onClick={() => setScanMessage(null)} aria-label="Dismiss alert" />
           </div>
         )}
 
         {testResult && (
           <div className={`px-6 py-2.5 text-xs flex items-center justify-between ${
             testResult.success
-              ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-b border-emerald-500/20'
-              : 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-b border-rose-500/20'
+              ? 'bg-success-primary/10 text-success-primary border-b border-success-primary/20'
+              : 'bg-danger-primary/10 text-danger-primary border-b border-danger-primary/20'
           }`}>
             <span>
               {testResult.success 
-                ? `✅ ${testResult.message} (${testResult.mailboxCount} mailboxes verified)`
-                : `❌ ${testResult.error}`}
+                ? `${testResult.message} (${testResult.mailboxCount} mailboxes verified)`
+                : `Error: ${testResult.error}`}
             </span>
-            <button onClick={() => setTestResult(null)} className="text-gray-400 hover:text-gray-600">
-              <X className="h-3.5 w-3.5" />
-            </button>
+            <CloseButton size="sm" onClick={() => setTestResult(null)} aria-label="Dismiss result" />
           </div>
         )}
 
         {/* Simulation Tray */}
         {showSimulate && (
-          <div className="px-6 py-3 border-b border-border-subtle bg-surface-2/60 animate-in slide-in-from-top-2">
+          <div className="px-6 py-3 border-b border-separator-border bg-background-secondary-default animate-in slide-in-from-top-2">
             <div className="flex items-center justify-between mb-2">
-              <h4 className="text-xs font-semibold text-gray-900 dark:text-white flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
+              <h4 className="text-xs font-semibold text-text-primary flex items-center gap-1.5">
+                <RiSparklingLine className="h-3.5 w-3.5 text-accent-500" />
                 <span>Simulate Prospect Spam Reply</span>
               </h4>
-              <button onClick={() => setShowSimulate(false)} className="text-gray-400 hover:text-gray-600 text-xs">
+              <Button variant="link" size="small" onClick={() => setShowSimulate(false)} className="text-text-tertiary hover:text-text-secondary text-xs p-0 h-auto">
                 Cancel
-              </button>
+              </Button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
-                <label className="block text-[11px] text-gray-500 mb-1">Target Lead to Simulate:</label>
-                <select
-                  value={simLeadId}
-                  onChange={(e) => setSimLeadId(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-surface-1 border border-border-subtle text-xs text-gray-900 dark:text-white"
-                >
-                  {leads.map(l => (
-                    <option key={l.id} value={l.id}>
-                      {l.business_name} ({l.city || 'Remote'})
-                    </option>
-                  ))}
-                </select>
+                <label className="block text-[11px] text-text-tertiary mb-1">Target Lead to Simulate:</label>
+                <div className="relative flex items-center">
+                  <select
+                    value={simLeadId}
+                    onChange={(e) => setSimLeadId(e.target.value)}
+                    className="w-full appearance-none px-2.5 pr-7 py-1.5 rounded-lg bg-background-tertiary-default border border-separator-border text-xs text-text-primary cursor-pointer hover:border-accent-500/50 transition-colors"
+                  >
+                    {leads.map(l => (
+                      <option key={l.id} value={l.id}>
+                        {l.business_name} ({l.city || 'Remote'})
+                      </option>
+                    ))}
+                  </select>
+                  <RiArrowDownSLine className="pointer-events-none absolute right-2 size-3.5 text-text-tertiary" />
+                </div>
               </div>
               <div className="md:col-span-2">
-                <label className="block text-[11px] text-gray-500 mb-1">Simulated Reply Content:</label>
+                <label className="block text-[11px] text-text-tertiary mb-1">Simulated Reply Content:</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={simBody}
                     onChange={(e) => setSimBody(e.target.value)}
-                    className="flex-1 px-2.5 py-1.5 rounded-lg bg-surface-1 border border-border-subtle text-xs text-gray-900 dark:text-white"
+                    className="flex-1 px-2.5 py-1.5 rounded-lg bg-background-tertiary-default border border-separator-border text-xs text-text-primary"
                     placeholder="Enter prospect reply text..."
                   />
-                  <button
+                  <Button
                     onClick={handleSimulateRescue}
                     disabled={simulating}
-                    className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium shrink-0 transition-colors disabled:opacity-50"
+                    variant="primary"
+                    size="small"
                   >
                     {simulating ? 'Simulating...' : 'Trigger Rescue'}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -393,13 +403,13 @@ export default function RescuerModal({ onClose, leads = [], onSelectLead, onPipe
         )}
 
         {/* Preventive Immunity Callout */}
-        <div className="px-6 py-2.5 bg-gradient-to-r from-amber-500/10 via-brand/5 to-emerald-500/10 border-b border-border-subtle flex items-center justify-between text-xs">
+        <div className="px-6 py-2.5 bg-background-secondary-default border-b border-separator-border flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
-            <span className="p-1 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400">
-              <FileCode className="h-3.5 w-3.5" />
+            <span className="p-1 rounded bg-accent-500/10 text-accent-500">
+              <RiFileCodeLine className="h-3.5 w-3.5" />
             </span>
-            <span className="text-gray-700 dark:text-gray-300">
-              <strong>Spam Immunity Rule:</strong> Download the XML filter above, then open <strong>Gmail Settings ➔ Filters ➔ Import filters</strong>. Gmail will permanently whitelabel your lead domains so they never trigger Spam!
+            <span className="text-text-secondary">
+              <strong className="text-text-primary">Spam Immunity Rule:</strong> Download the XML filter above, then open <strong>Gmail Settings -&gt; Filters -&gt; Import filters</strong>. Gmail will permanently whitelabel your lead domains so they never trigger Spam!
             </span>
           </div>
         </div>
@@ -408,50 +418,52 @@ export default function RescuerModal({ onClose, leads = [], onSelectLead, onPipe
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <h3 className="text-xs font-semibold uppercase font-mono tracking-wider text-gray-500 dark:text-gray-400">
+              <h3 className="text-xs font-semibold uppercase font-mono tracking-wider text-text-tertiary">
                 Rescued Client Responses ({replies.length})
               </h3>
               {replies.length > 0 && (
-                <span className="px-1.5 py-0.2 text-[10px] rounded-full bg-emerald-500/20 text-emerald-600 font-mono">
+                <Chip variant="subtle" color="emerald" size="sm">
                   {status?.stats?.positive || 0} Hot Deals
-                </span>
+                </Chip>
               )}
             </div>
-            <span className="text-[11px] text-gray-400">
+            <span className="text-[11px] text-text-tertiary">
               {status?.lastScan ? `Last scanned: ${new Date(status.lastScan).toLocaleTimeString()}` : 'No scans yet'}
             </span>
           </div>
 
           {loading ? (
-            <div className="h-48 flex items-center justify-center text-xs text-gray-400">
-              <RotateCw className="h-5 w-5 animate-spin mr-2" />
+            <div className="h-48 flex items-center justify-center text-xs text-text-tertiary">
+              <RiRefreshLine className="h-5 w-5 animate-spin mr-2" />
               Loading rescued messages...
             </div>
           ) : replies.length === 0 ? (
-            <div className="h-64 flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-border-subtle rounded-xl">
-              <div className="h-12 w-12 rounded-full bg-surface-2 flex items-center justify-center text-gray-400 mb-3">
-                <Inbox className="h-6 w-6" />
+            <div className="h-64 flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-separator-border rounded-xl">
+              <div className="h-12 w-12 rounded-full bg-background-secondary-default flex items-center justify-center text-text-tertiary mb-3">
+                <RiInboxLine className="h-6 w-6" />
               </div>
-              <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
+              <h4 className="text-sm font-semibold text-text-primary mb-1">
                 No Rescued Emails in Spam Yet
               </h4>
-              <p className="text-xs text-gray-500 max-w-sm mb-4">
+              <p className="text-xs text-text-secondary max-w-sm mb-4">
                 When prospects reply to your cold pitches and Gmail misclassifies them into [Gmail]/Spam, our IMAP bridge instantly moves them to your Primary INBOX so your phone rings!
               </p>
               <div className="flex items-center gap-2">
-                <button
+                <Button
                   onClick={handleScanNow}
                   disabled={!status?.configured}
-                  className="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-brand hover:bg-brand-hover text-white transition-colors"
+                  variant="primary"
+                  size="small"
                 >
-                  ⚡ Scan Spam Now
-                </button>
-                <button
+                  Scan Spam Now
+                </Button>
+                <Button
                   onClick={() => setShowSimulate(true)}
-                  className="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-surface-2 hover:bg-surface-3 border border-border-subtle text-gray-700 dark:text-gray-200 transition-colors"
+                  variant="secondary"
+                  size="small"
                 >
-                  ✨ Test with Simulation
-                </button>
+                  Test with Simulation
+                </Button>
               </div>
             </div>
           ) : (
@@ -459,32 +471,32 @@ export default function RescuerModal({ onClose, leads = [], onSelectLead, onPipe
               {replies.map((reply) => (
                 <div
                   key={reply.id}
-                  className="p-4 rounded-xl bg-surface-2/60 hover:bg-surface-2 border border-border-subtle transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+                  className="p-4 rounded-xl bg-background-secondary-default hover:bg-background-tertiary-default border border-separator-border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
                 >
                   <div className="space-y-1 flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-semibold text-xs text-gray-900 dark:text-white truncate">
+                      <span className="font-semibold text-xs text-text-primary truncate">
                         {reply.sender_name || reply.sender_email}
                       </span>
-                      <span className="text-[11px] font-mono text-gray-400">
+                      <span className="text-[11px] font-mono text-text-tertiary">
                         &lt;{reply.sender_email}&gt;
                       </span>
                       {getSentimentBadge(reply.sentiment)}
-                      <span className="px-2 py-0.5 text-[10px] font-mono rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center gap-1">
-                        <Bell className="h-2.5 w-2.5" />
+                      <span className="px-2 py-0.5 text-[10px] font-mono rounded-full bg-accent-500/10 text-accent-500 border border-accent-500/20 flex items-center gap-1">
+                        <RiNotificationLine className="h-2.5 w-2.5" />
                         <span>Moved to Primary INBOX</span>
                       </span>
                     </div>
 
-                    <div className="text-xs font-medium text-gray-800 dark:text-gray-200">
+                    <div className="text-xs font-medium text-text-primary">
                       {reply.subject || 'No Subject'}
                     </div>
 
-                    <div className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 bg-surface-1/60 p-2 rounded-lg border border-border-subtle/50 font-sans">
+                    <div className="text-xs text-text-secondary line-clamp-2 bg-background-primary-default p-2 rounded-lg border border-separator-border font-sans">
                       {reply.body_preview || 'No message snippet available'}
                     </div>
 
-                    <div className="flex items-center gap-3 text-[11px] text-gray-400 pt-1">
+                    <div className="flex items-center gap-3 text-[11px] text-text-tertiary pt-1">
                       <span>Rescued: {new Date(reply.rescued_at).toLocaleString()}</span>
                       {reply.business_name && (
                         <span>• Lead: <strong>{reply.business_name}</strong></span>
@@ -495,7 +507,7 @@ export default function RescuerModal({ onClose, leads = [], onSelectLead, onPipe
 
                   <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
                     {reply.lead_id && (
-                      <button
+                      <Button
                         onClick={() => {
                           const target = leads.find(l => l.id === reply.lead_id);
                           if (target && onSelectLead) {
@@ -503,43 +515,47 @@ export default function RescuerModal({ onClose, leads = [], onSelectLead, onPipe
                             onClose();
                           }
                         }}
-                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg bg-surface-1 hover:bg-surface-3 border border-border-subtle text-brand transition-colors"
+                        variant="secondary"
+                        size="small"
+                        trailingIcon={RiArrowRightLine}
                         title="Open Lead in Kanban & Outreach Drawer"
                       >
-                        <span>Open Lead</span>
-                        <ArrowRight className="h-3 w-3" />
-                      </button>
+                        Open Lead
+                      </Button>
                     )}
 
-                    <button
+                    <Button
                       onClick={() => handleDeleteReply(reply.id)}
-                      className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-surface-1 transition-colors"
+                      variant="ghost"
+                      size="small"
+                      leadingIcon={RiDeleteBin6Line}
+                      iconOnly
+                      aria-label="Delete record"
                       title="Delete record"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                      className="text-text-tertiary hover:text-danger-primary"
+                    />
                   </div>
                 </div>
               ))}
             </div>
           )}
         </div>
+      </ModalBody>
 
-        {/* Footer */}
-        <div className="px-6 py-3 border-t border-border-subtle bg-surface-2/40 flex items-center justify-between text-xs text-gray-500">
-          <div className="flex items-center gap-2">
-            <Flame className="h-4 w-4 text-amber-500" />
-            <span>Automatic Kanban Pipeline Sync: Rescued leads are moved to <strong>"In Discussion"</strong> & follow-up sequence paused.</span>
-          </div>
-          <button
-            onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-surface-2 hover:bg-surface-3 border border-border-subtle text-gray-700 dark:text-gray-200 transition-colors"
-          >
-            Close
-          </button>
+      {/* Footer */}
+      <ModalFooter className="px-6 py-3 border-t border-separator-border bg-background-secondary-default flex items-center justify-between text-xs text-text-secondary shrink-0">
+        <div className="flex items-center gap-2">
+          <RiFireLine className="h-4 w-4 text-warning-primary" />
+          <span>Automatic Kanban Pipeline Sync: Rescued leads are moved to <strong>"In Discussion"</strong> & follow-up sequence paused.</span>
         </div>
-
-      </div>
-    </div>
+        <Button
+          variant="secondary"
+          size="small"
+          onClick={onClose}
+        >
+          Close
+        </Button>
+      </ModalFooter>
+    </Modal>
   );
 }

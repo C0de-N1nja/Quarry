@@ -12,6 +12,9 @@ router.get('/active-job', osintController.getActiveJob.bind(osintController));
 // Reset OSINT data across leads and contacts
 router.post('/reset', osintController.resetOsint.bind(osintController));
 
+// Social account resolution from email address
+router.post('/social-resolve', osintController.resolveSocialAccounts.bind(osintController));
+
 // Single lead OSINT
 router.post('/owner/:leadId', osintController.enrichOwner.bind(osintController));
 router.post('/:leadId', osintController.enrichLead.bind(osintController));

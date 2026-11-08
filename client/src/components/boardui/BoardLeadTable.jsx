@@ -14,7 +14,11 @@ import {
   RiLayoutMasonryLine,
   RiTableLine,
   RiLayoutColumnLine,
-  RiCheckDoubleLine
+  RiCheckDoubleLine,
+  RiFireLine,
+  RiStarLine,
+  RiRefreshLine,
+  RiCloseLine
 } from '@remixicon/react';
 
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '@/components/base/table/table';
@@ -23,13 +27,12 @@ import { Chip } from '@/components/base/badges/chip';
 import { StatusDot } from '@/components/base/badges/status-dot';
 import { Checkbox } from '@/components/base/checkbox/checkbox';
 import { Select, SelectItem } from '@/components/base/select/select';
-import { InputBase } from '@/components/base/input/input';
+import { SearchField } from '@/components/base/search-field/search-field';
 import { IconButton } from '@/components/base/buttons/icon-button';
 import { Button } from '@/components/base/buttons/button';
 import { Pagination } from '@/components/base/pagination/pagination';
 import { SegmentedControl, SegmentedControlItem } from '@/components/base/segmented-control/segmented-control';
-import { Tooltip, TooltipTrigger } from '@/components/base/tooltip/tooltip';
-import { Focusable } from 'react-aria-components';
+import { PillTabList, PillTab } from '@/components/base/tabs/pill-tab';
 import { cx } from '@/utils/cx';
 
 function getInitials(name = '') {
@@ -65,6 +68,10 @@ export default function BoardLeadTable({
   onNicheChange,
   contactChannel = 'all',
   onContactChannelChange,
+  focusTier = 'vault',
+  onFocusTierChange,
+  onCleanWebsites,
+  onResetOsint,
   searchTerm = '',
   onSearchChange,
   currentPage = 1,
@@ -74,9 +81,15 @@ export default function BoardLeadTable({
 }) {
   const [selectedLeadIds, setSelectedLeadIds] = useState(new Set());
 
-  // Determine pagination bounds
-  const numericPageSize = pageSize === 'all' ? leads.length || 50 : parseInt(pageSize, 10) || 50;
+  // Determine pagination bounds and cap DOM nodes to guarantee 60fps responsiveness
+  const numericPageSize = pageSize === 'all' ? 100 : (parseInt(pageSize, 10) || 50);
   const totalPages = Math.max(1, Math.ceil((totalCount || leads.length) / numericPageSize));
+
+  const displayedLeads = useMemo(() => {
+    if (pageSize === 'all') return leads.slice(0, 100);
+    const size = parseInt(pageSize, 10) || 50;
+    return leads.slice(0, size);
+  }, [leads, pageSize]);
 
   // Compute unique niches for the filter dropdown
   const nicheOptions = useMemo(() => {
@@ -91,9 +104,9 @@ export default function BoardLeadTable({
     return Array.from(set).slice(0, 20);
   }, [stats, leads]);
 
-  const allPageIds = useMemo(() => leads.map(l => l.id), [leads]);
-  const isAllSelected = leads.length > 0 && allPageIds.every(id => selectedLeadIds.has(id));
-  const isPartiallySelected = leads.length > 0 && allPageIds.some(id => selectedLeadIds.has(id)) && !isAllSelected;
+  const allPageIds = useMemo(() => displayedLeads.map(l => l.id), [displayedLeads]);
+  const isAllSelected = displayedLeads.length > 0 && allPageIds.every(id => selectedLeadIds.has(id));
+  const isPartiallySelected = displayedLeads.length > 0 && allPageIds.some(id => selectedLeadIds.has(id)) && !isAllSelected;
 
   const handleToggleSelectAll = () => {
     if (isAllSelected) {
@@ -125,24 +138,33 @@ export default function BoardLeadTable({
             <span className="text-body-medium font-medium text-text-primary">
               {selectedLeadIds.size === 1 ? '1 prospect selected' : `${selectedLeadIds.size} prospects selected`}
             </span>
-            <button
+            <Button
+              variant="link"
+              size="small"
               onClick={() => setSelectedLeadIds(new Set())}
-              className="text-caption-1-regular text-text-tertiary underline hover:text-text-primary cursor-pointer ml-1"
+              className="text-caption-1-regular text-text-tertiary hover:text-text-primary p-0 h-auto"
             >
               Deselect all
-            </button>
+            </Button>
           </div>
           <div className="flex items-center gap-2">
             <Button
-              size="sm"
+              size="small"
               variant="secondary"
               leadingIcon={RiShieldCheckLine}
-              onClick={() => onOpenOsintRun && onOpenOsintRun(Array.from(selectedLeadIds))}
+              onClick={() => onOpenOsintRun && onOpenOsintRun({
+                leadIds: Array.from(selectedLeadIds),
+                category: activeNiche,
+                filter: activeFilter,
+                focusTier,
+                contactChannel,
+                searchTerm
+              })}
             >
               Run OSINT ({selectedLeadIds.size})
             </Button>
             <Button
-              size="sm"
+              size="small"
               variant="primary"
               leadingIcon={RiFlashlightFill}
               onClick={() => onOpenAutoPilot && onOpenAutoPilot(Array.from(selectedLeadIds))}
@@ -155,17 +177,124 @@ export default function BoardLeadTable({
 
       {/* Main BoardUI Table Card Container (Figma Node 3731:3201) */}
       <section className="flex w-full flex-col rounded-3xl border border-border-button-default bg-background-primary-default p-4 shadow-xs sm:p-6">
-        {/* Top Header & Toolbar Row */}
-        <div className="flex w-full flex-col items-start gap-4 pb-4 sm:flex-row sm:items-center sm:justify-between border-b border-separator-border">
-          {/* Left: Total Results Caption & Count */}
-          <div className="flex flex-col justify-center">
-            <p className="text-body-medium whitespace-nowrap text-text-tertiary">Total Results</p>
-            <p className="text-title-2-medium whitespace-nowrap text-text-primary font-semibold">
-              {(totalCount || leads.length).toLocaleString()} Prospects
-            </p>
+        
+        {/* Tier 1: Quick Priority Segments (Pill Tabs) + Actions Row */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-separator-border/60">
+          <PillTabList className="flex-wrap">
+            <PillTab
+              variant="blue"
+              isSelected={activeFilter === 'all' && focusTier === 'vault'}
+              onSelect={() => {
+                if (onNicheChange) onNicheChange('all');
+                if (onFocusTierChange) onFocusTierChange('vault');
+                if (onFilterChange) onFilterChange('all');
+              }}
+            >
+              <span>All Prospects ({(totalCount || stats?.totalLeads || leads.length).toLocaleString()})</span>
+            </PillTab>
+
+            <PillTab
+              variant="blue"
+              icon={RiFireLine}
+              isSelected={activeFilter === 'no_website'}
+              onSelect={() => {
+                if (onFocusTierChange) onFocusTierChange('vault');
+                if (onFilterChange) onFilterChange(activeFilter === 'no_website' ? 'all' : 'no_website');
+              }}
+            >
+              <span>No Website ({stats?.noWebsite || 0})</span>
+            </PillTab>
+
+            <PillTab
+              variant="blue"
+              icon={RiStarLine}
+              isSelected={focusTier === 'gold'}
+              onSelect={() => {
+                if (onFocusTierChange) onFocusTierChange(focusTier === 'gold' ? 'vault' : 'gold');
+              }}
+            >
+              <span>Gold Vault ({stats?.goldLeads || 0})</span>
+            </PillTab>
+
+            <PillTab
+              variant="gray"
+              isSelected={activeFilter === 'enriched'}
+              onSelect={() => {
+                if (onFilterChange) onFilterChange(activeFilter === 'enriched' ? 'all' : 'enriched');
+              }}
+            >
+              <span>Enriched ({stats?.enriched || 0})</span>
+            </PillTab>
+
+            <PillTab
+              variant="gray"
+              isSelected={activeFilter === 'won'}
+              onSelect={() => {
+                if (onFilterChange) onFilterChange(activeFilter === 'won' ? 'all' : 'won');
+              }}
+            >
+              <span>Won ({stats?.won || 0})</span>
+            </PillTab>
+          </PillTabList>
+
+          {/* Quick Dataset Actions: Run OSINT on current slice, Purge Sites, Reset */}
+          <div className="flex items-center gap-2 shrink-0">
+            {onCleanWebsites && stats && stats.withWebsites > 0 && (
+              <Button
+                size="small"
+                variant="danger"
+                onClick={onCleanWebsites}
+                title="Purge prospects that already have verified websites"
+              >
+                Purge {stats.withWebsites} Sites
+              </Button>
+            )}
+
+            {onResetOsint && (
+              <Button
+                size="small"
+                variant="secondary"
+                leadingIcon={RiRefreshLine}
+                onClick={() => onResetOsint(activeNiche)}
+                title="Reset OSINT cache for current slice"
+              >
+                Reset OSINT
+              </Button>
+            )}
+
+            <Button
+              size="small"
+              variant="primary"
+              leadingIcon={RiShieldCheckLine}
+              onClick={() => onOpenOsintRun && onOpenOsintRun({
+                leadIds: selectedLeadIds.size > 0 ? Array.from(selectedLeadIds) : null,
+                category: activeNiche,
+                filter: activeFilter,
+                focusTier,
+                contactChannel,
+                searchTerm
+              })}
+            >
+              Run OSINT ({selectedLeadIds.size > 0 ? selectedLeadIds.size : (totalCount || leads.length)})
+            </Button>
+          </div>
+        </div>
+
+        {/* Tier 2: Search, Filters & View Switcher Row */}
+        <div className="flex w-full flex-col items-start gap-3 py-3 sm:flex-row sm:items-center sm:justify-between border-b border-separator-border">
+          {/* Left: Total Count and Search Field */}
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            <SearchField
+              aria-label="Search prospects"
+              placeholder="Search business, phone, city..."
+              value={searchTerm}
+              onChange={(val) => onSearchChange && onSearchChange(val)}
+              size="small"
+              className="w-full sm:w-64"
+            />
           </div>
 
-          {/* Right: Filters & Controls */}
+          {/* Right: Select Dropdowns & View Switcher */}
           <div className="flex w-full flex-wrap items-center gap-2.5 sm:w-auto sm:justify-end">
             {/* Niche Filter */}
             <Select
@@ -190,13 +319,13 @@ export default function BoardLeadTable({
               onSelectionChange={(k) => onFilterChange && onFilterChange(String(k))}
             >
               <SelectItem id="all" textValue="All Stages">All Stages</SelectItem>
-              <SelectItem id="no_website" textValue="No Website 🌐❌">No Website 🌐❌</SelectItem>
+              <SelectItem id="no_website" textValue="No Website">No Website</SelectItem>
               <SelectItem id="discovered" textValue="Discovered">Discovered</SelectItem>
               <SelectItem id="enriched" textValue="Enriched">Enriched</SelectItem>
               <SelectItem id="pitched" textValue="Pitched">Pitched</SelectItem>
-              <SelectItem id="sent" textValue="Sent">Sent ✓</SelectItem>
+              <SelectItem id="sent" textValue="Sent">Sent</SelectItem>
               <SelectItem id="replied" textValue="In Discussion">In Discussion</SelectItem>
-              <SelectItem id="won" textValue="Won 🏆">Won 🏆</SelectItem>
+              <SelectItem id="won" textValue="Won">Won</SelectItem>
             </Select>
 
             {/* Contact Channel Filter */}
@@ -213,16 +342,6 @@ export default function BoardLeadTable({
               <SelectItem id="has_social" textValue="Social Profiles">Social Profiles</SelectItem>
               <SelectItem id="phone_only" textValue="Phone Only">Phone Only</SelectItem>
             </Select>
-
-            {/* Pill Search Input */}
-            <InputBase
-              aria-label="Search prospects"
-              placeholder="Search prospects..."
-              leadingIcon={RiSearchLine}
-              value={searchTerm}
-              onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
-              fieldClassName="w-48 rounded-full bg-background-secondary-default text-body-medium"
-            />
 
             {/* View Switcher: Split / Table / Kanban */}
             <SegmentedControl
@@ -305,7 +424,7 @@ export default function BoardLeadTable({
                   </div>
                   {onOpenSearch && (
                     <Button
-                      size="sm"
+                      size="small"
                       variant="primary"
                       leadingIcon={RiFlashlightFill}
                       onClick={() => onOpenSearch('search')}
@@ -317,7 +436,7 @@ export default function BoardLeadTable({
                 </div>
               )}
             >
-              {leads.map((lead) => {
+              {displayedLeads.map((lead) => {
                 const isSelected = selectedLeadIds.has(lead.id);
                 const isCurrentlyActive = selectedLead?.id === lead.id;
                 const businessName = lead.business_name || lead.company_name || 'Prospect';
@@ -353,7 +472,7 @@ export default function BoardLeadTable({
                         <Avatar
                           initials={getInitials(businessName)}
                           size="md"
-                          className={hasWebsite ? "bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200" : "bg-accent-100 text-accent-800 dark:bg-accent-900/60 dark:text-accent-200"}
+                          className={hasWebsite ? "bg-background-tertiary-default text-text-secondary" : "bg-accent-500/15 text-accent-500 font-semibold"}
                         />
                         <div className="flex min-w-0 flex-col">
                           <p className="truncate text-body-medium font-medium text-text-primary group-hover:text-accent-600">
@@ -376,14 +495,18 @@ export default function BoardLeadTable({
                       </div>
                     </TableCell>
 
-                    {/* Website Audit Cell */}
+                    {/* Website Audit Cell with BoardUI StatusDot + Chip */}
                     <TableCell className="w-48 px-3 py-3.5" onClick={() => onSelectLead && onSelectLead(lead)}>
                       {!hasWebsite ? (
-                        <Chip variant="bold" color="rose">
-                          Verified: No Site
-                        </Chip>
+                        <div className="flex items-center gap-1.5">
+                          <StatusDot color="indigo" />
+                          <Chip variant="bold" color="rose">
+                            Verified: No Site
+                          </Chip>
+                        </div>
                       ) : (
                         <div className="flex items-center gap-1.5">
+                          <StatusDot color="green" />
                           <Chip variant="bold" color="lime">
                             Site Active
                           </Chip>
@@ -392,7 +515,7 @@ export default function BoardLeadTable({
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="text-text-tertiary hover:text-text-primary transition-colors"
+                            className="text-text-tertiary hover:text-text-primary transition-colors ml-0.5"
                             title={lead.website}
                           >
                             <RiExternalLinkLine className="size-4" />
@@ -449,9 +572,9 @@ export default function BoardLeadTable({
                     <TableCell className="w-40 px-3 py-3.5" onClick={() => onSelectLead && onSelectLead(lead)}>
                       <div className="flex items-center gap-2">
                         {lead.pipeline_stage === 'won' ? (
-                          <Chip variant="bold" color="lime">🏆 Won</Chip>
+                          <Chip variant="bold" color="lime">Won</Chip>
                         ) : lead.pipeline_stage === 'sent' ? (
-                          <Chip variant="bold" color="cyan">Sent ✓</Chip>
+                          <Chip variant="bold" color="cyan">Sent</Chip>
                         ) : lead.pipeline_stage === 'replied' ? (
                           <Chip variant="bold" color="yellow">In Discussion</Chip>
                         ) : lead.pipeline_stage === 'pitched' ? (
@@ -474,45 +597,40 @@ export default function BoardLeadTable({
                     {/* Row Action Buttons */}
                     <TableCell className="w-32 px-3 py-3.5 text-right">
                       <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                        {/* Open Drawer Action */}
-                        <TooltipTrigger delay={200}>
-                          <Focusable>
-                            <IconButton
-                              icon={RiEditLine}
-                              size="small"
-                              aria-label="View Prospect Dossier"
-                              onClick={() => onOpenLeadDrawer ? onOpenLeadDrawer(lead) : onSelectLead(lead)}
-                            />
-                          </Focusable>
-                          <Tooltip size="md">View Prospect Dossier</Tooltip>
-                        </TooltipTrigger>
+                        <IconButton
+                          icon={RiEditLine}
+                          size="small"
+                          variant="ghost"
+                          aria-label="View Prospect Dossier"
+                          title="View Prospect Dossier"
+                          onClick={() => onOpenLeadDrawer ? onOpenLeadDrawer(lead) : onSelectLead(lead)}
+                        />
 
-                        {/* Quick OSINT Action */}
-                        <TooltipTrigger delay={200}>
-                          <Focusable>
-                            <IconButton
-                              icon={RiShieldCheckLine}
-                              size="small"
-                              aria-label="Deep OSINT Investigation"
-                              onClick={() => onOpenOsintRun && onOpenOsintRun([lead.id])}
-                            />
-                          </Focusable>
-                          <Tooltip size="md">Deep OSINT Investigation</Tooltip>
-                        </TooltipTrigger>
+                        <IconButton
+                          icon={RiShieldCheckLine}
+                          size="small"
+                          variant="ghost"
+                          aria-label="Deep OSINT Investigation"
+                          title="Deep OSINT Investigation"
+                          onClick={() => onOpenOsintRun && onOpenOsintRun({
+                            leadIds: [lead.id],
+                            category: lead.category || activeNiche,
+                            filter: activeFilter,
+                            focusTier,
+                            contactChannel,
+                            searchTerm
+                          })}
+                        />
 
-                        {/* Delete Action */}
                         {onDeleteLead && (
-                          <TooltipTrigger delay={200}>
-                            <Focusable>
-                              <IconButton
-                                icon={RiDeleteBin6Line}
-                                size="small"
-                                aria-label="Delete Prospect"
-                                onClick={() => onDeleteLead(lead.id)}
-                              />
-                            </Focusable>
-                            <Tooltip size="md">Delete Prospect</Tooltip>
-                          </TooltipTrigger>
+                          <IconButton
+                            icon={RiDeleteBin6Line}
+                            size="small"
+                            variant="ghost"
+                            aria-label="Delete Prospect"
+                            title="Delete Prospect"
+                            onClick={() => onDeleteLead(lead.id)}
+                          />
                         )}
                       </div>
                     </TableCell>

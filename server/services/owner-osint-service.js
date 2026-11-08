@@ -12,6 +12,7 @@ const Lead = require('../models/Lead');
 const Contact = require('../models/Contact');
 const phoneService = require('./phone-service');
 const osintService = require('./osint-service');
+const stealthService = require('./stealth-service');
 
 class OwnerOsintService {
   /**
@@ -56,21 +57,13 @@ class OwnerOsintService {
   }
 
   /**
-   * Extract potential owner name from web page text or snippets
+   * Helper: Validate and clean person name
    */
-  extractOwnerNameFromText(text, businessName = '') {
-    if (!text || typeof text !== 'string') return null;
-    const cleanText = text.replace(/\s+/g, ' ');
-
-    // Patterns matching title + name, founded by name, or name + title
-    const patterns = [
-      /(?:founded|established|started|operated|owned)\s+by\s+([A-Z][a-z]{1,20}\s+[A-Z][a-z]{1,20})/i,
-      /(?:owner|founder|co-founder|president|ceo|principal|director|master arborist|lead contractor)[:\s]+(?:is\s+)?([A-Z][a-z]{1,20}\s+[A-Z][a-z]{1,20})/i,
-      /([A-Z][a-z]{1,20}\s+[A-Z][a-z]{1,20})(?:,\s*|\s+is\s+(?:the\s+)?)(?:owner|founder|co-founder|president|ceo|principal|managing member)/i,
-      /([A-Z][a-z]{1,20}\s+[A-Z][a-z]{1,20})\s*[-–|]\s*(?:owner|founder|co-founder|president|ceo|principal|managing member)/i,
-      /(?:dr\.|doctor)\s+([A-Z][a-z]{1,20}\s+[A-Z][a-z]{1,20})/i,
-      /(?:meet\s+(?:the\s+owner\s+|our\s+founder\s+)?|about\s+(?:the\s+owner\s+|our\s+founder\s+|the\s+founder\s+))([A-Z][a-z]{1,20}\s+[A-Z][a-z]{1,20})/i
-    ];
+  cleanPersonName(candidate, businessName = '') {
+    if (!candidate || typeof candidate !== 'string') return null;
+    const clean = candidate.trim().replace(/^(?:mr\.?|ms\.?|mrs\.?|dr\.?)\s+/i, '');
+    const words = clean.split(/\s+/);
+    if (words.length < 2 || words.length > 3) return null;
 
     const stopWords = new Set([
       'and', 'or', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'a', 'an', 'by', 'with', 'for', 'at', 'our', 'in', 'on', 'to', 'from', 'of',
@@ -78,80 +71,202 @@ class OwnerOsintService {
       'can', 'will', 'would', 'should', 'could', 'may', 'might', 'must', 'about', 'into', 'through', 'after', 'over', 'between', 'out', 'against',
       'during', 'without', 'before', 'under', 'around', 'among', 'services', 'contact', 'about', 'projects', 'project', 'open', 'close', 'menu',
       'skip', 'content', 'home', 'learn', 'more', 'read', 'gallery', 'portfolio', 'pricing', 'reviews', 'testimonials', 'blog', 'news', 'privacy',
-      'policy', 'terms', 'cookies', 'login', 'signup', 'register', 'design', 'landscape', 'landscaping', 'tree', 'construction', 'roofing',
-      'plumbing', 'electric', 'cleaning', 'gardening', 'contractor', 'contractors', 'arborist', 'builders', 'builder', 'remodeling', 'lawn',
-      'care', 'painting', 'hvac', 'pool', 'flooring', 'renovation', 'development', 'management', 'solutions', 'enterprises', 'group', 'team',
-      'company', 'agency', 'studio', 'store', 'shop', 'online', 'website', 'shopify', 'wordpress', 'wix', 'squarespace', 'page', 'site', 'view',
-      'help', 'search', 'click', 'here', 'see', 'find', 'send', 'email', 'phone', 'call', 'today', 'free', 'quote', 'estimate'
+      'policy', 'terms', 'cookies', 'login', 'signup', 'register', 'design', 'designs', 'cabinet', 'cabinets', 'cabinetry', 'woodwork', 'woodworking',
+      'landscape', 'landscaping', 'tree', 'trees', 'construction', 'roofing', 'plumbing', 'electric', 'electrical', 'cleaning', 'gardening',
+      'contractor', 'contractors', 'arborist', 'builders', 'builder', 'remodeling', 'lawn', 'care', 'painting', 'hvac', 'pool', 'flooring',
+      'renovation', 'development', 'management', 'solutions', 'solution', 'enterprises', 'enterprise', 'group', 'team', 'company', 'agency',
+      'studio', 'studios', 'store', 'shop', 'online', 'website', 'systems', 'system', 'ventures', 'venture', 'associates', 'associate',
+      'consulting', 'consultant', 'consultants', 'laboratories', 'laboratory', 'holdings', 'holding', 'industries', 'industry',
+      'corporation', 'incorporated', 'limited', 'technologies', 'technology', 'works', 'craft', 'custom', 'customs',
+      'shopify', 'wordpress', 'wix', 'squarespace', 'page', 'site', 'view', 'help', 'search', 'click', 'here', 'see', 'find', 'send',
+      'email', 'phone', 'call', 'today', 'free', 'quote', 'estimate'
     ]);
-    const stopNames = ['Contact Us', 'About Us', 'Our Team', 'Home Page', 'Read More', 'Learn More', 'Business Name', 'Privacy Policy', 'Terms Service', 'John Smith', 'Jane Doe', 'Projects Open'];
+    const stopNames = ['Contact Us', 'About Us', 'Our Team', 'Home Page', 'Read More', 'Learn More', 'Business Name', 'Privacy Policy', 'Terms Service', 'John Smith', 'Jane Doe', 'Projects Open', 'Tree Service'];
 
-    for (const pat of patterns) {
-      const match = cleanText.match(pat);
-      if (match && match[1]) {
-        const candidate = match[1].trim();
-        const words = candidate.split(/\s+/);
-        if (words.length < 2 || words.length > 3) continue;
-        // Strict capitalization: each word must start with genuine uppercase and contain only lowercase letters
-        if (!words.every(w => /^[A-Z][a-z]{1,20}$/.test(w))) continue;
-        // Reject if any word is an auxiliary word, preposition, or industry stopword
-        if (words.some(w => stopWords.has(w.toLowerCase()))) continue;
-        if (!stopNames.includes(candidate) && !businessName.toLowerCase().includes(candidate.toLowerCase())) {
-          return candidate;
-        }
+    // Strict capital validation
+    if (!words.every(w => /^[A-Z][a-z]{1,20}$/.test(w))) return null;
+    
+    // Check if any word or stem matches trade/stop words
+    const isTradeOrStopWord = (word) => {
+      const w = word.toLowerCase();
+      if (stopWords.has(w)) return true;
+      if (w.endsWith('s') && stopWords.has(w.slice(0, -1))) return true;
+      if (w.endsWith('ing') && stopWords.has(w.slice(0, -3))) return true;
+      return false;
+    };
+    if (words.some(w => isTradeOrStopWord(w))) return null;
+    if (stopNames.includes(clean)) return null;
+
+    // Check collision with business name tokens
+    if (businessName) {
+      const bTokens = businessName.toLowerCase().split(/[^a-z0-9]+/).filter(t => t.length >= 3);
+      if (words.some(w => bTokens.includes(w.toLowerCase()))) return null;
+      if (businessName.toLowerCase().includes(clean.toLowerCase())) return null;
+    }
+
+    return clean;
+  }
+
+  /**
+   * Extract potential owner name and title from web page text, legal filings, or snippets
+   */
+  extractOwnerEntityFromText(text, businessName = '') {
+    if (!text || typeof text !== 'string') return null;
+    const cleanText = text.replace(/\s+/g, ' ');
+
+    // 1. Inverted legal name from corporate filings / Sunbiz / SOS
+    // e.g. "The guiding force behind this is Planthaber, Amanda S from Tampa FL, holding the position of Manager; Planthaber, Patrick S..."
+    const invRe = /([A-Z][a-z]{1,20}),\s+([A-Z][a-z]{1,20})(?:\s+[A-Z]\.?)?(?:[,\s]+from\s+[A-Za-z\s,]+)?[,\s]+(?:holding the position of|serving as(?: the)?|is(?: the)?)\s+(manager|managing member|president|director|owner|officer|ceo|principal)/gi;
+    let invMatch;
+    while ((invMatch = invRe.exec(cleanText)) !== null) {
+      const candidate = `${invMatch[2]} ${invMatch[1]}`;
+      const valid = this.cleanPersonName(candidate, businessName);
+      if (valid) {
+        const rawTitle = invMatch[3].trim();
+        const formattedTitle = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1).toLowerCase();
+        return { name: valid, title: formattedTitle, source: 'Corporate Registry Filing' };
       }
     }
+
+    // 2. Led by / operated by / headed by owner [Mr.] Name
+    const ledRe = /(?:led|headed|run|operated|managed)\s+by\s+(?:owner|founder|president|ceo|principal)?\s*(?:mr\.?|ms\.?|mrs\.?|dr\.?)?\s*([A-Z][a-z]{1,20}\s+[A-Z][a-z]{1,20})/gi;
+    let ledMatch;
+    while ((ledMatch = ledRe.exec(cleanText)) !== null) {
+      const valid = this.cleanPersonName(ledMatch[1], businessName);
+      if (valid) return { name: valid, title: 'Owner / Principal', source: 'Executive Leadership Context' };
+    }
+
+    // 3. Title [: ,] [is] [Mr.] Name (e.g. "Owner Patrick Planthaber", "Company Owner , Tim Bowen", "Principal: John Doe")
+    const titleRe = /(?:owner|founder|co-founder|president|ceo|principal|managing member)[:\s,]+(?:is\s+)?(?:mr\.?|ms\.?|mrs\.?|dr\.?)?\s*([A-Z][a-z]{1,20}\s+[A-Z][a-z]{1,20})/gi;
+    let titleMatch;
+    while ((titleMatch = titleRe.exec(cleanText)) !== null) {
+      const valid = this.cleanPersonName(titleMatch[1], businessName);
+      if (valid) return { name: valid, title: 'Owner / Principal', source: 'Executive Title Anchor' };
+    }
+
+    // 4. Name [,] is [the] [proud] owner / founder / president / managing member
+    const nameTitleRe = /([A-Z][a-z]{1,20}\s+[A-Z][a-z]{1,20})[,\s]+(?:is\s+(?:the\s+)?)?(?:the\s+)?(?:proud\s+)?(owner|founder|co-founder|president|ceo|principal|managing member)/gi;
+    let nameTitleMatch;
+    while ((nameTitleMatch = nameTitleRe.exec(cleanText)) !== null) {
+      const valid = this.cleanPersonName(nameTitleMatch[1], businessName);
+      if (valid) {
+        const rawTitle = nameTitleMatch[2].trim();
+        const formattedTitle = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1).toLowerCase();
+        return { name: valid, title: formattedTitle, source: 'Bio & Role Disclosure' };
+      }
+    }
+
+    // 5. Name - Owner / Founder
+    const dashRe = /([A-Z][a-z]{1,20}\s+[A-Z][a-z]{1,20})\s*[-–|]\s*(owner|founder|co-founder|president|ceo|principal|managing member)/gi;
+    let dashMatch;
+    while ((dashMatch = dashRe.exec(cleanText)) !== null) {
+      const valid = this.cleanPersonName(dashMatch[1], businessName);
+      if (valid) {
+        const rawTitle = dashMatch[2].trim();
+        const formattedTitle = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1).toLowerCase();
+        return { name: valid, title: formattedTitle, source: 'Leadership Byline' };
+      }
+    }
+
+    // 6. Founded / Established / Owned by [Mr.] Name
+    const foundRe = /(?:founded|established|started|owned)\s+by\s+(?:mr\.?|ms\.?|mrs\.?|dr\.?)?\s*([A-Z][a-z]{1,20}\s+[A-Z][a-z]{1,20})/gi;
+    let foundMatch;
+    while ((foundMatch = foundRe.exec(cleanText)) !== null) {
+      const valid = this.cleanPersonName(foundMatch[1], businessName);
+      if (valid) return { name: valid, title: 'Founder', source: 'Company History' };
+    }
+
+    // 7. Meet the owner / about our founder [Name]
+    const meetRe = /(?:meet\s+(?:the\s+owner\s+|our\s+founder\s+)?|about\s+(?:the\s+owner\s+|our\s+founder\s+|the\s+founder\s+))(?:mr\.?|ms\.?|mrs\.?|dr\.?)?\s*([A-Z][a-z]{1,20}\s+[A-Z][a-z]{1,20})/gi;
+    let meetMatch;
+    while ((meetMatch = meetRe.exec(cleanText)) !== null) {
+      const valid = this.cleanPersonName(meetMatch[1], businessName);
+      if (valid) return { name: valid, title: 'Owner / Founder', source: 'Bio Page Intro' };
+    }
+
     return null;
   }
 
   /**
-   * Step 1: Discover or Confirm Owner Name
+   * Backward-compatible helper: extracts just the owner name
+   */
+  extractOwnerNameFromText(text, businessName = '') {
+    const entity = this.extractOwnerEntityFromText(text, businessName);
+    return entity?.name || null;
+  }
+
+  /**
+   * Step 1: Discover or Confirm Owner Name & Corporate Entity
    */
   async discoverOwnerName(lead, manualName = null) {
     if (manualName && manualName.trim().length >= 3) {
       return manualName.trim();
     }
 
-    // A. Check dedicated bio / About / Team pages first, then fallback to homepage
+    // A. Check dedicated bio / About / Team pages with Stealth Fetcher fallback (check homepage first)
     if (lead.website && !osintService.isSocialOrDirectory(lead.website)) {
-      const targetPaths = ['/about', '/about-us', '/our-team', '/team', '/meet-the-team', '/leadership', '/owner', ''];
+      const targetPaths = ['', '/about', '/about-us', '/our-team', '/team', '/leadership', '/owner'];
       let norm = lead.website.trim().replace(/\/+$/, '');
       if (!norm.startsWith('http')) norm = 'https://' + norm;
 
       for (const p of targetPaths) {
         try {
-          const pageRes = await axios.get(norm + p, {
-            timeout: 5000,
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
-            validateStatus: s => s === 200
-          });
-          if (pageRes.status === 200 && pageRes.data) {
-            const $ = cheerio.load(pageRes.data);
+          let html = '';
+          try {
+            const pageRes = await axios.get(norm + p, {
+              timeout: 4000,
+              headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
+              validateStatus: s => s === 200
+            });
+            html = pageRes.data;
+          } catch (axiosErr) {
+            // If challenged or failed, invoke stealth fetcher
+            const sRes = await stealthService.fetch(norm + p, { engine: 'fast_http', timeout: 5000 });
+            if (sRes.success && sRes.html) html = sRes.html;
+          }
+
+          if (html && typeof html === 'string') {
+            const $ = cheerio.load(html);
 
             // Harvest any website social links
             if (!lead._siteSocials) lead._siteSocials = {};
             $('a[href]').each((_, el) => {
               const h = $(el).attr('href') || '';
-              if (h.includes('instagram.com/') && !lead._siteSocials.instagram) lead._siteSocials.instagram = h;
-              if (h.includes('facebook.com/') && !lead._siteSocials.facebook) lead._siteSocials.facebook = h;
-              if (h.includes('linkedin.com/in/') && !lead._siteSocials.linkedin) lead._siteSocials.linkedin = h;
+              if (h.includes('instagram.com/') && !lead._siteSocials.instagram) {
+                if (!/\/tv\b|\/reel\b|\/explore\b|\/p\/|\/stories\b|\/accounts\b/i.test(h)) {
+                  lead._siteSocials.instagram = h;
+                }
+              }
+              if (h.includes('facebook.com/') && !lead._siteSocials.facebook) {
+                if (!/\/reel\b|\/sharer\b|\/dialog\b|\/watch\b|\/share\b|\/tr\b|\/events\b/i.test(h)) {
+                  lead._siteSocials.facebook = h;
+                }
+              }
+              if (h.includes('linkedin.com/in/') && !lead._siteSocials.linkedin) {
+                lead._siteSocials.linkedin = h;
+              }
             });
 
             $('script, style, svg').remove();
             $('p, h1, h2, h3, h4, h5, h6, li, span, div, a').append(' ');
             const bodyText = $('body').text();
-            const foundName = this.extractOwnerNameFromText(bodyText, lead.business_name);
-            if (foundName) return foundName;
+            const foundEntity = this.extractOwnerEntityFromText(bodyText, lead.business_name);
+            if (foundEntity) {
+              if (!lead._discoveredTitle) lead._discoveredTitle = foundEntity.title;
+              if (!lead._discoverySource) lead._discoverySource = foundEntity.source;
+              return foundEntity.name;
+            }
           }
         } catch {}
       }
     }
 
-    // B. Search engine dorks for owner/founder & LinkedIn
+    // B. Search engine dorks for Corporate Registry, SOS, Sunbiz, and Executive Leadership
     const dorks = [
-      `site:linkedin.com/in/ "${lead.business_name}" (owner OR founder OR president)`,
-      `"${lead.business_name}" ${lead.city || ''} (owner OR founder OR president OR "managing member")`,
-      `"${lead.business_name}" "meet the owner" OR "about the founder"`
+      `"${lead.business_name}" "${lead.city || ''}" (manager OR "managing member" OR officer OR principal OR "corporate filing" OR sunbiz OR "secretary of state")`,
+      `"${lead.business_name}" "${lead.city || ''}" (owner OR founder OR president OR "meet the owner" OR "about the owner")`,
+      `site:linkedin.com/in/ "${lead.business_name}" ${lead.city || ''}`,
+      `site:bbb.org "${lead.business_name}" ${lead.city || ''}`
     ];
 
     for (const q of dorks) {
@@ -159,16 +274,22 @@ class OwnerOsintService {
       for (const snip of full.snippets) {
         if (!this.isSnippetRelevant(snip, lead.business_name)) continue;
 
-        const found = this.extractOwnerNameFromText(snip, lead.business_name);
-        if (found) return found;
+        const foundEntity = this.extractOwnerEntityFromText(snip, lead.business_name);
+        if (foundEntity) {
+          if (!lead._discoveredTitle) lead._discoveredTitle = foundEntity.title;
+          if (!lead._discoverySource) lead._discoverySource = foundEntity.source;
+          return foundEntity.name;
+        }
       }
       for (const snip of full.snippets) {
         if (!this.isSnippetRelevant(snip, lead.business_name)) continue;
 
         const liMatch = snip.match(/^([A-Z][a-z]{1,20}\s+[A-Z][a-z]{1,20})\s*[-–|]/);
         if (liMatch && liMatch[1]) {
-          const cand = liMatch[1].trim();
-          if (!cand.toLowerCase().includes(lead.business_name.toLowerCase())) {
+          const cand = this.cleanPersonName(liMatch[1].trim(), lead.business_name);
+          if (cand) {
+            if (!lead._discoveredTitle) lead._discoveredTitle = 'Professional Profile';
+            if (!lead._discoverySource) lead._discoverySource = 'LinkedIn Identity Graph';
             return cand;
           }
         }
@@ -217,7 +338,8 @@ class OwnerOsintService {
         const extracted = osintService.extractEmails(snip);
         for (const e of extracted) {
           const lower = e.toLowerCase();
-          if (lower.includes('gmail.com') || lower.includes('yahoo.com') || lower.includes('outlook.com') || lower.includes('icloud.com') || lower.includes('aol.com') || lower.includes('hotmail.com')) {
+          // Strictly match legitimate consumer email providers (reject subdomains like yahoo.uservoice.com)
+          if (/@(?:gmail\.com|yahoo\.com|outlook\.com|hotmail\.com|icloud\.com|aol\.com)$/i.test(lower)) {
             emailsFound.add(lower);
           }
         }
@@ -386,6 +508,8 @@ class OwnerOsintService {
     // 1. Discover Owner Name
     const ownerName = await this.discoverOwnerName(lead, manualOwnerName);
     dossier.owner_name = ownerName;
+    if (lead._discoveredTitle) dossier.owner_title = lead._discoveredTitle;
+    if (lead._discoverySource) dossier.discovery_source = lead._discoverySource;
 
     if (!ownerName) {
       dossier.confidence = 'low';
@@ -393,17 +517,22 @@ class OwnerOsintService {
       return dossier;
     }
 
-    // 2. Generate and Verify Work Email Permutations (if domain exists)
+    // 2. Generate and Verify Work Email Permutations (if legitimate business domain exists)
     if (lead.website && !osintService.isSocialOrDirectory(lead.website)) {
-      const perms = this.generatePermutations(ownerName, lead.website);
-      dossier.work_permutations = perms.map(p => p.email);
+      const cleanDomain = lead.website.replace(/^(?:https?:\/\/)?(?:www\.)?/, '').split('/')[0].toLowerCase();
+      const blockedPermDomains = ['uservoice.com', 'zendesk.com', 'freshdesk.com', 'yahoo.com', 'bing.com', 'google.com', 'duckduckgo.com', 'atlassian.net', 'intercom.com', 'github.com'];
+      const isBlockedDomain = blockedPermDomains.some(b => cleanDomain === b || cleanDomain.endsWith('.' + b));
 
-      // Verify MX on domain first
-      const cleanDomain = lead.website.replace(/^(?:https?:\/\/)?(?:www\.)?/, '').split('/')[0];
-      const hasMx = await osintService.verifyMx(`test@${cleanDomain}`);
-      if (hasMx && perms.length > 0) {
-        // Preferred candidate permutation is first.last or first
-        dossier.verified_work_email = perms[1]?.email || perms[0]?.email;
+      if (!isBlockedDomain) {
+        const perms = this.generatePermutations(ownerName, cleanDomain);
+        dossier.work_permutations = perms.map(p => p.email);
+
+        // Verify MX on domain first
+        const hasMx = await osintService.verifyMx(`test@${cleanDomain}`);
+        if (hasMx && perms.length > 0) {
+          // Preferred candidate permutation is first.last or first
+          dossier.verified_work_email = perms[1]?.email || perms[0]?.email;
+        }
       }
     }
 

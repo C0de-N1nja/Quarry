@@ -45,7 +45,8 @@ import { directionalIconClass } from "@/utils/directional-icon";
  */
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
-type ButtonSize = "medium" | "small" | "xs";
+type ButtonSize = "medium" | "small" | "xs" | "md" | "sm";
+type ResolvedButtonSize = "medium" | "small" | "xs";
 
 type IconComponent = ComponentType<{
   className?: string;
@@ -154,25 +155,27 @@ export function Button({
   ref,
   ...props
 }: ButtonProps) {
+  const resolvedSize: ResolvedButtonSize = size === "sm" ? "small" : size === "md" ? "medium" : size;
+
   return (
     <button
       ref={ref}
       type={type}
       className={cx(
         styles.base,
-        styles.size[size],
+        styles.size[resolvedSize],
         styles.variant[variant],
-        iconOnly && styles.iconOnlySize[size],
+        iconOnly && styles.iconOnlySize[resolvedSize],
         className,
       )}
       {...props}
     >
-      {Leading ? <Leading className={cx(styles.icon[size], directionalIconClass(Leading))} aria-hidden /> : null}
+      {Leading ? <Leading className={cx(styles.icon[resolvedSize], directionalIconClass(Leading))} aria-hidden /> : null}
       {!iconOnly && children !== undefined && children !== null && (
-        <span className={styles.label[size]}>{children}</span>
+        <span className={styles.label[resolvedSize]}>{children}</span>
       )}
       {!iconOnly && Trailing ? (
-        <Trailing className={cx(styles.icon[size], directionalIconClass(Trailing))} aria-hidden />
+        <Trailing className={cx(styles.icon[resolvedSize], directionalIconClass(Trailing))} aria-hidden />
       ) : null}
     </button>
   );
@@ -190,24 +193,26 @@ export function ButtonLink({
   ref,
   ...props
 }: ButtonLinkProps) {
+  const resolvedSize: ResolvedButtonSize = size === "sm" ? "small" : size === "md" ? "medium" : size;
+
   return (
     <a
       ref={ref}
       className={cx(
         styles.base,
-        styles.size[size],
+        styles.size[resolvedSize],
         styles.variant[variant],
-        iconOnly && styles.iconOnlySize[size],
+        iconOnly && styles.iconOnlySize[resolvedSize],
         className,
       )}
       {...props}
     >
-      {Leading ? <Leading className={cx(styles.icon[size], directionalIconClass(Leading))} aria-hidden /> : null}
+      {Leading ? <Leading className={cx(styles.icon[resolvedSize], directionalIconClass(Leading))} aria-hidden /> : null}
       {!iconOnly && children !== undefined && children !== null && (
-        <span className={styles.label[size]}>{children}</span>
+        <span className={styles.label[resolvedSize]}>{children}</span>
       )}
       {!iconOnly && Trailing ? (
-        <Trailing className={cx(styles.icon[size], directionalIconClass(Trailing))} aria-hidden />
+        <Trailing className={cx(styles.icon[resolvedSize], directionalIconClass(Trailing))} aria-hidden />
       ) : null}
     </a>
   );

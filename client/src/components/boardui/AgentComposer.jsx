@@ -1,10 +1,21 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
 import { 
-  Sparkles, Send, Copy, Check, RefreshCw, Wand2, 
-  MessageSquare, Sliders, ChevronDown, Bot
-} from 'lucide-react';
-import { RiSparklingFill, RiSendPlaneFill, RiFlashlightLine } from '@remixicon/react';
+  RiSparklingFill, 
+  RiSendPlaneFill, 
+  RiFlashlightLine,
+  RiFileCopyLine,
+  RiCheckLine,
+  RiRefreshLine,
+  RiMagicLine,
+  RiMessage3Line,
+  RiEqualizerLine,
+  RiArrowDownSLine,
+  RiRobotLine
+} from '@remixicon/react';
+import { Button } from '@/components/base/buttons/button';
+import { IconButton } from '@/components/base/buttons/icon-button';
+import { ButtonGroup, ButtonGroupItem } from '@/components/base/buttons/button-group';
+import { Chip } from '@/components/base/badges/chip';
 
 export default function AgentComposer({
   onGenerate,
@@ -36,63 +47,60 @@ export default function AgentComposer({
   };
 
   return (
-    <div className="rounded-xl border border-border-subtle bg-surface-1/95 dark:bg-surface-1/90 shadow-dropdown overflow-hidden transition-all">
+    <div className="rounded-xl border border-separator-border bg-background-primary-default shadow-sm overflow-hidden transition-all text-text-primary">
       {/* Top Bar: Channel & Angle Pills */}
-      <div className="p-2.5 border-b border-border-subtle/80 flex items-center justify-between gap-2 flex-wrap bg-surface-2/40">
+      <div className="p-2.5 border-b border-separator-border flex items-center justify-between gap-2 flex-wrap bg-background-secondary-default">
         <div className="flex items-center gap-1.5">
           {/* Channel Selector */}
-          <div className="flex p-0.5 rounded-lg bg-surface-2 border border-border-subtle">
-            <button
+          <ButtonGroup size="small">
+            <ButtonGroupItem
+              size="small"
+              selected={channel === 'email'}
               onClick={() => onChannelChange && onChannelChange('email')}
-              className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors ${
-                channel === 'email' 
-                  ? 'bg-brand text-white shadow-xs' 
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
             >
               Email Pitch
-            </button>
-            <button
+            </ButtonGroupItem>
+            <ButtonGroupItem
+              size="small"
+              selected={channel === 'sms'}
               onClick={() => onChannelChange && onChannelChange('sms')}
-              className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors ${
-                channel === 'sms' 
-                  ? 'bg-brand text-white shadow-xs' 
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
             >
               SMS / WhatsApp
-            </button>
-          </div>
+            </ButtonGroupItem>
+          </ButtonGroup>
 
           {/* Model Badge */}
-          <div className="hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-md bg-surface-2 border border-border-subtle text-[11px] font-mono text-gray-500">
-            <Bot className="h-3 w-3 text-brand" />
+          <div className="hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-md bg-background-tertiary-default border border-separator-border text-[11px] font-mono text-text-tertiary">
+            <RiRobotLine className="h-3 w-3 text-accent-500" />
             <span>{model}</span>
           </div>
         </div>
 
         {/* Pitch Angle Pill Selector */}
-        <div className="flex items-center gap-1">
-          <select
-            value={pitchAngle}
-            onChange={(e) => setPitchAngle(e.target.value)}
-            className="px-2 py-1 rounded-md bg-surface-2 border border-border-subtle text-xs text-gray-800 dark:text-gray-200 outline-hidden font-medium"
-          >
-            {angles.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.label}
-              </option>
-            ))}
-          </select>
+        <div className="flex items-center gap-1.5">
+          <div className="relative inline-flex items-center">
+            <select
+              value={pitchAngle}
+              onChange={(e) => setPitchAngle(e.target.value)}
+              className="appearance-none pl-2.5 pr-6 py-1 rounded-md bg-background-tertiary-default border border-separator-border text-xs text-text-primary outline-hidden font-medium cursor-pointer hover:border-accent-500/50 transition-colors"
+            >
+              {angles.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.label}
+                </option>
+              ))}
+            </select>
+            <RiArrowDownSLine className="pointer-events-none absolute right-1.5 size-3.5 text-text-tertiary" />
+          </div>
 
           {pitchText && (
-            <button
+            <IconButton
+              size="small"
+              icon={copied ? RiCheckLine : RiFileCopyLine}
+              aria-label={copied ? "Copied" : "Copy to clipboard"}
               onClick={handleCopy}
-              className="p-1.5 rounded-md bg-surface-2 hover:bg-surface-3 text-gray-600 dark:text-gray-300 border border-border-subtle transition-colors cursor-pointer"
               title="Copy to clipboard"
-            >
-              {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-            </button>
+            />
           )}
         </div>
       </div>
@@ -104,44 +112,38 @@ export default function AgentComposer({
           value={pitchText}
           onChange={(e) => onPitchTextChange && onPitchTextChange(e.target.value)}
           placeholder="Click 'Generate Pitch' below to synthesize hyper-personalized cold outreach based on the lead's OSINT profile and decision maker name..."
-          className="w-full p-2.5 rounded-lg bg-surface-2/60 border border-border-subtle focus:border-brand/60 text-xs font-sans text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 outline-hidden resize-none leading-relaxed"
+          className="w-full p-2.5 rounded-lg bg-background-secondary-default border border-separator-border focus:border-accent-500 text-xs font-sans text-text-primary placeholder:text-text-tertiary outline-hidden resize-none leading-relaxed"
         />
       </div>
 
       {/* Bottom Action Footer */}
-      <div className="p-2.5 border-t border-border-subtle bg-surface-2/30 flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2 text-[11px] text-gray-500">
-          <RiSparklingFill className="h-3.5 w-3.5 text-brand" />
+      <div className="p-2.5 border-t border-separator-border bg-background-secondary-default flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 text-[11px] text-text-secondary">
+          <RiSparklingFill className="h-3.5 w-3.5 text-accent-500" />
           <span>Tailored using real decision maker intelligence</span>
         </div>
 
         <div className="flex items-center gap-2">
-          <button
+          <Button
             onClick={() => onGenerate && onGenerate(pitchAngle)}
             disabled={isGenerating}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-surface-2 hover:bg-surface-3 border border-border-subtle text-gray-800 dark:text-gray-200 transition-colors cursor-pointer disabled:opacity-50"
+            variant="secondary"
+            size="small"
+            leadingIcon={isGenerating ? RiRefreshLine : RiMagicLine}
           >
-            {isGenerating ? (
-              <RefreshCw className="h-3.5 w-3.5 animate-spin text-brand" />
-            ) : (
-              <Wand2 className="h-3.5 w-3.5 text-brand" />
-            )}
-            <span>{pitchText ? 'Regenerate' : 'Generate Pitch'}</span>
-          </button>
+            {pitchText ? 'Regenerate' : 'Generate Pitch'}
+          </Button>
 
           {pitchText && onSend && (
-            <button
+            <Button
               onClick={onSend}
               disabled={isSending}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-brand hover:bg-brand-hover text-white shadow-xs transition-all cursor-pointer disabled:opacity-50"
+              variant="primary"
+              size="small"
+              leadingIcon={isSending ? RiRefreshLine : RiSendPlaneFill}
             >
-              {isSending ? (
-                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <RiSendPlaneFill className="h-3.5 w-3.5" />
-              )}
-              <span>Queue Outreach</span>
-            </button>
+              Queue Outreach
+            </Button>
           )}
         </div>
       </div>

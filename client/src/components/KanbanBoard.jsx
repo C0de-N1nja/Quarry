@@ -1,34 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  DollarSign, ArrowRight, CheckCircle2, Clock, 
-  AlertCircle, Sparkles, Building, Globe, Phone, ExternalLink,
-  ChevronRight, Award, Trophy, UserCheck, Filter, Search
-} from 'lucide-react';
-import { RiCopperCoinLine, RiTrophyLine, RiShieldCheckLine, RiKanbanView } from '@remixicon/react';
+  RiCopperCoinLine, 
+  RiTrophyLine, 
+  RiShieldCheckLine, 
+  RiKanbanView, 
+  RiUserStarLine, 
+  RiCoinsLine 
+} from '@remixicon/react';
+import { Chip } from '@/components/base/badges/chip';
+import { StatusDot } from '@/components/base/badges/status-dot';
+import { SearchField } from '@/components/base/search-field/search-field';
+import { Button } from '@/components/base/buttons/button';
 import BoardTicket from './boardui/BoardTicket';
 
 const STAGES = [
-  { id: 'discovered', label: '1. Discovered', color: 'border-blue-500/30 bg-blue-500/10 text-blue-500' },
-  { id: 'enriched', label: '2. OSINT Enriched', color: 'border-purple-500/30 bg-purple-500/10 text-purple-400', match: ['enriched'] },
-  { id: 'pitched', label: '3. Pitched / Outreached', color: 'border-indigo-500/30 bg-indigo-500/10 text-indigo-400', match: ['pitched', 'sent'] },
-  { id: 'replied', label: '4. In Discussion', color: 'border-amber-500/30 bg-amber-500/10 text-amber-500', match: ['replied'] },
-  { id: 'won', label: '5. Deal Won 🏆', color: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-500', match: ['won'] }
+  { id: 'discovered', label: '1. Discovered', dotColor: 'indigo', chipColor: 'blue' },
+  { id: 'enriched', label: '2. OSINT Enriched', dotColor: 'indigo', chipColor: 'purple', match: ['enriched'] },
+  { id: 'pitched', label: '3. Pitched / Outreached', dotColor: 'yellow', chipColor: 'yellow', match: ['pitched', 'sent'] },
+  { id: 'replied', label: '4. In Discussion', dotColor: 'indigo', chipColor: 'cyan', match: ['replied'] },
+  { id: 'won', label: '5. Deal Won', dotColor: 'green', chipColor: 'lime', match: ['won'] }
 ];
 
 export default function KanbanBoard({ leads = [], stats, onSelectLead, onStageChange, onRefresh }) {
   const [boardSearch, setBoardSearch] = useState('');
+  const [expandedStages, setExpandedStages] = useState(new Set());
+  const [dragOverStage, setDragOverStage] = useState(null);
 
-  const filteredLeads = leads.filter(l => {
-    if (!boardSearch.trim()) return true;
+  const filteredLeads = useMemo(() => {
+    if (!boardSearch.trim()) return leads;
     const term = boardSearch.toLowerCase();
-    return (
+    return leads.filter(l => (
       (l.business_name && l.business_name.toLowerCase().includes(term)) ||
       (l.category && l.category.toLowerCase().includes(term)) ||
       (l.city && l.city.toLowerCase().includes(term)) ||
       (l.decision_maker_name && l.decision_maker_name.toLowerCase().includes(term))
-    );
-  });
+    ));
+  }, [leads, boardSearch]);
 
   const getLeadsForStage = (stage) => {
     if (stage.match) {
@@ -43,6 +51,20 @@ export default function KanbanBoard({ leads = [], stats, onSelectLead, onStageCh
     if (currentStatus === 'pitched' || currentStatus === 'sent') return 'replied';
     if (currentStatus === 'replied') return 'won';
     return null;
+  };
+
+  const handleStageDrop = async (leadId, targetStage) => {
+    if (!leadId || !targetStage) return;
+    try {
+      await fetch(`/api/leads/${leadId}/stage`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: targetStage })
+      });
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error('Failed to update stage on drop', err);
+    }
   };
 
   const handleQuickAdvance = async (e, lead) => {
@@ -74,117 +96,97 @@ export default function KanbanBoard({ leads = [], stats, onSelectLead, onStageCh
     }
   };
 
+  const toggleExpandStage = (stageId) => {
+    setExpandedStages(prev => {
+      const next = new Set(prev);
+      if (next.has(stageId)) next.delete(stageId);
+      else next.add(stageId);
+      return next;
+    });
+  };
+
   return (
-    <div className="space-y-4">
-      {/* BoardUI Metric Cards Banner */}
-      <div className="p-3.5 sm:p-4 rounded-xl bg-surface-1 border border-border-subtle shadow-xs grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center font-bold text-lg shrink-0">
-            <RiCopperCoinLine className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-[10px] font-mono uppercase text-gray-500 tracking-wider">Total Pipeline Value</p>
-            <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-              ${(stats?.totalPipelineValue || 0).toLocaleString()}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
-            <DollarSign className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-[10px] font-mono uppercase text-gray-500 tracking-wider">In Negotiations</p>
-            <p className="text-base sm:text-lg font-bold text-amber-600 dark:text-amber-400">
-              ${(stats?.activeNegotiationValue || 0).toLocaleString()}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
-            <RiTrophyLine className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-[10px] font-mono uppercase text-gray-500 tracking-wider">Won Revenue</p>
-            <p className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">
-              ${(stats?.wonRevenue || 0).toLocaleString()}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
-            <UserCheck className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-[10px] font-mono uppercase text-gray-500 tracking-wider">Active Deals</p>
-            <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-              {filteredLeads.length} Leads
-            </p>
-          </div>
-        </div>
-      </div>
-
+    <div className="space-y-3.5">
       {/* Board Controls: Search & Filter */}
       <div className="flex items-center justify-between gap-3 px-1">
-        <div className="relative w-full max-w-xs">
-          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-gray-400" />
-          <input
-            type="text"
+        <div className="w-full max-w-xs">
+          <SearchField
             value={boardSearch}
-            onChange={(e) => setBoardSearch(e.target.value)}
+            onChange={setBoardSearch}
             placeholder="Filter board tickets..."
-            className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-surface-1 border border-border-subtle text-xs text-gray-800 dark:text-gray-200 placeholder:text-gray-400 outline-hidden focus:border-brand/60"
+            size="small"
+            shape="pill"
+            aria-label="Filter board tickets"
           />
         </div>
-        <div className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+        <Chip variant="subtle" color="neutral">
           Showing {filteredLeads.length} of {leads.length} leads
-        </div>
+        </Chip>
       </div>
 
-      {/* 5-Column Kanban Board with BoardUI styling */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3.5 items-start overflow-x-auto pb-4">
+      {/* 5-Column Kanban Board with comfortable column widths and drag-and-drop */}
+      <div className="flex gap-4 overflow-x-auto pb-4 items-start no-scrollbar">
         {STAGES.map((stage) => {
           const stageLeads = getLeadsForStage(stage);
           const stageValue = stageLeads.reduce((acc, l) => acc + (l.deal_value || 1000), 0);
+          const isExpanded = expandedStages.has(stage.id);
+          const visibleLeads = isExpanded ? stageLeads : stageLeads.slice(0, 30);
+          const isTargeted = dragOverStage === stage.id;
 
           return (
             <div 
               key={stage.id} 
-              className="bg-surface-0/60 dark:bg-surface-0/40 rounded-xl border border-border-subtle flex flex-col min-h-[550px] max-h-[78vh] shadow-xs"
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                setDragOverStage(stage.id);
+              }}
+              onDragLeave={() => {
+                if (dragOverStage === stage.id) setDragOverStage(null);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOverStage(null);
+                const leadId = e.dataTransfer.getData('text/plain');
+                if (leadId) handleStageDrop(leadId, stage.id);
+              }}
+              className={`min-w-[280px] sm:min-w-[300px] flex-1 max-w-[360px] bg-background-secondary-default/40 rounded-2xl border transition-all flex flex-col min-h-[580px] max-h-[80vh] shadow-2xs overflow-hidden ${
+                isTargeted ? 'border-accent-500 ring-2 ring-accent-500/30 bg-accent-500/5' : 'border-separator-border'
+              }`}
             >
               {/* Column Header */}
-              <div className="p-3 border-b border-border-subtle flex items-center justify-between bg-surface-1/80 backdrop-blur-xs rounded-t-xl">
-                <div>
-                  <h3 className="text-xs font-semibold text-gray-900 dark:text-white flex items-center gap-1.5">
-                    <span>{stage.label}</span>
-                  </h3>
-                  <span className="text-[10px] font-mono text-gray-500">
-                    ${stageValue.toLocaleString()}
-                  </span>
+              <div className="p-3 border-b border-separator-border flex items-center justify-between bg-background-primary-default/90 backdrop-blur-xs">
+                <div className="flex items-center gap-2">
+                  <StatusDot color={stage.dotColor} />
+                  <div>
+                    <h3 className="text-body-medium font-semibold text-text-primary">
+                      {stage.label}
+                    </h3>
+                    <span className="text-caption-1-medium font-mono text-text-tertiary">
+                      ${stageValue.toLocaleString()}
+                    </span>
+                  </div>
                 </div>
-                <span className={`px-2 py-0.5 text-[10px] font-mono rounded-full border ${stage.color}`}>
+                <Chip variant="bold" color={stage.chipColor}>
                   {stageLeads.length}
-                </span>
+                </Chip>
               </div>
 
-              {/* Cards Container with Framer Motion */}
+              {/* Cards Container */}
               <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5">
-                <AnimatePresence mode="popLayout">
+                <AnimatePresence>
                   {stageLeads.length === 0 ? (
                     <motion.div 
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="h-32 flex flex-col items-center justify-center text-[11px] text-gray-400 border border-dashed border-border-subtle/80 rounded-lg p-2 text-center"
+                      className="h-32 flex flex-col items-center justify-center text-caption-1-medium text-text-tertiary border border-dashed border-separator-border rounded-xl p-2 text-center"
                     >
-                      <RiKanbanView className="h-5 w-5 mb-1 opacity-40" />
+                      <RiKanbanView className="size-5 mb-1.5 opacity-40 text-text-secondary" />
                       <span>No leads in stage</span>
                     </motion.div>
                   ) : (
-                    stageLeads.map((lead) => (
+                    visibleLeads.map((lead) => (
                       <BoardTicket
                         key={lead.id}
                         lead={lead}
@@ -195,6 +197,20 @@ export default function KanbanBoard({ leads = [], stats, onSelectLead, onStageCh
                     ))
                   )}
                 </AnimatePresence>
+
+                {/* Show More toggle if stage has more than 30 cards */}
+                {stageLeads.length > 30 && (
+                  <div className="pt-2 text-center">
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      onClick={() => toggleExpandStage(stage.id)}
+                      className="w-full text-text-tertiary hover:text-text-primary"
+                    >
+                      {isExpanded ? 'Show top 30' : `Show all ${stageLeads.length} leads`}
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           );

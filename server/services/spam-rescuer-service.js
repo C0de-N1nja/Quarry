@@ -505,18 +505,18 @@ class SpamRescuerService {
         const isEnabled = Setting.get('spam_monitor_enabled', 'true') === 'true';
 
         if (isEnabled && user && pass) {
-          console.log('🛡️ [SpamRescuer] Running automatic background scan of [Gmail]/Spam...');
+          console.log('[SpamRescuer] Running automatic background scan of [Gmail]/Spam...');
           const result = await this.scanSpamFolder();
           if (result.success && result.rescuedCount > 0) {
-            console.log(`🔥 [SpamRescuer] Rescued ${result.rescuedCount} client email(s) from Spam folder!`);
+            console.log(`[SpamRescuer] Rescued ${result.rescuedCount} client email(s) from Spam folder!`);
           }
         }
       } catch (err) {
-        console.error('🛡️ [SpamRescuer] Background scan error:', err.message);
+        console.error('[SpamRescuer] Background scan error:', err.message);
       }
     }, intervalMins * 60 * 1000);
 
-    console.log(`🛡️ [SpamRescuer] Background spam monitor initialized (polling every ${intervalMins}m)`);
+    console.log(`[SpamRescuer] Background spam monitor initialized (polling every ${intervalMins}m)`);
   }
 }
 

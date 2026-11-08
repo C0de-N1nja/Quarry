@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  forwardRef,
   useContext,
   type ComponentType,
   type ReactNode,
@@ -198,18 +199,20 @@ export function inputFieldClassName(
   );
 }
 
-export function InputBase({
-  size: sizeProp,
-  leadingIcon: Leading,
-  trailingIcon: Trailing,
-  leadingAddon,
-  trailingAddon,
-  fieldClassName,
-  className,
+export const InputBase = forwardRef<HTMLInputElement, InputBaseProps>(function InputBase(
+  {
+    size: sizeProp,
+    leadingIcon: Leading,
+    trailingIcon: Trailing,
+    leadingAddon,
+    trailingAddon,
+    fieldClassName,
+    className,
+    groupRef,
+    ...inputProps
+  },
   ref,
-  groupRef,
-  ...inputProps
-}: InputBaseProps) {
+) {
   const { direction } = useLocale();
   const ctx = useContext(TextFieldContext);
   const size: InputSize = sizeProp ?? ctx.size ?? "medium";
@@ -240,7 +243,7 @@ export function InputBase({
       </div>
     </AriaGroup>
   );
-}
+});
 
 InputBase.displayName = "InputBase";
 

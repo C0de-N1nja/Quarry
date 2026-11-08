@@ -664,7 +664,7 @@ class MockupService {
 
   <!-- Dev Header Banner -->
   <div class="dev-banner">
-    <span>⚡ <strong>Interactive Web Prototype</strong> created for <strong>${businessName}</strong> by <strong>${developerName}</strong></span>
+    <span><strong>Interactive Web Prototype</strong> created for <strong>${businessName}</strong> by <strong>${developerName}</strong></span>
     <a href="mailto:${settings.sender_email || ''}?subject=Claiming%20Mockup%20for%20${encodeURIComponent(businessName)}" class="dev-banner-btn">
       Deploy This Site For Your Domain →
     </a>
@@ -677,12 +677,12 @@ class MockupService {
         <div class="brand-icon">${businessName.charAt(0)}</div>
         <div>
           <div class="brand-title">${businessName}</div>
-          <div class="brand-loc">📍 ${city} • ⭐ ${rating} (${reviews} reviews)</div>
+          <div class="brand-loc">${city} • Rating: ${rating} (${reviews} reviews)</div>
         </div>
       </div>
       <div class="header-cta">
         <a href="tel:${cleanPhone}" class="header-phone">
-          📞 <span>${phone}</span>
+          <span>${phone}</span>
         </a>
         <button onclick="scrollToCalc()" class="btn-primary">
           Instant Estimate
@@ -695,32 +695,29 @@ class MockupService {
   <section class="hero">
     <div>
       <div class="badge-pill">
-        <span>⭐ Verified Google Top-Rated in ${city}</span>
+        <span>Verified Google Top-Rated in ${city}</span>
       </div>
       <h1>${headline}</h1>
       <p>${niche.sub}</p>
       
       <div class="trust-badges">
         <div class="trust-item">
-          <span>🛡️</span>
           <span>Fully Licensed & Insured</span>
         </div>
         <div class="trust-item">
-          <span>⚡</span>
           <span>Rapid Same-Day Response</span>
         </div>
         <div class="trust-item">
-          <span>💯</span>
-          <span>100% Satisfaction Guarantee</span>
+          <span>Satisfaction Guaranteed</span>
         </div>
       </div>
 
       <div class="hero-actions">
         <button onclick="scrollToCalc()" class="btn-primary btn-large">
-          ⚡ Calculate Instant Estimate
+          Calculate Instant Estimate
         </button>
         <a href="tel:${cleanPhone}" class="btn-secondary">
-          📞 Call ${phone}
+          Call ${phone}
         </a>
       </div>
     </div>
@@ -728,7 +725,6 @@ class MockupService {
     <!-- Instant Cost Estimator Card -->
     <div class="calc-card" id="estimator-widget">
       <div class="calc-title">
-        <span>🧮</span>
         <span>Instant Project Estimator</span>
       </div>
       <div class="calc-desc">Select your service to calculate an immediate price range:</div>
@@ -778,17 +774,17 @@ class MockupService {
 
     <div class="services-grid">
       <div class="service-card">
-        <div class="service-icon">🏗️</div>
+        <div class="service-icon">01</div>
         <h3>${niche.service1}</h3>
         <p>${niche.desc1}</p>
       </div>
       <div class="service-card">
-        <div class="service-icon">🚨</div>
+        <div class="service-icon">02</div>
         <h3>${niche.service2}</h3>
         <p>${niche.desc2}</p>
       </div>
       <div class="service-card">
-        <div class="service-icon">📋</div>
+        <div class="service-icon">03</div>
         <h3>${niche.service3}</h3>
         <p>${niche.desc3}</p>
       </div>
@@ -810,7 +806,7 @@ class MockupService {
         </div>
         ${mapsLink !== '#' ? `
         <a href="${mapsLink}" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="font-size: 12px; padding: 8px 14px;">
-          📍 View on Google Maps ↗
+          View on Google Maps ↗
         </a>` : ''}
       </div>
 
@@ -837,17 +833,16 @@ class MockupService {
   <!-- Fixed Mobile Action Bar -->
   <div class="mobile-bar">
     <a href="tel:${cleanPhone}" class="mobile-btn mobile-call">
-      📞 Call ${phone}
+      Call ${phone}
     </a>
     <button onclick="scrollToCalc()" class="mobile-btn mobile-quote">
-      ⚡ Get Instant Quote
+      Get Instant Quote
     </button>
   </div>
 
   <!-- Success Modal -->
   <div class="modal-backdrop" id="modal">
     <div class="modal-box">
-      <div style="font-size: 40px; margin-bottom: 12px;">🎉</div>
       <h3>Estimate Locked In!</h3>
       <p id="modal-msg">A specialist from ${businessName} will contact you shortly to confirm your scheduled consultation.</p>
       <button onclick="closeModal()" class="btn-primary" style="width: 100%;">Got it!</button>
@@ -858,7 +853,7 @@ class MockupService {
   <footer>
     <p>© ${new Date().getFullYear()} ${businessName}. All rights reserved.</p>
     <p style="margin-top: 8px; opacity: 0.7;">
-      Prototype designed & built with ⚡ Node.js by <a href="${developerPortfolio}" target="_blank">${developerName}</a>.
+      Prototype designed & built with Node.js by <a href="${developerPortfolio}" target="_blank">${developerName}</a>.
     </p>
   </footer>
 

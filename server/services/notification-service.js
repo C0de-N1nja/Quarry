@@ -68,7 +68,7 @@ class NotificationService {
    * Helper specifically formatted for scraping completion
    */
   sendScrapeComplete({ engine = 'Google Maps', keyword, location, found = 0, inserted = 0, upgraded = 0, time }) {
-    const title = `🎯 ${engine} Complete!`;
+    const title = `${engine} Complete!`;
     const timeStr = time ? ` in ${time}` : '';
     const body = `Harvested ${found} places (${inserted} fresh leads saved, ${upgraded} upgraded)${timeStr} for "${keyword}" in ${location}.`;
     this.sendNotification(title, body, {
@@ -82,9 +82,9 @@ class NotificationService {
    * Helper specifically formatted for OSINT completion
    */
   sendOsintComplete({ total = 0, processed = 0, noWebsiteCount = 0, hasWebsiteCount = 0, emailsFound = 0, elapsedSeconds = 0 }) {
-    const title = `🔍 OSINT Verification Complete!`;
+    const title = `OSINT Verification Complete!`;
     const timeStr = elapsedSeconds ? ` in ${elapsedSeconds}s` : '';
-    const body = `Verified ${processed}/${total} leads${timeStr}.\n🎯 ${noWebsiteCount} confirmed no-website prospects\n📧 ${emailsFound} emails discovered\n🌐 ${hasWebsiteCount} active websites detected.`;
+    const body = `Verified ${processed}/${total} leads${timeStr}.\n${noWebsiteCount} confirmed no-website prospects\n${emailsFound} emails discovered\n${hasWebsiteCount} active websites detected.`;
     this.sendNotification(title, body, {
       urgency: 'normal',
       expireTime: 9000,

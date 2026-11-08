@@ -27,7 +27,19 @@ const SOCIAL_AND_AGGREGATOR_DOMAINS = [
   'tripadvisor.com',
   'expertise.com',
   'houzz.com',
-  'porch.com'
+  'porch.com',
+  'yahoo.com',
+  'bing.com',
+  'google.com',
+  'duckduckgo.com',
+  'uservoice.com',
+  'zendesk.com',
+  'freshdesk.com',
+  'atlassian.net',
+  'intercom.com',
+  'helpjuice.com',
+  'github.com',
+  'gitlab.com'
 ];
 
 function isSocialOrAggregator(url) {

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, Clock, X } from 'lucide-react';
+import { RiCheckLine, RiTimeLine, RiCloseLine } from '@remixicon/react';
+import { Chip } from '@/components/base/badges/chip';
+import { CloseButton } from '@/components/base/buttons/close-button';
 import Header from './components/Header';
 import DashboardSidebar from './components/boardui/DashboardSidebar';
 import LeadTable from './components/LeadTable';
@@ -12,6 +14,11 @@ import OsintRunModal from './components/OsintRunModal';
 
 export default function App() {
   const [theme, setTheme] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const themeParam = params.get('theme');
+    if (themeParam && ['dark', 'light'].includes(themeParam)) {
+      return themeParam;
+    }
     return localStorage.getItem('theme') || 'dark';
   });
 
@@ -22,9 +29,18 @@ export default function App() {
   const [contactChannel, setContactChannel] = useState('all'); // 'all', 'has_email', 'has_whatsapp', 'has_social', 'phone_only', 'social_all'
   const [focusTier, setFocusTier] = useState('vault'); // 'vault' (all leads), 'today', 'gold'
   const [searchTerm, setSearchTerm] = useState('');
-  const [pageSize, setPageSize] = useState('all'); // '50', '100', '250', 'all'
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [pageSize, setPageSize] = useState('50'); // Default to 50 for instantaneous responsiveness
   const [currentPage, setCurrentPage] = useState(1);
   const [totalLeadsCount, setTotalLeadsCount] = useState(0);
+
+  // Debounce search input to guarantee immediate, zero-lag typing
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 200);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
   const [selectedLead, setSelectedLead] = useState(null);
   const [autoPilotSelectedLeads, setAutoPilotSelectedLeads] = useState(null);
   const [osintSelectedLeads, setOsintSelectedLeads] = useState(null);
@@ -33,6 +49,11 @@ export default function App() {
   const [osintJobId, setOsintJobId] = useState(null);
   const [activeModal, setActiveModal] = useState(null); // 'search', 'csv', 'queue', 'settings', 'autopilot', 'osint', 'drawer'
   const [viewMode, setViewMode] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const viewParam = params.get('view');
+    if (viewParam && ['table', 'kanban', 'split'].includes(viewParam)) {
+      return viewParam;
+    }
     return localStorage.getItem('viewMode') || 'table';
   });
   const [toast, setToast] = useState(null); // { message, time, type }
@@ -68,6 +89,28 @@ export default function App() {
     }
   }, [toast]);
 
+  // Deep-link to open LeadDrawer if ?leadId is present in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const leadId = params.get('leadId');
+    const tab = params.get('tab');
+    const viewParam = params.get('view');
+    if (viewParam && ['table', 'kanban', 'split'].includes(viewParam)) {
+      setViewMode(viewParam);
+    }
+    if (leadId) {
+      fetch(`/api/leads/${leadId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data?.success && data?.lead) {
+            setSelectedLead({ ...data.lead, initialTab: tab || 'pitch' });
+            setActiveModal('drawer');
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
+
   // Apply theme class to document
   useEffect(() => {
     if (theme === 'dark') {
@@ -84,7 +127,7 @@ export default function App() {
 
   const fetchLeads = async () => {
     try {
-      let url = `/api/leads?status=${activeFilter}&search=${encodeURIComponent(searchTerm)}`;
+      let url = `/api/leads?status=${activeFilter}&search=${encodeURIComponent(debouncedSearch)}`;
       if (activeNiche && activeNiche !== 'all') {
         url += `&category=${encodeURIComponent(activeNiche)}`;
       }
@@ -98,9 +141,9 @@ export default function App() {
       }
 
       if (pageSize === 'all') {
-        url += '&limit=all';
+        url += '&limit=200';
       } else {
-        const lim = parseInt(pageSize, 10) || 100;
+        const lim = parseInt(pageSize, 10) || 50;
         const off = (currentPage - 1) * lim;
         url += `&limit=${lim}&offset=${off}`;
       }
@@ -139,11 +182,11 @@ export default function App() {
   // Reset to page 1 when filter/niche/search/focus/contactChannel changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeFilter, searchTerm, activeNiche, focusTier, contactChannel, pageSize]);
+  }, [activeFilter, debouncedSearch, activeNiche, focusTier, contactChannel, pageSize]);
 
   useEffect(() => {
     fetchLeads();
-  }, [activeFilter, searchTerm, activeNiche, focusTier, contactChannel, pageSize, currentPage]);
+  }, [activeFilter, debouncedSearch, activeNiche, focusTier, contactChannel, pageSize, currentPage]);
 
   useEffect(() => {
     fetchStats();
@@ -171,7 +214,7 @@ export default function App() {
   // Run OSINT on single lead from row
   const handleRunOsint = async (leadId) => {
     try {
-      const res = await fetch(`/api/osint/${leadId}`, { method: 'POST' });
+      const res = await fetch(`/api/osint/${leadId}?force=true`, { method: 'POST' });
       const data = await res.json();
       if (data.success) {
         await fetchLeads();
@@ -291,7 +334,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-canvas text-gray-800 dark:text-gray-200 flex font-sans transition-colors duration-200 antialiased overflow-x-hidden">
+    <div className="min-h-screen bg-canvas text-text-primary flex font-sans transition-colors duration-200 antialiased overflow-x-hidden">
       {/* BoardUI Floating Sidebar */}
       <DashboardSidebar
         viewMode={viewMode}
@@ -506,32 +549,27 @@ export default function App() {
 
       {/* Floating Real-Time Toast Notification */}
       {toast && (
-        <div className="fixed bottom-4 right-4 left-4 sm:left-auto sm:max-w-md z-50 bg-surface-1 border border-brand/40 shadow-2xl rounded-xl p-3.5 flex items-start gap-3 animate-in slide-in-from-bottom-5 duration-200">
-          <div className="p-2 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shrink-0">
-            <CheckCircle2 className="h-5 w-5" />
+        <div className="fixed bottom-4 right-4 left-4 sm:left-auto sm:max-w-md z-50 bg-background-primary-default border border-separator-border shadow-2xl rounded-2xl p-4 flex items-start gap-3 animate-in slide-in-from-bottom-5 duration-200">
+          <div className="p-2 rounded-xl bg-status-lime-background text-status-lime-text shrink-0">
+            <RiCheckLine className="size-5" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+              <span className="text-caption-1-semibold text-text-primary uppercase tracking-wider">
                 Harvesting Completed
               </span>
               {toast.time && (
-                <span className="px-2 py-0.5 rounded-full bg-brand/10 border border-brand/20 text-brand font-mono font-bold text-xs flex items-center gap-1 shrink-0">
-                  <Clock className="h-3 w-3" />
-                  {toast.time}
-                </span>
+                <Chip variant="subtle" color="lime" className="gap-1 inline-flex items-center font-mono">
+                  <RiTimeLine className="size-3" />
+                  <span>{toast.time}</span>
+                </Chip>
               )}
             </div>
-            <p className="text-xs text-gray-700 dark:text-gray-300 mt-1 leading-snug">
+            <p className="text-caption-1-regular text-text-secondary mt-1 leading-snug">
               {toast.message}
             </p>
           </div>
-          <button
-            onClick={() => setToast(null)}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-md shrink-0"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <CloseButton size="sm" onClick={() => setToast(null)} aria-label="Dismiss Notification" />
         </div>
       )}
     </div>

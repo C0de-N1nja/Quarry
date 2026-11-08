@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { 
-  Building, Globe, Phone, Mail, ArrowRight, ShieldCheck, 
-  MessageCircle, Star, Sparkles, CheckCircle2, UserCheck, 
-  ExternalLink, Calendar
-} from 'lucide-react';
-import { RiBuildingLine, RiUserStarLine, RiWhatsappLine } from '@remixicon/react';
+  RiBuildingLine, 
+  RiShieldCheckLine, 
+  RiGlobalLine, 
+  RiPhoneLine, 
+  RiMailLine, 
+  RiWhatsappLine, 
+  RiArrowRightLine, 
+  RiStarFill 
+} from '@remixicon/react';
+import { Chip } from '@/components/base/badges/chip';
+import { IconButton } from '@/components/base/buttons/icon-button';
 
-export default function BoardTicket({ 
+function BoardTicket({ 
   lead, 
   onSelect, 
   onAdvance, 
@@ -16,6 +22,7 @@ export default function BoardTicket({
 }) {
   const [isEditingDeal, setIsEditingDeal] = useState(false);
   const [dealInput, setDealInput] = useState(String(lead.deal_value || 1000));
+  const [isDraggingLocal, setIsDraggingLocal] = useState(false);
 
   const hasNoWebsite = lead.website_status === 'no_website' || 
     (lead.has_no_website === 1 && lead.no_website_verified === 1) || 
@@ -45,28 +52,32 @@ export default function BoardTicket({
 
   return (
     <motion.div
-      layout
-      layoutId={`ticket-${lead.id}`}
-      initial={{ opacity: 0, y: 10, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      whileHover={{ y: -2, transition: { duration: 0.15 } }}
+      draggable={true}
+      onDragStart={(e) => {
+        e.dataTransfer.setData('text/plain', String(lead.id));
+        setIsDraggingLocal(true);
+      }}
+      onDragEnd={() => setIsDraggingLocal(false)}
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      whileHover={{ y: -2, transition: { duration: 0.12 } }}
       onClick={() => onSelect(lead)}
-      className={`group relative p-3.5 rounded-xl bg-surface-1 dark:bg-surface-1/90 border border-border-subtle hover:border-brand/50 hover:shadow-card transition-all cursor-pointer ${
-        isDragging ? 'shadow-dropdown ring-2 ring-brand/50 rotate-1' : ''
+      className={`group relative p-3.5 rounded-xl bg-background-primary-default border border-separator-border hover:border-accent-500/60 hover:shadow-dropdown transition-all cursor-grab active:cursor-grabbing select-none ${
+        isDragging || isDraggingLocal ? 'opacity-50 ring-2 ring-accent-500 shadow-dropdown rotate-1 scale-98' : ''
       }`}
     >
       {/* Top Header Row: Business Identity */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="h-8 w-8 rounded-lg bg-surface-2 dark:bg-surface-3 border border-border-subtle flex items-center justify-center font-bold text-xs text-brand shrink-0 group-hover:scale-105 transition-transform">
+          <div className="h-8 w-8 rounded-lg bg-background-secondary-default border border-separator-border flex items-center justify-center font-bold text-xs text-accent-500 shrink-0 group-hover:scale-105 transition-transform">
             {lead.business_name ? lead.business_name.charAt(0).toUpperCase() : 'B'}
           </div>
-          <div className="min-w-0">
-            <h4 className="text-xs font-semibold text-gray-900 dark:text-white truncate group-hover:text-brand transition-colors leading-tight">
+          <div className="min-w-0 flex-1">
+            <h4 className="text-body-medium font-semibold text-text-primary truncate group-hover:text-accent-500 transition-colors leading-tight">
               {lead.business_name}
             </h4>
-            <div className="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+            <div className="flex items-center gap-1.5 text-caption-1-regular text-text-tertiary mt-0.5 truncate">
               <span>{lead.category || 'Local Business'}</span>
               <span>•</span>
               <span>{lead.city || 'Remote'}</span>
@@ -76,76 +87,81 @@ export default function BoardTicket({
 
         {/* Quick Advance Button */}
         {onAdvance && (
-          <button
+          <IconButton
+            size="small"
+            icon={RiArrowRightLine}
+            aria-label="Advance stage"
             onClick={(e) => {
               e.stopPropagation();
               onAdvance(e, lead);
             }}
             title="Advance stage"
-            className="p-1 rounded-md text-gray-400 hover:text-brand hover:bg-surface-2 dark:hover:bg-surface-3 transition-colors shrink-0 opacity-80 group-hover:opacity-100"
-          >
-            <ArrowRight className="h-3.5 w-3.5" />
-          </button>
+            className="shrink-0 opacity-80 group-hover:opacity-100 cursor-pointer"
+          />
         )}
       </div>
 
       {/* Decision Maker & Status Badges */}
       <div className="flex items-center gap-1.5 flex-wrap mb-2.5">
         {ownerName && (
-          <span 
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-medium"
+          <Chip 
+            variant="subtle" 
+            color="emerald" 
+            size="sm"
+            className="gap-1 inline-flex items-center"
             title={`Verified Decision Maker: ${ownerName}`}
           >
-            <ShieldCheck className="h-3 w-3 shrink-0" />
-            <span className="truncate max-w-[120px]">{ownerName}</span>
-          </span>
+            <RiShieldCheckLine className="size-3 shrink-0" />
+            <span className="truncate max-w-[140px]">{ownerName}</span>
+          </Chip>
         )}
 
         {hasNoWebsite ? (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-[10px] font-medium">
-            🔥 No Website
-          </span>
+          <Chip variant="subtle" color="rose" size="sm">
+            No Website
+          </Chip>
         ) : (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-[10px] font-medium">
-            <Globe className="h-2.5 w-2.5 shrink-0" />
+          <Chip variant="subtle" color="blue" size="sm" className="gap-1 inline-flex items-center">
+            <RiGlobalLine className="size-3 shrink-0" />
             <span>Site Found</span>
-          </span>
+          </Chip>
         )}
 
         {lead.rating > 0 && (
-          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[10px] font-mono">
-            ★ {lead.rating}
-          </span>
+          <Chip variant="subtle" color="amber" size="sm" className="gap-1 inline-flex items-center font-mono">
+            <RiStarFill className="size-2.5 shrink-0 text-amber-500" />
+            <span>{lead.rating} / 5.0</span>
+          </Chip>
         )}
       </div>
 
       {/* Quick Contact Previews */}
-      <div className="flex items-center gap-3 text-[11px] text-gray-600 dark:text-gray-400 mb-2.5">
+      <div className="flex items-center gap-2 text-caption-1-regular text-text-secondary mb-2.5 flex-wrap">
         {lead.phone && (
-          <span className="inline-flex items-center gap-1 font-mono text-[10px]" title={lead.phone}>
-            <Phone className="h-3 w-3 text-emerald-500 shrink-0" />
-            <span className="truncate max-w-[95px]">{lead.phone}</span>
+          <span className="inline-flex items-center gap-1 font-mono text-caption-1-medium text-text-secondary" title={lead.phone}>
+            <RiPhoneLine className="size-3 text-success-primary shrink-0" />
+            <span className="truncate max-w-[130px]">{lead.phone}</span>
           </span>
         )}
         {lead.email && (
-          <span className="inline-flex items-center gap-1 font-mono text-[10px]" title={lead.email}>
-            <Mail className="h-3 w-3 text-blue-500 shrink-0" />
-            <span className="truncate max-w-[100px]">{lead.email}</span>
+          <span className="inline-flex items-center gap-1 font-mono text-caption-1-medium text-text-secondary" title={lead.email}>
+            <RiMailLine className="size-3 text-accent-500 shrink-0" />
+            <span className="truncate max-w-[140px]">{lead.email}</span>
           </span>
         )}
         {lead.whatsapp && (
-          <span className="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400" title="WhatsApp Active">
-            <RiWhatsappLine className="h-3 w-3 shrink-0" />
+          <span className="inline-flex items-center gap-0.5 text-success-primary" title="WhatsApp Active">
+            <RiWhatsappLine className="size-3 shrink-0" />
           </span>
         )}
       </div>
 
       {/* Footer: Deal Value & Follow-up Step */}
-      <div className="pt-2.5 border-t border-border-subtle flex items-center justify-between gap-2">
+      <div className="pt-2.5 border-t border-separator-border flex items-center justify-between gap-2">
         {/* Deal Value Pill */}
         {isEditingDeal ? (
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-            <span className="text-gray-400 font-mono text-xs">$</span>
+            <span className="text-text-tertiary font-mono text-caption-1-medium">$</span>
             <input
               type="number"
               autoFocus
@@ -153,39 +169,39 @@ export default function BoardTicket({
               onChange={(e) => setDealInput(e.target.value)}
               onBlur={handleDealSubmit}
               onKeyDown={(e) => e.key === 'Enter' && handleDealSubmit(e)}
-              className="w-16 px-1.5 py-0.5 rounded bg-surface-2 border border-brand text-xs font-mono text-gray-900 dark:text-white outline-hidden"
+              className="w-16 px-1.5 py-0.5 rounded bg-background-secondary-default border border-border-focus-ring text-caption-1-semibold font-mono text-text-primary outline-hidden"
             />
           </div>
         ) : (
-          <button
+          <div
             onClick={(e) => {
               e.stopPropagation();
               setIsEditingDeal(true);
             }}
             title="Click to change deal value"
-            className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 flex items-center gap-0.5 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-0.5 rounded-md transition-colors"
+            className="cursor-pointer inline-flex items-center"
           >
-            <span>${(lead.deal_value || 1000).toLocaleString()}</span>
-          </button>
+            <Chip variant="subtle" color="lime" className="font-mono font-bold hover:opacity-80">
+              ${(lead.deal_value || 1000).toLocaleString()}
+            </Chip>
+          </div>
         )}
 
         {/* Sequence / Stage Step Info */}
         <div className="flex items-center gap-1">
           {lead.status === 'replied' ? (
-            <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 text-[10px] font-semibold">
+            <Chip variant="caption" color="cyan">
               In Discussion
-            </span>
+            </Chip>
           ) : lead.sequence_step > 1 && lead.sequence_step < 4 ? (
-            <span className={`px-2 py-0.5 rounded-md text-[10px] font-mono ${
-              isDue 
-                ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30 font-bold' 
-                : 'bg-surface-2 text-gray-500 dark:text-gray-400 border border-border-subtle'
-            }`}>
+            <Chip variant="caption" color={isDue ? "rose" : "neutral"} className="font-mono">
               Step {lead.sequence_step}/3 {isDue ? '• Due' : ''}
-            </span>
+            </Chip>
           ) : null}
         </div>
       </div>
     </motion.div>
   );
 }
+
+export default React.memo(BoardTicket);

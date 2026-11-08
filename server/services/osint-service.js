@@ -36,7 +36,8 @@ const BLOCKED_EMAIL_DOMAINS = [
   'yellowpages.com', 'bbb.org', 'angi.com', 'thumbtack.com', 'tripadvisor.com',
   'mapquest.com', 'domain.com', 'email.com', 'wordpress.org', 'wordpress.com',
   'wxxi.org', 'pbs.org', 'npr.org', 'cbsnews.com', 'nbcnews.com', 'cnn.com',
-  'nutricia.com', 'marchon.com'
+  'nutricia.com', 'marchon.com', 'uservoice.com', 'zendesk.com', 'freshdesk.com',
+  'atlassian.net', 'intercom.com', 'helpjuice.com', 'custhelp.com', 'github.com'
 ];
 
 const BLOCKED_LOCAL_PARTS = [
@@ -60,7 +61,9 @@ const SOCIAL_OR_DIRECTORY_DOMAINS = [
   'homeadvisor.com', 'thumbtack.com', 'tripadvisor.com', 'manta.com',
   'merchantcircle.com', 'citysearch.com', 'superpages.com', 'chamberofcommerce.com',
   'bizapedia.com', 'fresha.com', 'vagaro.com', 'booksy.com', 'schedulicity.com',
-  'square.site', 'opentable.com', 'grubhub.com', 'doordash.com', 'ubereats.com'
+  'square.site', 'opentable.com', 'grubhub.com', 'doordash.com', 'ubereats.com',
+  'uservoice.com', 'zendesk.com', 'freshdesk.com', 'atlassian.net', 'intercom.com',
+  'helpjuice.com', 'custhelp.com', 'github.com', 'gitlab.com'
 ];
 
 const PARKED_PHRASES = [
@@ -305,6 +308,14 @@ class OsintService {
     if (!html || typeof html !== 'string') return false;
     const lower = this.normalizeFancyText(html).toLowerCase();
 
+    // 0. Conflicting trade filter
+    const leadCategory = (lead.category || '').toLowerCase();
+    const bName = (lead.business_name || '').toLowerCase();
+    const isLandscaper = leadCategory.includes('landscape') || leadCategory.includes('lawn') || bName.includes('landscape') || bName.includes('lawn');
+    if (isLandscaper && (lower.includes('custom cabinet') || lower.includes('cabinet shop') || lower.includes('cabinet maker') || lower.includes('cabinetry'))) {
+      return false;
+    }
+
     // 1. Check phone digits
     if (lead.phone) {
       const digits = lead.phone.replace(/[^\d]/g, '');
@@ -314,7 +325,7 @@ class OsintService {
     }
 
     // 2. Check business name tokens
-    const stopWords = ['llc', 'inc', 'corp', 'co', 'the', 'and', '&', 'services', 'service', 'solutions', 'group', 'company', 'clinic', 'center', 'pros', 'pro'];
+    const stopWords = ['llc', 'inc', 'corp', 'co', 'the', 'and', '&', 'services', 'service', 'solutions', 'group', 'company', 'clinic', 'center', 'pros', 'pro', 'area', 'bay', 'custom', 'design', 'designs'];
     const nameTokens = (lead.business_name || '')
       .toLowerCase()
       .split(/[^a-z0-9]+/)
@@ -329,8 +340,8 @@ class OsintService {
 
     // 3. Check city if provided
     if (lead.city && lead.city.length >= 4 && lower.includes(lead.city.toLowerCase())) {
-      // If city matches AND at least 1 name token matches
-      if (nameTokens.some(token => lower.includes(token))) {
+      // If city matches AND at least 1 distinctive name token matches
+      if (nameTokens.length > 0 && nameTokens.some(token => lower.includes(token))) {
         return true;
       }
     }
@@ -522,8 +533,7 @@ class OsintService {
    */
   async searchEngineQuery(query, preferredEngine = 'yahoo', timeout = 6000) {
     const cleanQuery = query
-      .replace(/&/g, 'and')
-      .replace(/["'()]/g, ' ')
+      .replace(/[\r\n\t]+/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
 
@@ -563,9 +573,14 @@ class OsintService {
                 for (const b of data.blocks) {
                   if (b.href) {
                     const unwrapped = this.decodeSearchUrl(b.href);
-                    if (unwrapped.startsWith('http')) links.push(unwrapped);
+                    if (unwrapped.startsWith('http') && !unwrapped.includes('yahoo.com')) links.push(unwrapped);
                   }
-                  if (b.type === 'text' && b.text) snippets.push(b.text.trim());
+                  if (b.type === 'text' && b.text) {
+                    const txt = b.text.trim();
+                    if (txt.length > 25 && !/voice search|microphone access|waiting for permission/i.test(txt)) {
+                      snippets.push(txt);
+                    }
+                  }
                 }
                 if (links.length > 0 || snippets.length > 0) {
                   return { success: true, engine: 'oc_yahoo', links, snippets, html: '', error: null };
@@ -609,15 +624,53 @@ class OsintService {
           const links = [];
           const snippets = [];
 
-          $('a[href]').each((_, el) => {
+          // Target specific search result links first
+          const linkSelectors = [
+            '#web ol li div.compTitle a',
+            '#web ol li h3 a',
+            'div.compTitle a',
+            'h3.title a',
+            'li.b_algo h2 a',
+            'li.b_algo a[href]',
+            'td.result-link a',
+            '.result__url',
+            'a.result__a'
+          ];
+          $(linkSelectors.join(', ')).each((_, el) => {
             const raw = $(el).attr('href') || '';
             const unwrapped = this.decodeSearchUrl(raw);
-            if (unwrapped.startsWith('http')) links.push(unwrapped);
+            if (unwrapped.startsWith('http') && !/yahoo\.com|bing\.com|duckduckgo\.com|microsoft\.com/i.test(unwrapped)) {
+              if (!links.includes(unwrapped)) links.push(unwrapped);
+            }
           });
 
-          $('div.compText, p, span.fc-smoke, li.b_algo p, .b_snippet, td.result-snippet, .result-snippet, .result__snippet').each((_, el) => {
-            const txt = $(el).text().trim();
-            if (txt) snippets.push(txt);
+          // Fallback to all a[href] if specific selectors returned none
+          if (links.length === 0) {
+            $('a[href]').each((_, el) => {
+              const raw = $(el).attr('href') || '';
+              const unwrapped = this.decodeSearchUrl(raw);
+              if (unwrapped.startsWith('http') && !/yahoo\.com|bing\.com|duckduckgo\.com|microsoft\.com/i.test(unwrapped)) {
+                if (!links.includes(unwrapped)) links.push(unwrapped);
+              }
+            });
+          }
+
+          // Extract legitimate snippets, ignoring UI navigation and voice search prompts
+          const snippetSelectors = [
+            'div.compText',
+            'li.b_algo p',
+            'li.b_algo div.b_caption p',
+            '.b_snippet',
+            'td.result-snippet',
+            '.result-snippet',
+            '.result__snippet',
+            'div.compText span'
+          ];
+          $(snippetSelectors.join(', ')).each((_, el) => {
+            const txt = $(el).text().replace(/\s+/g, ' ').trim();
+            if (txt.length >= 25 && !/voice search|microphone access|waiting for permission|selected edition|try saying|feedback|privacy policy|terms of service/i.test(txt)) {
+              snippets.push(txt);
+            }
           });
 
           if (links.length > 0 || snippets.length > 0) {
@@ -679,6 +732,49 @@ class OsintService {
       error: errors.map(e => `${e.engine}: ${e.error}`).join('; '),
       errors
     };
+  }
+
+  /**
+   * Guard against entity collision and trade mismatch in candidate social profiles
+   */
+  isSocialCandidateRelevant(href, lead) {
+    if (!href || !lead) return false;
+    const bName = (lead.business_name || '').toLowerCase();
+    const cleanHref = href.split('?')[0].toLowerCase();
+
+    // 1. Extract slug from social URL
+    const match = cleanHref.match(/^https?:\/\/(?:www\.)?(?:facebook|instagram|linkedin|twitter|x)\.com\/(?:in\/|company\/)?([a-zA-Z0-9._-]+)/i);
+    if (!match || !match[1]) return true;
+    const slug = match[1].toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    // 2. Conflicting trade filter
+    const leadCategory = (lead.category || '').toLowerCase();
+    const isLandscaper = leadCategory.includes('landscape') || leadCategory.includes('lawn') || bName.includes('landscape') || bName.includes('lawn');
+    if (isLandscaper) {
+      const conflictingTrades = ['cabinet', 'cabinets', 'cabinetry', 'roofing', 'plumbing', 'dental', 'orthodont', 'autobody', 'collision'];
+      if (conflictingTrades.some(c => slug.includes(c))) return false;
+    }
+
+    const isRoofing = leadCategory.includes('roof') || bName.includes('roof');
+    if (isRoofing) {
+      const conflictingTrades = ['landscape', 'cabinet', 'dental', 'plumb', 'restaurant', 'salon'];
+      if (conflictingTrades.some(c => slug.includes(c))) return false;
+    }
+
+    // 3. Brand token collision check
+    const genericWords = new Set(['and', 'the', 'inc', 'llc', 'corp', 'co', 'services', 'service', 'solutions', 'group', 'company', 'pros', 'pro', 'design', 'designs', 'custom', 'bay', 'area', 'city']);
+    const brandTokens = bName.split(/[^a-z0-9]+/).filter(w => w.length >= 4 && !genericWords.has(w));
+
+    if (brandTokens.length > 0) {
+      const hasToken = brandTokens.some(tok => slug.includes(tok));
+      if (!hasToken && slug.length >= 8) {
+        const bTokensAll = bName.split(/[^a-z0-9]+/).filter(w => w.length >= 3);
+        const overlap = bTokensAll.filter(t => slug.includes(t));
+        if (overlap.length === 0) return false;
+      }
+    }
+
+    return true;
   }
 
   /**
@@ -744,27 +840,35 @@ class OsintService {
       for (const href of res.links) {
         const lower = href.toLowerCase();
 
-        // Facebook Business Profile (reject generic root or share endpoints)
+        // Facebook Business Profile (reject generic root or share endpoints, enforce candidate relevance)
         const fbMatch = href.match(/^https?:\/\/(?:www\.)?facebook\.com\/([a-zA-Z0-9._-]+)\/?/i);
         if (!profiles.facebook && fbMatch && fbMatch[1] && !['sharer', 'login', 'dialog', 'search', 'pages', 'groups', 'watch', 'share', 'events', 'marketplace'].includes(fbMatch[1].toLowerCase())) {
-          profiles.facebook = href.split('?')[0];
+          if (this.isSocialCandidateRelevant(href, lead)) {
+            profiles.facebook = href.split('?')[0];
+          }
         }
 
-        // Instagram Business Profile (reject root, post, reel, explore)
+        // Instagram Business Profile (reject root, post, reel, explore, enforce candidate relevance)
         const igMatch = href.match(/^https?:\/\/(?:www\.)?instagram\.com\/([a-zA-Z0-9._-]+)\/?/i);
         if (!profiles.instagram && igMatch && igMatch[1] && !['p', 'reel', 'reels', 'accounts', 'explore', 'stories', 'about'].includes(igMatch[1].toLowerCase())) {
-          profiles.instagram = href.split('?')[0];
+          if (this.isSocialCandidateRelevant(href, lead)) {
+            profiles.instagram = href.split('?')[0];
+          }
         }
 
         // LinkedIn Company or Personal Profile
         if (!profiles.linkedin && lower.includes('linkedin.com/') && (lower.includes('/company/') || lower.includes('/in/'))) {
-          profiles.linkedin = href.split('?')[0];
+          if (this.isSocialCandidateRelevant(href, lead)) {
+            profiles.linkedin = href.split('?')[0];
+          }
         }
 
         // X / Twitter Profile
         const twMatch = href.match(/^https?:\/\/(?:www\.)?(?:twitter|x)\.com\/([a-zA-Z0-9_]+)\/?/i);
         if (!profiles.twitter && twMatch && twMatch[1] && !['status', 'home', 'explore', 'notifications', 'messages', 'i'].includes(twMatch[1].toLowerCase())) {
-          profiles.twitter = href.split('?')[0];
+          if (this.isSocialCandidateRelevant(href, lead)) {
+            profiles.twitter = href.split('?')[0];
+          }
         }
 
         // TikTok Profile
@@ -1231,6 +1335,38 @@ class OsintService {
       for (const res of inspectionResults) {
         if (res.status !== 'fulfilled') continue;
         const inspected = res.value;
+
+        // HARD PHONE ANCHOR: Check for phone contradiction between candidate profile and lead
+        const leadPhoneRaw = lead.phone_e164 || lead.phone;
+        const leadDigits = String(leadPhoneRaw || '').replace(/\D/g, '').slice(-10);
+        let phoneContradiction = false;
+
+        if (leadDigits.length === 10 && inspected.phones && inspected.phones.length > 0) {
+          const inspected10Digits = inspected.phones
+            .map(p => String(p).replace(/\D/g, '').slice(-10))
+            .filter(d => d.length === 10);
+
+          if (inspected10Digits.length > 0) {
+            const hasMatch = inspected10Digits.some(d => d === leadDigits);
+            if (!hasMatch) {
+              phoneContradiction = true;
+            }
+          }
+        }
+
+        if (phoneContradiction) {
+          if (socialProfiles[inspected.platform] === inspected.url) {
+            socialProfiles[inspected.platform] = null;
+          }
+          evidence.profiles_inspected.push({
+            platform: inspected.platform,
+            url: inspected.url,
+            status: 'rejected_contradiction',
+            reason: `Phone contradiction: candidate lists ${inspected.phones.join(', ')} while lead phone is ${lead.phone}`
+          });
+          continue; // DROP ALL CANDIDATE LINKS, EMAILS, AND PHONES FROM THIS PROFILE
+        }
+
         evidence.profiles_inspected.push({
           platform: inspected.platform,
           url: inspected.url,

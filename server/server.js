@@ -87,7 +87,7 @@ app.use((err, req, res, next) => {
 
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`⚡ Client Hunting Automation Backend running on http://localhost:${PORT}`);
+    console.log(`[Quarry Server] Running on http://localhost:${PORT}`);
     // Initialize background spam monitor
     spamRescuerService.initBackgroundMonitor();
   });

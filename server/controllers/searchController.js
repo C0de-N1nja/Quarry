@@ -49,7 +49,7 @@ class SearchController {
 
       try {
         notificationService.sendNotification(
-          '📂 CSV Ingestion Complete',
+          'CSV Ingestion Complete',
           `Imported ${result.count} leads into database (${parsed.length} rows processed).`
         );
       } catch (notifErr) {}

@@ -1,5 +1,28 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Search, UploadCloud, Plus, Loader2, CheckCircle2, MapPin, Clock, Zap, Flame, Building2, Star, Sparkles, Globe } from 'lucide-react';
+import { 
+  RiCloseLine, 
+  RiSearchLine, 
+  RiUploadCloud2Line, 
+  RiAddLine, 
+  RiLoader4Line, 
+  RiCheckLine, 
+  RiMapPinLine, 
+  RiTimeLine, 
+  RiFlashlightFill, 
+  RiFireLine, 
+  RiBuildingLine, 
+  RiStarFill, 
+  RiSparklingLine, 
+  RiGlobalLine,
+  RiMapPin2Line,
+  RiArrowDownSLine
+} from '@remixicon/react';
+import { Modal, ModalBody, ModalFooter } from '@/components/base/modal/modal';
+import { CloseButton } from '@/components/base/buttons/close-button';
+import { Button } from '@/components/base/buttons/button';
+import { PillTabList, PillTab } from '@/components/base/tabs/pill-tab';
+import { Chip } from '@/components/base/badges/chip';
+import { StatusDot } from '@/components/base/badges/status-dot';
 
 function playChime() {
   try {
@@ -221,7 +244,7 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
       setFinalTimeStr(formatted);
       playChime();
       sendBrowserNotification(
-        '🎯 Google Maps Scraping Complete!',
+        'Google Maps Scraping Complete!',
         `Harvested ${data.found} verified places (${data.inserted} fresh leads saved) in ${formatted}!`
       );
 
@@ -284,7 +307,7 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
       setFinalTimeStr(formatted);
       playChime();
       sendBrowserNotification(
-        '🎯 Web Crawler Search Complete!',
+        'Web Crawler Search Complete!',
         `Discovered ${data.found} prospects (${data.inserted} new leads saved) in ${formatted}!`
       );
 
@@ -383,50 +406,66 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className={`bg-surface-1 border border-border-subtle rounded-xl w-full ${loading && activeTab === 'maps' ? 'max-w-xl' : 'max-w-lg'} shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 transition-all`}>
-        {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-surface-2/40">
-          <div className="flex items-center gap-2">
-            <Search className="h-4 w-4 text-brand" />
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Lead Ingestion Engine</h2>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 dark:hover:text-white p-1 rounded-md">
-            <X className="h-4 w-4" />
-          </button>
+    <Modal
+      isOpen={true}
+      onOpenChange={(open) => { if (!open && !loading) onClose(); }}
+      size={loading && activeTab === 'maps' ? 'lg' : 'md'}
+      aria-label="Lead Ingestion Engine"
+      className="p-0 gap-0 overflow-hidden flex flex-col max-h-[92vh] bg-background-primary-default border border-separator-border text-text-primary shadow-2xl rounded-3xl"
+    >
+      {/* Modal Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-separator-border bg-background-secondary-default shrink-0">
+        <div className="flex items-center gap-2">
+          <RiSearchLine className="h-4 w-4 text-accent-500" />
+          <h2 className="text-sm font-semibold text-text-primary">Lead Ingestion Engine</h2>
         </div>
+        <CloseButton
+          size="md"
+          onClick={onClose}
+          disabled={loading}
+          aria-label="Close Modal"
+        />
+      </div>
 
-        {/* Tab Buttons */}
-        <div className="grid grid-cols-4 border-b border-border-subtle bg-surface-2/40 text-xs font-medium text-gray-500 dark:text-gray-400">
-          <button
-            onClick={() => { setActiveTab('maps'); setError(null); }}
-            className={`py-2.5 text-center flex items-center justify-center gap-1.5 transition-colors ${activeTab === 'maps' ? 'text-gray-900 dark:text-white border-b-2 border-brand bg-surface-1 font-semibold' : 'hover:text-gray-800 dark:hover:text-gray-200'}`}
+      {/* Tab Buttons using BoardUI PillTabs */}
+      <div className="px-5 py-2.5 border-b border-separator-border bg-background-secondary-default shrink-0">
+        <PillTabList className="w-full flex justify-between gap-1 overflow-x-auto no-scrollbar">
+          <PillTab
+            variant="blue"
+            icon={RiMapPin2Line}
+            isSelected={activeTab === 'maps'}
+            onSelect={() => { setActiveTab('maps'); setError(null); }}
           >
-            <MapPin className="h-3.5 w-3.5 text-brand" />
-            <span>Maps Radar</span>
-          </button>
-          <button
-            onClick={() => { setActiveTab('search'); setError(null); }}
-            className={`py-2.5 text-center flex items-center justify-center gap-1.5 transition-colors ${activeTab === 'search' ? 'text-gray-900 dark:text-white border-b-2 border-brand bg-surface-1 font-semibold' : 'hover:text-gray-800 dark:hover:text-gray-200'}`}
+            Maps Radar
+          </PillTab>
+          <PillTab
+            variant="blue"
+            icon={RiSearchLine}
+            isSelected={activeTab === 'search'}
+            onSelect={() => { setActiveTab('search'); setError(null); }}
           >
-            <Search className="h-3.5 w-3.5 text-blue-500" />
-            <span>Crawler</span>
-          </button>
-          <button
-            onClick={() => { setActiveTab('csv'); setError(null); }}
-            className={`py-2.5 text-center flex items-center justify-center gap-1.5 transition-colors ${activeTab === 'csv' ? 'text-gray-900 dark:text-white border-b-2 border-brand bg-surface-1 font-semibold' : 'hover:text-gray-800 dark:hover:text-gray-200'}`}
+            Crawler
+          </PillTab>
+          <PillTab
+            variant="blue"
+            icon={RiUploadCloud2Line}
+            isSelected={activeTab === 'csv'}
+            onSelect={() => { setActiveTab('csv'); setError(null); }}
           >
-            <UploadCloud className="h-3.5 w-3.5 text-emerald-500" />
-            <span>CSV Import</span>
-          </button>
-          <button
-            onClick={() => { setActiveTab('manual'); setError(null); }}
-            className={`py-2.5 text-center flex items-center justify-center gap-1.5 transition-colors ${activeTab === 'manual' ? 'text-gray-900 dark:text-white border-b-2 border-brand bg-surface-1 font-semibold' : 'hover:text-gray-800 dark:hover:text-gray-200'}`}
+            CSV Import
+          </PillTab>
+          <PillTab
+            variant="blue"
+            icon={RiAddLine}
+            isSelected={activeTab === 'manual'}
+            onSelect={() => { setActiveTab('manual'); setError(null); }}
           >
-            <Plus className="h-3.5 w-3.5 text-purple-500" />
-            <span>Manual</span>
-          </button>
-        </div>
+            Manual
+          </PillTab>
+        </PillTabList>
+      </div>
+
+      <ModalBody className="p-0 gap-0 flex-1 overflow-y-auto">
 
         {/* Notifications & Live Stopwatch */}
         {error && (
@@ -437,51 +476,48 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
 
         {/* Live Progress Telemetry HUD for Google Maps Radar */}
         {loading && activeTab === 'maps' && (
-          <div className="mx-6 mt-4 p-4 rounded-xl bg-surface-2 border border-brand/30 shadow-xl animate-in fade-in zoom-in-95 duration-200 space-y-3.5">
+          <div className="mx-6 mt-4 p-4 rounded-2xl bg-background-secondary-default border border-border-focus-ring/40 shadow-xl animate-in fade-in zoom-in-95 duration-200 space-y-3.5">
             {/* Top Bar: Status, Workers, Speed, and Elapsed Clock */}
-            <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+            <div className="flex items-center justify-between pb-3 border-b border-separator-border">
               <div className="flex items-center gap-2">
-                <span className="relative flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                </span>
+                <StatusDot color="green" className="animate-pulse" />
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+                  <span className="text-caption-1-semibold text-text-primary uppercase tracking-wider">
                     {telemetry?.status === 'deduplicating' ? 'Deduplicating' : 'Live Harvester'}
                   </span>
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                    ⚡ {telemetry?.activeWorkers || 8} Workers
-                  </span>
+                  <Chip variant="caption" color="lime">
+                    {telemetry?.activeWorkers || 8} Workers
+                  </Chip>
                   {telemetry && telemetry.speedPerMin > 0 && (
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20 animate-pulse">
-                      ⚡ ~{telemetry.speedPerMin} places/min
-                    </span>
+                    <Chip variant="caption" color="yellow" className="animate-pulse font-mono">
+                      ~{telemetry.speedPerMin} places/min
+                    </Chip>
                   )}
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
+                <Button
+                  size="xs"
+                  variant="danger"
                   onClick={handleCancelHarvest}
                   disabled={isCancelling}
-                  className="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 transition-colors flex items-center gap-1"
+                  leadingIcon={RiCloseLine}
                   title="Stop scraper and conclude harvest immediately"
                 >
-                  <X className="h-3 w-3" />
-                  <span>{isCancelling ? 'Stopping...' : 'Stop'}</span>
-                </button>
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand/10 border border-brand/20 text-brand font-mono font-bold text-sm tracking-widest shadow-inner">
-                  <Clock className="h-4 w-4 animate-spin text-brand" style={{ animationDuration: '3s' }} />
+                  {isCancelling ? 'Stopping...' : 'Stop'}
+                </Button>
+                <Chip variant="bold" color="blue" className="gap-1 inline-flex items-center font-mono">
+                  <RiTimeLine className="size-3.5 animate-spin" style={{ animationDuration: '3s' }} />
                   <span>{formatTimer(elapsedSeconds)}</span>
-                </div>
+                </Chip>
               </div>
             </div>
 
             {/* Stage Text & Mathematical Percentage */}
             <div>
-              <div className="flex items-center justify-between text-xs mb-1.5">
-                <span className="font-medium text-gray-800 dark:text-gray-200 flex items-center gap-1.5 truncate max-w-[80%]">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-brand shrink-0" />
+              <div className="flex items-center justify-between text-caption-1-regular mb-1.5">
+                <span className="font-medium text-text-primary flex items-center gap-1.5 truncate max-w-[80%]">
+                  <RiLoader4Line className="size-3.5 animate-spin text-status-blue-text shrink-0" />
                   <span className="truncate">
                     {telemetry?.status === 'deduplicating'
                       ? 'Deduplicating & saving fresh leads to collection...'
@@ -492,15 +528,15 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
                           : `Extracting Google Maps places across ${mapsLocation}...`}
                   </span>
                 </span>
-                <span className="text-xs font-mono font-bold text-brand shrink-0">
+                <span className="text-caption-1-semibold font-mono text-status-blue-text shrink-0">
                   {telemetry?.percent ? `${telemetry.percent}%` : `${Math.min(95, Math.max(5, Math.round((elapsedSeconds / 60) * 100)))}%`}
                 </span>
               </div>
 
               {/* Real Mathematical Progress Bar */}
-              <div className="w-full bg-surface-3 h-2 rounded-full overflow-hidden shadow-inner p-0.5">
+              <div className="w-full bg-background-primary-default h-2 rounded-full overflow-hidden border border-separator-border p-0.5">
                 <div
-                  className="bg-gradient-to-r from-brand to-emerald-500 h-full rounded-full transition-all duration-500 ease-out shadow-sm"
+                  className="bg-status-blue-text h-full rounded-full transition-all duration-500 ease-out shadow-sm"
                   style={{
                     width: `${Math.max(4, Math.min(100, telemetry?.percent || Math.round((elapsedSeconds / 60) * 100)))}%`
                   }}
@@ -510,104 +546,104 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
 
             {/* 4-Column Metric Counters */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-              <div className="p-2.5 rounded-lg bg-surface-1 border border-border-subtle flex flex-col justify-between">
-                <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+              <div className="p-2.5 rounded-xl bg-background-primary-default border border-separator-border flex flex-col justify-between">
+                <div className="flex items-center justify-between text-caption-1-regular text-text-tertiary">
                   <span>Harvested</span>
-                  <MapPin className="h-3.5 w-3.5 text-brand" />
+                  <RiMapPinLine className="size-3.5 text-status-blue-text" />
                 </div>
                 <div className="mt-1 flex items-baseline gap-1">
-                  <span className="text-base font-bold font-mono text-gray-900 dark:text-white">
+                  <span className="text-base font-bold font-mono text-text-primary">
                     {telemetry?.placesHarvested || 0}
                   </span>
-                  <span className="text-[10px] text-gray-400 font-mono">
+                  <span className="text-caption-1-regular text-text-tertiary font-mono">
                     / {mapsLimitOption === 'custom' ? customMapsLimit : mapsLimitOption}
                   </span>
                 </div>
               </div>
 
-              <div className="p-2.5 rounded-lg bg-surface-1 border border-border-subtle flex flex-col justify-between">
-                <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+              <div className="p-2.5 rounded-xl bg-background-primary-default border border-separator-border flex flex-col justify-between">
+                <div className="flex items-center justify-between text-caption-1-regular text-text-tertiary">
                   <span>Unique Leads</span>
-                  <Building2 className="h-3.5 w-3.5 text-emerald-500" />
+                  <RiBuildingLine className="size-3.5 text-status-lime-text" />
                 </div>
                 <div className="mt-1">
-                  <span className="text-base font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                  <span className="text-base font-bold font-mono text-status-lime-text">
                     {telemetry?.uniqueBusinesses || 0}
                   </span>
                 </div>
               </div>
 
-              <div className="p-2.5 rounded-lg bg-surface-1 border border-border-subtle flex flex-col justify-between">
-                <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+              <div className="p-2.5 rounded-xl bg-background-primary-default border border-separator-border flex flex-col justify-between">
+                <div className="flex items-center justify-between text-caption-1-regular text-text-tertiary">
                   <span>With Website</span>
-                  <Globe className="h-3.5 w-3.5 text-blue-500" />
+                  <RiGlobalLine className="size-3.5 text-status-blue-text" />
                 </div>
                 <div className="mt-1 flex items-center gap-1">
-                  <span className="text-base font-bold font-mono text-blue-600 dark:text-blue-400">
+                  <span className="text-base font-bold font-mono text-status-blue-text">
                     {telemetry?.withWebsiteCount || 0}
                   </span>
                 </div>
               </div>
 
-              <div className="p-2.5 rounded-lg bg-surface-1 border border-border-subtle flex flex-col justify-between">
-                <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+              <div className="p-2.5 rounded-xl bg-background-primary-default border border-separator-border flex flex-col justify-between">
+                <div className="flex items-center justify-between text-caption-1-regular text-text-tertiary">
                   <span>No Website</span>
-                  <Flame className="h-3.5 w-3.5 text-amber-500" />
+                  <RiFireLine className="size-3.5 text-status-rose-text" />
                 </div>
                 <div className="mt-1 flex items-center gap-1">
-                  <span className="text-base font-bold font-mono text-amber-600 dark:text-amber-400">
+                  <span className="text-base font-bold font-mono text-status-rose-text">
                     {telemetry?.noWebsiteCount || 0}
                   </span>
-                  <span className="text-[9px] font-semibold text-amber-500 bg-amber-500/10 px-1 py-0.5 rounded">
+                  <Chip variant="caption" color="rose">
                     HOT
-                  </span>
+                  </Chip>
                 </div>
               </div>
             </div>
 
             {/* Live Discovery Ticker Feed */}
             {telemetry?.recentPlaces && telemetry.recentPlaces.length > 0 && (
-              <div className="pt-2 border-t border-border-subtle">
-                <div className="flex items-center justify-between text-[11px] mb-2">
-                  <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300 font-medium">
-                    <Sparkles className="h-3 w-3 text-brand" />
+              <div className="pt-2 border-t border-separator-border">
+                <div className="flex items-center justify-between text-caption-1-regular mb-2">
+                  <div className="flex items-center gap-1.5 text-text-primary font-medium">
+                    <RiSparklingLine className="size-3 text-status-blue-text" />
                     <span>Live Discovery Feed</span>
                   </div>
-                  <span className="text-[10px] text-gray-400 font-mono">Streaming places...</span>
+                  <span className="text-caption-1-regular text-text-tertiary font-mono">Streaming places...</span>
                 </div>
 
                 <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
                   {telemetry.recentPlaces.slice(0, 4).map((item, idx) => (
                     <div
                       key={idx}
-                      className="px-2.5 py-1.5 rounded-lg bg-surface-1 border border-border-subtle/80 flex items-center justify-between gap-2 text-xs animate-in fade-in slide-in-from-top-1 duration-200"
+                      className="px-2.5 py-1.5 rounded-lg bg-background-primary-default border border-separator-border flex items-center justify-between gap-2 text-caption-1-regular animate-in fade-in slide-in-from-top-1 duration-200"
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-gray-900 dark:text-white truncate text-[11px]">
+                        <div className="font-semibold text-text-primary truncate text-caption-1-semibold">
                           {item.name}
                         </div>
-                        <div className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                        <div className="text-caption-1-regular text-text-tertiary truncate">
                           {item.city}
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
                         {item.rating && (
-                          <div className="flex items-center gap-0.5 text-[10px] font-mono text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded">
-                            <Star className="h-2.5 w-2.5 fill-amber-500 text-amber-500" />
+                          <Chip variant="caption" color="yellow" className="gap-0.5 inline-flex items-center font-mono">
+                            <RiStarFill className="size-2.5" />
                             <span>{item.rating.toFixed(1)}</span>
-                          </div>
+                          </Chip>
                         )}
                         {item.hasNoWebsite ? (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 px-1.5 py-0.5 rounded">
-                            <Flame className="h-2.5 w-2.5" />
+                          <Chip variant="caption" color="rose" className="gap-1 inline-flex items-center">
+                            <RiFireLine className="size-2.5" />
                             <span>No Website</span>
-                          </span>
+                          </Chip>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-medium text-blue-600 dark:text-blue-400 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded">
-                            <Globe className="h-2.5 w-2.5" />
+                          <Chip variant="caption" color="blue" className="gap-1 inline-flex items-center">
+                            <RiGlobalLine className="size-2.5" />
                             <span>Website</span>
-                          </span>
+                          </Chip>
                         )}
                       </div>
                     </div>
@@ -620,36 +656,33 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
 
         {/* Crawler Search Loading Panel */}
         {loading && activeTab !== 'maps' && (
-          <div className="mx-6 mt-4 p-4 rounded-xl bg-surface-2 border border-brand/30 shadow-lg animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+          <div className="mx-6 mt-4 p-4 rounded-2xl bg-background-secondary-default border border-border-focus-ring/40 shadow-lg animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-separator-border">
               <div className="flex items-center gap-2">
-                <span className="relative flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                </span>
-                <span className="text-xs font-semibold text-gray-900 dark:text-white uppercase tracking-wider">
+                <StatusDot color="green" className="animate-pulse" />
+                <span className="text-caption-1-semibold text-text-primary uppercase tracking-wider">
                   Web Crawler Engine
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand/10 border border-brand/20 text-brand font-mono font-bold text-sm tracking-widest shadow-inner">
-                <Clock className="h-4 w-4 animate-spin text-brand" style={{ animationDuration: '3s' }} />
+              <Chip variant="bold" color="blue" className="gap-1 inline-flex items-center font-mono">
+                <RiTimeLine className="size-3.5 animate-spin" style={{ animationDuration: '3s' }} />
                 <span>{formatTimer(elapsedSeconds)}</span>
-              </div>
+              </Chip>
             </div>
 
             <div className="mt-3 space-y-2">
-              <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300">
+              <div className="flex items-center justify-between text-caption-1-regular text-text-secondary">
                 <span className="font-medium flex items-center gap-1.5">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-brand" />
+                  <RiLoader4Line className="size-3.5 animate-spin text-status-blue-text" />
                   Searching & parsing prospects...
                 </span>
-                <span className="text-[11px] font-mono text-gray-400">
+                <span className="text-caption-1-regular font-mono text-text-tertiary">
                   {elapsedSeconds}s elapsed
                 </span>
               </div>
-              <div className="w-full bg-surface-3 h-1.5 rounded-full overflow-hidden">
+              <div className="w-full bg-background-primary-default h-1.5 rounded-full overflow-hidden border border-separator-border">
                 <div
-                  className="bg-brand h-full rounded-full transition-all duration-500 ease-out animate-pulse"
+                  className="bg-status-blue-text h-full rounded-full transition-all duration-500 ease-out animate-pulse"
                   style={{
                     width: `${Math.min(95, Math.max(15, (elapsedSeconds / 30) * 100))}%`
                   }}
@@ -661,34 +694,34 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
 
         {/* Completion Notification Card */}
         {successMsg && (
-          <div className="mx-6 mt-4 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-200 shadow-md animate-in fade-in zoom-in-95 duration-200">
+          <div className="mx-6 mt-4 p-4 rounded-2xl bg-status-lime-background/40 border border-status-lime-background text-status-lime-text shadow-md animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 shrink-0">
-                <CheckCircle2 className="h-5 w-5" />
+              <div className="p-2 rounded-xl bg-status-lime-background text-status-lime-text shrink-0">
+                <RiCheckLine className="size-5" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <h4 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+                  <h4 className="text-caption-1-semibold text-text-primary uppercase tracking-wider">
                     Scraping Complete!
                   </h4>
                   {finalTimeStr && (
-                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-600 dark:text-emerald-300 font-mono font-bold text-xs flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {finalTimeStr}
-                    </span>
+                    <Chip variant="bold" color="lime" className="gap-1 inline-flex items-center font-mono">
+                      <RiTimeLine className="size-3" />
+                      <span>{finalTimeStr}</span>
+                    </Chip>
                   )}
                 </div>
-                <p className="text-xs text-gray-700 dark:text-gray-300 mt-1 leading-relaxed">
+                <p className="text-caption-1-regular text-text-secondary mt-1 leading-relaxed">
                   {successMsg}
                 </p>
                 <div className="mt-3 flex items-center gap-2">
-                  <button
+                  <Button
+                    size="small"
+                    variant="primary"
                     onClick={onClose}
-                    className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs shadow-sm transition-colors flex items-center gap-1.5"
                   >
-                    <span>View Generated Leads in Dashboard</span>
-                    <span className="text-[10px]">➔</span>
-                  </button>
+                    View Generated Leads in Dashboard
+                  </Button>
                 </div>
               </div>
             </div>
@@ -698,19 +731,19 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
         {/* Tab 0: Google Maps Lead Radar Form */}
         {activeTab === 'maps' && (
           <form onSubmit={handleMapsSearch} className="p-6 space-y-4">
-            <div className="p-3 rounded-lg bg-brand/5 border border-brand/20 flex items-start gap-2.5 text-xs text-gray-600 dark:text-gray-300">
-              <MapPin className="h-4 w-4 text-brand shrink-0 mt-0.5" />
+            <div className="p-3.5 rounded-xl bg-status-blue-background/30 border border-status-blue-background/60 flex items-start gap-2.5 text-caption-1-regular text-text-secondary">
+              <RiMapPinLine className="size-4 text-status-blue-text shrink-0 mt-0.5" />
               <div>
-                <span className="font-semibold text-gray-900 dark:text-white">Local Standalone Scraper Engine</span>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                <span className="font-semibold text-text-primary">Local Standalone Scraper Engine</span>
+                <p className="text-caption-1-regular text-text-tertiary mt-0.5">
                   High-speed Go binary extraction directly from Google Maps places. 0 Docker required, 0 SaaS subscription costs.
                 </p>
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Target Niche or Business Keyword <span className="text-brand font-mono text-[10px]">(Auto-creates its own Collection)</span>
+              <label className="block text-caption-1-semibold text-text-primary mb-1.5">
+                Target Niche or Business Keyword <span className="text-status-blue-text font-mono text-[10px]">(Auto-creates its own Collection)</span>
               </label>
               <input
                 type="text"
@@ -718,49 +751,52 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
                 onChange={(e) => setMapsKeyword(e.target.value)}
                 placeholder="e.g. Roofing Contractors, MedSpa, Dental Clinic, Solar, Plumbers"
                 required
-                className="w-full px-3 py-2 text-xs rounded-lg bg-surface-2 border border-border-subtle focus:border-brand focus:outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                className="w-full px-3 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary placeholder:text-text-tertiary"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Target City / State</label>
+                <label className="block text-caption-1-semibold text-text-primary mb-1.5">Target City / State</label>
                 <input
                   type="text"
                   value={mapsLocation}
                   onChange={(e) => setMapsLocation(e.target.value)}
                   placeholder="e.g. Austin, TX or Miami, FL"
                   required
-                  className="w-full px-3 py-2 text-xs rounded-lg bg-surface-2 border border-border-subtle focus:border-brand focus:outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                  className="w-full px-3 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary placeholder:text-text-tertiary"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Max Places to Harvest</label>
-                <select
-                  value={mapsLimitOption}
-                  onChange={(e) => setMapsLimitOption(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-lg bg-surface-2 border border-border-subtle focus:border-brand focus:outline-none text-gray-900 dark:text-white"
-                >
-                  <option value="20">20 Places (Quick Scan)</option>
-                  <option value="50">50 Places (Medium Batch)</option>
-                  <option value="100">100 Places</option>
-                  <option value="250">250 Places (Broad Search)</option>
-                  <option value="500">500 Places (Metro Sweep)</option>
-                  <option value="1000">1,000 Places (Deep Regional Run)</option>
-                  <option value="custom">✏️ Custom Quantity (Enter Any Number: 1000, 2000, 3000+)...</option>
-                </select>
+                <label className="block text-caption-1-semibold text-text-primary mb-1.5">Max Places to Harvest</label>
+                <div className="relative flex items-center">
+                  <select
+                    value={mapsLimitOption}
+                    onChange={(e) => setMapsLimitOption(e.target.value)}
+                    className="w-full appearance-none px-3 pr-8 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary cursor-pointer"
+                  >
+                    <option value="20">20 Places (Quick Scan)</option>
+                    <option value="50">50 Places (Medium Batch)</option>
+                    <option value="100">100 Places</option>
+                    <option value="250">250 Places (Broad Search)</option>
+                    <option value="500">500 Places (Metro Sweep)</option>
+                    <option value="1000">1,000 Places (Deep Regional Run)</option>
+                    <option value="custom">Custom Quantity (Enter Any Number: 1000, 2000, 3000+)...</option>
+                  </select>
+                  <RiArrowDownSLine className="pointer-events-none absolute right-2.5 size-4 text-text-tertiary" />
+                </div>
               </div>
             </div>
 
             {mapsLimitOption === 'custom' && (
-              <div className="p-3 rounded-lg bg-surface-2/80 border border-brand/30 animate-in fade-in slide-in-from-top-1 duration-150">
+              <div className="p-3.5 rounded-xl bg-background-secondary-default border border-border-focus-ring/40 animate-in fade-in slide-in-from-top-1 duration-150">
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-medium text-gray-900 dark:text-white flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-brand"></span>
+                  <label className="text-caption-1-semibold text-text-primary flex items-center gap-1.5">
+                    <StatusDot color="indigo" />
                     <span>Custom Quantity of Leads to Scrape</span>
                   </label>
-                  <span className="text-[10px] text-gray-400 font-mono">Unlimited (e.g. 500 – 5,000+)</span>
+                  <span className="text-caption-1-regular text-text-tertiary font-mono">Unlimited (e.g. 500 – 5,000+)</span>
                 </div>
                 <div className="relative">
                   <input
@@ -771,46 +807,46 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
                     onChange={(e) => setCustomMapsLimit(e.target.value)}
                     placeholder="e.g. 500, 1000, 2000, 3000, 5000"
                     required
-                    className="w-full px-3 py-2 text-xs rounded-lg bg-surface-1 border border-brand/40 focus:border-brand focus:ring-1 focus:ring-brand focus:outline-none text-gray-900 dark:text-white font-mono placeholder-gray-400 dark:placeholder-gray-500"
+                    className="w-full px-3 py-2 text-caption-1-regular rounded-xl bg-background-primary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary font-mono placeholder:text-text-tertiary"
                   />
                   <div className="absolute right-2.5 top-2 flex items-center gap-1">
-                    <span className="text-[10px] font-medium text-brand bg-brand/10 px-1.5 py-0.5 rounded">
+                    <Chip variant="caption" color="blue">
                       places
-                    </span>
+                    </Chip>
                   </div>
                 </div>
-                <p className="text-[10px] text-gray-500 mt-1">
+                <p className="text-caption-1-regular text-text-tertiary mt-1">
                   Engine will dynamically harvest and deduplicate precisely {customMapsLimit || 0} authentic places into your database.
                 </p>
               </div>
             )}
 
-            <p className="text-[11px] text-gray-500 italic">
+            <p className="text-caption-1-regular text-text-tertiary italic">
               Extracts business name, phone, verified address, rating, review count, and canonical website domain into your CRM.
             </p>
 
             <div className="pt-2 flex justify-end gap-2">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="small"
                 onClick={onClose}
-                className="px-3.5 py-2 text-xs font-medium rounded-lg bg-surface-2 hover:bg-surface-3 text-gray-700 dark:text-gray-300 border border-border-subtle"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
+                variant="primary"
+                size="small"
                 disabled={loading}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-brand hover:bg-brand-hover text-white disabled:opacity-50 transition-colors shadow-sm shadow-brand/20 font-mono"
+                leadingIcon={loading ? RiLoader4Line : RiMapPinLine}
               >
-                {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MapPin className="h-3.5 w-3.5" />}
-                <span>
-                  {loading
-                    ? telemetry && telemetry.placesHarvested > 0
-                      ? `Harvested ${telemetry.placesHarvested} (${formatTimer(elapsedSeconds)})...`
-                      : `Harvesting (${formatTimer(elapsedSeconds)})...`
-                    : 'Launch Maps Radar'}
-                </span>
-              </button>
+                {loading
+                  ? telemetry && telemetry.placesHarvested > 0
+                    ? `Harvested ${telemetry.placesHarvested} (${formatTimer(elapsedSeconds)})...`
+                    : `Harvesting (${formatTimer(elapsedSeconds)})...`
+                  : 'Launch Maps Radar'}
+              </Button>
             </div>
           </form>
         )}
@@ -819,8 +855,8 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
         {activeTab === 'search' && (
           <form onSubmit={handleCrawlerSearch} className="p-6 space-y-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Target Niche or Business Keyword <span className="text-brand font-mono text-[10px]">(Auto-creates its own Collection)</span>
+              <label className="block text-caption-1-semibold text-text-primary mb-1.5">
+                Target Niche or Business Keyword <span className="text-status-blue-text font-mono text-[10px]">(Auto-creates its own Collection)</span>
               </label>
               <input
                 type="text"
@@ -828,49 +864,52 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
                 onChange={(e) => setKeyword(e.target.value)}
                 placeholder="e.g. Roofing Contractors, Dental Clinics, Shopify Brands"
                 required
-                className="w-full px-3 py-2 text-xs rounded-lg bg-surface-2 border border-border-subtle focus:border-brand focus:outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                className="w-full px-3 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary placeholder:text-text-tertiary"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Target City / Location</label>
+                <label className="block text-caption-1-semibold text-text-primary mb-1.5">Target City / Location</label>
                 <input
                   type="text"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="e.g. Austin TX, Miami, London"
                   required
-                  className="w-full px-3 py-2 text-xs rounded-lg bg-surface-2 border border-border-subtle focus:border-brand focus:outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                  className="w-full px-3 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary placeholder:text-text-tertiary"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Max Prospects to Fetch</label>
-                <select
-                  value={crawlerLimitOption}
-                  onChange={(e) => setCrawlerLimitOption(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-lg bg-surface-2 border border-border-subtle focus:border-brand focus:outline-none text-gray-900 dark:text-white"
-                >
-                  <option value="10">10 Prospects</option>
-                  <option value="25">25 Prospects</option>
-                  <option value="50">50 Prospects</option>
-                  <option value="100">100 Prospects</option>
-                  <option value="250">250 Prospects</option>
-                  <option value="500">500 Prospects</option>
-                  <option value="custom">✏️ Custom Quantity (Enter Any Number)...</option>
-                </select>
+                <label className="block text-caption-1-semibold text-text-primary mb-1.5">Max Prospects to Fetch</label>
+                <div className="relative flex items-center">
+                  <select
+                    value={crawlerLimitOption}
+                    onChange={(e) => setCrawlerLimitOption(e.target.value)}
+                    className="w-full appearance-none px-3 pr-8 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary cursor-pointer"
+                  >
+                    <option value="10">10 Prospects</option>
+                    <option value="25">25 Prospects</option>
+                    <option value="50">50 Prospects</option>
+                    <option value="100">100 Prospects</option>
+                    <option value="250">250 Prospects</option>
+                    <option value="500">500 Prospects</option>
+                    <option value="custom">Custom Quantity (Enter Any Number)...</option>
+                  </select>
+                  <RiArrowDownSLine className="pointer-events-none absolute right-2.5 size-4 text-text-tertiary" />
+                </div>
               </div>
             </div>
 
             {crawlerLimitOption === 'custom' && (
-              <div className="p-3 rounded-lg bg-surface-2/80 border border-blue-500/30 animate-in fade-in slide-in-from-top-1 duration-150">
+              <div className="p-3.5 rounded-xl bg-background-secondary-default border border-border-focus-ring/40 animate-in fade-in slide-in-from-top-1 duration-150">
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-medium text-gray-900 dark:text-white flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+                  <label className="text-caption-1-semibold text-text-primary flex items-center gap-1.5">
+                    <StatusDot color="indigo" />
                     <span>Custom Quantity of Prospects to Crawl</span>
                   </label>
-                  <span className="text-[10px] text-gray-400 font-mono">Unlimited (1 – 50,000+)</span>
+                  <span className="text-caption-1-regular text-text-tertiary font-mono">Unlimited (1 – 50,000+)</span>
                 </div>
                 <div className="relative">
                   <input
@@ -881,40 +920,42 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
                     onChange={(e) => setCustomCrawlerLimit(e.target.value)}
                     placeholder="e.g. 50, 100, 250, 500, 1000"
                     required
-                    className="w-full px-3 py-2 text-xs rounded-lg bg-surface-1 border border-blue-500/40 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none text-gray-900 dark:text-white font-mono placeholder-gray-400 dark:placeholder-gray-500"
+                    className="w-full px-3 py-2 text-caption-1-regular rounded-xl bg-background-primary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary font-mono placeholder:text-text-tertiary"
                   />
                   <div className="absolute right-2.5 top-2 flex items-center gap-1">
-                    <span className="text-[10px] font-medium text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded">
+                    <Chip variant="caption" color="blue">
                       prospects
-                    </span>
+                    </Chip>
                   </div>
                 </div>
-                <p className="text-[10px] text-gray-500 mt-1">
+                <p className="text-caption-1-regular text-text-tertiary mt-1">
                   Crawler will fetch and filter clean website leads up to {customCrawlerLimit || 0} prospects.
                 </p>
               </div>
             )}
 
-            <p className="text-[11px] text-gray-500 italic">
+            <p className="text-caption-1-regular text-text-tertiary italic">
               Searches verified local businesses, filters directory noise, and automatically ingests clean websites into your database.
             </p>
 
             <div className="pt-2 flex justify-end gap-2">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="small"
                 onClick={onClose}
-                className="px-3.5 py-2 text-xs font-medium rounded-lg bg-surface-2 hover:bg-surface-3 text-gray-700 dark:text-gray-300 border border-border-subtle"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
+                variant="primary"
+                size="small"
                 disabled={loading}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-brand hover:bg-brand-hover text-white disabled:opacity-50 transition-colors shadow-sm shadow-brand/20 font-mono"
+                leadingIcon={loading ? RiLoader4Line : RiSearchLine}
               >
-                {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
-                <span>{loading ? `Crawling (${formatTimer(elapsedSeconds)})...` : 'Run Search Crawler'}</span>
-              </button>
+                {loading ? `Crawling (${formatTimer(elapsedSeconds)})...` : 'Run Search Crawler'}
+              </Button>
             </div>
           </form>
         )}
@@ -923,8 +964,8 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
         {activeTab === 'csv' && (
           <form onSubmit={handleCsvUpload} className="p-6 space-y-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Upload CSV File</label>
-              <div className="border-2 border-dashed border-border-subtle hover:border-brand/50 rounded-xl p-6 text-center cursor-pointer transition-colors bg-surface-2/40">
+              <label className="block text-caption-1-semibold text-text-primary mb-2">Upload CSV File</label>
+              <div className="border-2 border-dashed border-separator-border hover:border-border-focus-ring/60 rounded-2xl p-6 text-center cursor-pointer transition-colors bg-background-secondary-default/40">
                 <input
                   type="file"
                   accept=".csv"
@@ -933,11 +974,11 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
                   id="csv-file-input"
                 />
                 <label htmlFor="csv-file-input" className="cursor-pointer flex flex-col items-center">
-                  <UploadCloud className="h-8 w-8 text-brand mb-2" />
-                  <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                  <RiUploadCloud2Line className="size-8 text-status-blue-text mb-2" />
+                  <span className="text-body-medium font-semibold text-text-primary">
                     {csvFile ? `Selected: ${csvFile.name} (${(csvFile.size / 1024).toFixed(1)} KB)` : 'Click to select CSV file or drag and drop'}
                   </span>
-                  <span className="text-[10px] text-gray-500 mt-1">
+                  <span className="text-caption-1-regular text-text-tertiary mt-1">
                     Accepts Google Maps exports, roofer/business CSVs, Apollo/directory leads (name, phone, rating, reviews, maps link, website)
                   </span>
                 </label>
@@ -945,21 +986,23 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
             </div>
 
             <div className="pt-2 flex justify-end gap-2">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="small"
                 onClick={onClose}
-                className="px-3.5 py-2 text-xs font-medium rounded-lg bg-surface-2 hover:bg-surface-3 text-gray-700 dark:text-gray-300 border border-border-subtle"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
+                variant="primary"
+                size="small"
                 disabled={loading || !csvFile}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-brand hover:bg-brand-hover text-white disabled:opacity-50 transition-colors"
+                leadingIcon={loading ? RiLoader4Line : RiUploadCloud2Line}
               >
-                {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UploadCloud className="h-3.5 w-3.5" />}
-                <span>{loading ? 'Importing CSV...' : 'Import Leads'}</span>
-              </button>
+                {loading ? 'Importing CSV...' : 'Import Leads'}
+              </Button>
             </div>
           </form>
         )}
@@ -968,83 +1011,85 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
         {activeTab === 'manual' && (
           <form onSubmit={handleManualSubmit} className="p-6 space-y-3.5">
             <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Company / Business Name *</label>
+              <label className="block text-caption-1-semibold text-text-primary mb-1">Company / Business Name *</label>
               <input
                 type="text"
                 value={manualForm.business_name}
                 onChange={(e) => setManualForm({ ...manualForm, business_name: e.target.value })}
                 placeholder="e.g. Apex Roofing Texas"
                 required
-                className="w-full px-3 py-2 text-xs rounded-lg bg-surface-2 border border-border-subtle focus:border-brand focus:outline-none text-gray-900 dark:text-white"
+                className="w-full px-3 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary placeholder:text-text-tertiary"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Website URL (Optional)</label>
+              <label className="block text-caption-1-semibold text-text-primary mb-1">Website URL (Optional)</label>
               <input
                 type="text"
                 value={manualForm.website}
                 onChange={(e) => setManualForm({ ...manualForm, website: e.target.value })}
                 placeholder="e.g. apexroofingtx.com (optional)"
-                className="w-full px-3 py-2 text-xs rounded-lg bg-surface-2 border border-border-subtle focus:border-brand focus:outline-none text-gray-900 dark:text-white"
+                className="w-full px-3 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary placeholder:text-text-tertiary"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
+                <label className="block text-caption-1-semibold text-text-primary mb-1">Phone</label>
                 <input
                   type="text"
                   value={manualForm.phone}
                   onChange={(e) => setManualForm({ ...manualForm, phone: e.target.value })}
                   placeholder="e.g. (512) 555-0199"
-                  className="w-full px-3 py-2 text-xs rounded-lg bg-surface-2 border border-border-subtle focus:border-brand focus:outline-none text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary placeholder:text-text-tertiary"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">City</label>
+                <label className="block text-caption-1-semibold text-text-primary mb-1">City</label>
                 <input
                   type="text"
                   value={manualForm.city}
                   onChange={(e) => setManualForm({ ...manualForm, city: e.target.value })}
                   placeholder="e.g. Austin, TX"
-                  className="w-full px-3 py-2 text-xs rounded-lg bg-surface-2 border border-border-subtle focus:border-brand focus:outline-none text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary placeholder:text-text-tertiary"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Category / Industry</label>
+              <label className="block text-caption-1-semibold text-text-primary mb-1">Category / Industry</label>
               <input
                 type="text"
                 value={manualForm.category}
                 onChange={(e) => setManualForm({ ...manualForm, category: e.target.value })}
                 placeholder="e.g. Roofing, MedSpa, HVAC"
-                className="w-full px-3 py-2 text-xs rounded-lg bg-surface-2 border border-border-subtle focus:border-brand focus:outline-none text-gray-900 dark:text-white"
+                className="w-full px-3 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary placeholder:text-text-tertiary"
               />
             </div>
 
             <div className="pt-2 flex justify-end gap-2">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="small"
                 onClick={onClose}
-                className="px-3.5 py-2 text-xs font-medium rounded-lg bg-surface-2 hover:bg-surface-3 text-gray-700 dark:text-gray-300 border border-border-subtle"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
+                variant="primary"
+                size="small"
                 disabled={loading}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-brand hover:bg-brand-hover text-white disabled:opacity-50 transition-colors"
+                leadingIcon={loading ? RiLoader4Line : RiAddLine}
               >
-                {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-                <span>Save Prospect</span>
-              </button>
+                Save Prospect
+              </Button>
             </div>
           </form>
         )}
-      </div>
-    </div>
+      </ModalBody>
+    </Modal>
   );
 }

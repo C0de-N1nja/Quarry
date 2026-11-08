@@ -1,9 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  X, ShieldCheck, CheckCircle2, AlertCircle, AlertTriangle, 
-  Loader2, Globe, Phone, Mail, Clock, RefreshCw, StopCircle, 
-  ExternalLink, Sparkles, UserCheck, Flame
-} from 'lucide-react';
+  RiShieldCheckLine, 
+  RiCheckboxCircleLine, 
+  RiErrorWarningLine, 
+  RiAlertLine, 
+  RiLoader4Line, 
+  RiGlobalLine, 
+  RiPhoneLine, 
+  RiMailLine, 
+  RiTimeLine, 
+  RiRefreshLine, 
+  RiStopCircleLine, 
+  RiExternalLinkLine, 
+  RiSparklingLine, 
+  RiUserFollowLine, 
+  RiFireLine,
+  RiCloseLine,
+  RiArrowDownSLine
+} from '@remixicon/react';
+import { Modal, ModalBody, ModalFooter } from '@/components/base/modal/modal';
+import { CloseButton } from '@/components/base/buttons/close-button';
+import { Button } from '@/components/base/buttons/button';
+import { Switch } from '@/components/base/switch/switch';
+import { Chip } from '@/components/base/badges/chip';
 
 function formatTimer(totalSeconds) {
   const m = Math.floor(totalSeconds / 60);
@@ -48,6 +67,7 @@ export default function OsintRunModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [forceRefresh, setForceRefresh] = useState(true);
 
   const sseRef = useRef(null);
   const pollRef = useRef(null);
@@ -119,7 +139,7 @@ export default function OsintRunModal({
     }, 1000);
   };
 
-  const startBatchRun = async (scopeToRun = activeScope, catToRun = selectedCategory) => {
+  const startBatchRun = async (scopeToRun = activeScope, catToRun = selectedCategory, forceOverride = undefined) => {
     setActiveScope(scopeToRun);
     setSelectedCategory(catToRun);
     setLoading(true);
@@ -164,6 +184,7 @@ export default function OsintRunModal({
     }
 
     try {
+      const shouldForce = forceOverride !== undefined ? forceOverride : forceRefresh;
       const res = await fetch('/api/osint/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -175,7 +196,8 @@ export default function OsintRunModal({
           batchMode: runBatchMode,
           contactChannel: runChannel,
           search: searchTerm,
-          limit
+          limit,
+          forceRefresh: shouldForce
         })
       });
 
@@ -238,7 +260,7 @@ export default function OsintRunModal({
       const res = await fetch('/api/osint/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ leadIds: failedLeadIds })
+        body: JSON.stringify({ leadIds: failedLeadIds, forceRefresh: true, retryFailedOnly: true })
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
@@ -260,53 +282,55 @@ export default function OsintRunModal({
   const isCancelled = job?.status === 'cancelled';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-surface-1 border border-border-subtle shadow-2xl rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border-subtle bg-surface-1 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl border flex items-center justify-center ${
-              isRunning ? 'bg-brand/10 border-brand/30 text-brand' : 'bg-surface-2 border-border-subtle text-gray-400'
-            }`}>
-              <ShieldCheck className={`h-5 w-5 ${isRunning ? 'animate-pulse' : ''}`} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-gray-900 dark:text-white">
-                  OSINT Social Website Verifier
-                </h2>
-                <span className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-full uppercase tracking-wider ${
-                  isRunning ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30' :
-                  isCompleted ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' :
-                  'bg-gray-500/15 text-gray-400 border border-gray-500/30'
-                }`}>
-                  {isRunning ? `Running (${job?.activeThreads || job?.concurrency || 8} CPU Workers)` : isCompleted ? 'Completed' : isCancelled ? 'Cancelled' : 'Ready'}
-                </span>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                Probing Facebook, Instagram, LinkedIn, X, TikTok & Linktree to classify authentic no-website prospects
-              </p>
-            </div>
+    <Modal
+      isOpen={true}
+      onOpenChange={(open) => { if (!open && !isRunning) onClose(); }}
+      size="xl"
+      aria-label="OSINT Social Website Verifier"
+      className="p-0 gap-0 overflow-hidden flex flex-col max-h-[92vh] bg-background-primary-default border border-separator-border text-text-primary shadow-2xl rounded-3xl"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-separator-border bg-background-secondary-default shrink-0">
+        <div className="flex items-center gap-3">
+          <div className={`p-2.5 rounded-xl border flex items-center justify-center ${
+            isRunning ? 'bg-accent-500/15 border-accent-500/30 text-accent-500' : 'bg-background-tertiary-default border-separator-border text-text-secondary'
+          }`}>
+            <RiShieldCheckLine className={`h-5 w-5 ${isRunning ? 'animate-pulse' : ''}`} />
           </div>
-
-          <div className="flex items-center gap-2">
-            <div className="px-2.5 py-1 rounded-lg bg-surface-2 border border-border-subtle text-xs font-mono font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5 text-gray-400" />
-              <span>{formatTimer(job?.elapsedSeconds || elapsedSeconds)}</span>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold text-text-primary">
+                OSINT Social Website Verifier
+              </h2>
+              <Chip variant="subtle" color={isRunning ? "amber" : isCompleted ? "emerald" : "neutral"} size="sm">
+                {isRunning ? `Running (${job?.activeThreads || job?.concurrency || 8} CPU Workers)` : isCompleted ? 'Completed' : isCancelled ? 'Cancelled' : 'Ready'}
+              </Chip>
             </div>
-            <button
-              onClick={onClose}
-              className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-surface-2 transition-colors cursor-pointer"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            <p className="text-xs text-text-secondary mt-0.5">
+              Probing Facebook, Instagram, LinkedIn, X, TikTok & Linktree to classify authentic no-website prospects
+            </p>
           </div>
         </div>
 
+        <div className="flex items-center gap-2">
+          <div className="px-2.5 py-1 rounded-lg bg-background-tertiary-default border border-separator-border text-xs font-mono font-semibold text-text-secondary flex items-center gap-1.5">
+            <RiTimeLine className="h-3.5 w-3.5 text-text-secondary" />
+            <span>{formatTimer(job?.elapsedSeconds || elapsedSeconds)}</span>
+          </div>
+          <CloseButton
+            size="md"
+            onClick={onClose}
+            aria-label="Close Modal"
+          />
+        </div>
+      </div>
+
+      {/* Modal Body */}
+      <ModalBody className="p-0 gap-0 overflow-y-auto flex-1 flex flex-col">
         {/* Multi-Scope OSINT Target Selector Strip */}
-        <div className="flex flex-col gap-2 px-5 py-2.5 bg-surface-2 border-b border-border-subtle shrink-0">
+        <div className="flex flex-col gap-2 px-5 py-2.5 bg-background-secondary-default border-b border-separator-border shrink-0">
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
-            <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider shrink-0 mr-1">
+            <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider shrink-0 mr-1">
               OSINT Target Scope:
             </span>
 
@@ -317,11 +341,11 @@ export default function OsintRunModal({
                 disabled={isRunning}
                 className={`px-2.5 py-1 text-xs rounded-lg font-semibold transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50 ${
                   activeScope === 'selected'
-                    ? 'bg-brand text-white shadow-xs'
-                    : 'bg-surface-1 text-gray-700 dark:text-gray-300 hover:bg-surface-3 border border-border-subtle'
+                    ? 'bg-accent-500 text-white shadow-2xs'
+                    : 'bg-background-secondary-default text-text-secondary hover:bg-background-tertiary-default hover:text-text-primary border border-separator-border'
                 }`}
               >
-                <span>🎯 {targetLeadIds.length} Selected Leads</span>
+                <span>{targetLeadIds.length} Selected Leads</span>
               </button>
             )}
 
@@ -332,12 +356,12 @@ export default function OsintRunModal({
               disabled={isRunning}
               className={`px-2.5 py-1 text-xs rounded-lg font-semibold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap disabled:opacity-50 ${
                 activeScope === 'no_website'
-                  ? 'bg-rose-500 text-white shadow-xs'
-                  : 'bg-surface-1 text-rose-600 dark:text-rose-400 hover:bg-surface-3 border border-border-subtle'
+                  ? 'bg-danger-primary text-white shadow-2xs'
+                  : 'bg-background-secondary-default text-danger-primary hover:bg-background-tertiary-default border border-separator-border'
               }`}
               title="Target prospects verified without a website across all niches"
             >
-              <span>🔥 No Website</span>
+              <span>No Website</span>
               {stats?.noWebsite !== undefined && (
                 <span className="text-[10px] font-mono opacity-80">({stats.noWebsite})</span>
               )}
@@ -350,12 +374,12 @@ export default function OsintRunModal({
               disabled={isRunning}
               className={`px-2.5 py-1 text-xs rounded-lg font-semibold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap disabled:opacity-50 ${
                 activeScope === 'gold'
-                  ? 'bg-amber-500 text-white shadow-xs'
-                  : 'bg-surface-1 text-amber-600 dark:text-amber-400 hover:bg-surface-3 border border-border-subtle'
+                  ? 'bg-warning-primary text-white shadow-2xs'
+                  : 'bg-background-secondary-default text-warning-primary hover:bg-background-tertiary-default border border-separator-border'
               }`}
-              title="Target 4.5★+ high reputation prospects with verified phone"
+              title="Target 4.5+ high reputation prospects with verified phone"
             >
-              <span>⭐ Gold Leads</span>
+              <span>Gold Leads</span>
               {stats?.goldLeads !== undefined && (
                 <span className="text-[10px] font-mono opacity-80">({stats.goldLeads})</span>
               )}
@@ -368,12 +392,12 @@ export default function OsintRunModal({
               disabled={isRunning}
               className={`px-2.5 py-1 text-xs rounded-lg font-semibold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap disabled:opacity-50 ${
                 activeScope === 'whatsapp'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'bg-surface-1 text-emerald-600 dark:text-emerald-400 hover:bg-surface-3 border border-border-subtle'
+                  ? 'bg-success-primary text-white shadow-2xs'
+                  : 'bg-background-secondary-default text-success-primary hover:bg-background-tertiary-default border border-separator-border'
               }`}
               title="Target WhatsApp-ready prospects to extract owner emails and social proof"
             >
-              <span>💬 WhatsApp Ready</span>
+              <span>WhatsApp Ready</span>
               {stats?.withWhatsApp !== undefined && (
                 <span className="text-[10px] font-mono opacity-80">({stats.withWhatsApp})</span>
               )}
@@ -386,12 +410,12 @@ export default function OsintRunModal({
               disabled={isRunning}
               className={`px-2.5 py-1 text-xs rounded-lg font-semibold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap disabled:opacity-50 ${
                 activeScope === 'social'
-                  ? 'bg-pink-600 text-white shadow-xs'
-                  : 'bg-surface-1 text-pink-600 dark:text-pink-400 hover:bg-surface-3 border border-border-subtle'
+                  ? 'bg-purple-600 text-white shadow-2xs'
+                  : 'bg-background-secondary-default text-purple-600 dark:text-purple-400 hover:bg-background-tertiary-default border border-separator-border'
               }`}
               title="Target Instagram / Facebook profile leads to discover direct decision maker emails"
             >
-              <span>📸 Social Media</span>
+              <span>Social Media</span>
               {stats?.withSocial !== undefined && (
                 <span className="text-[10px] font-mono opacity-80">({stats.withSocial})</span>
               )}
@@ -404,12 +428,12 @@ export default function OsintRunModal({
               disabled={isRunning}
               className={`px-2.5 py-1 text-xs rounded-lg font-semibold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap disabled:opacity-50 ${
                 activeScope === 'phone'
-                  ? 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-surface-1 text-amber-600 dark:text-amber-400 hover:bg-surface-3 border border-border-subtle'
+                  ? 'bg-amber-600 text-white shadow-2xs'
+                  : 'bg-background-secondary-default text-amber-600 dark:text-amber-400 hover:bg-background-tertiary-default border border-separator-border'
               }`}
               title="Target phone-verified leads to probe for digital channels"
             >
-              <span>📞 Phone Available</span>
+              <span>Phone Available</span>
               {stats?.withPhoneOnly !== undefined && (
                 <span className="text-[10px] font-mono opacity-80">({stats.withPhoneOnly})</span>
               )}
@@ -422,12 +446,12 @@ export default function OsintRunModal({
               disabled={isRunning}
               className={`px-2.5 py-1 text-xs rounded-lg font-semibold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap disabled:opacity-50 ${
                 activeScope === 'today'
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'bg-surface-1 text-gray-700 dark:text-gray-300 hover:bg-surface-3 border border-border-subtle'
+                  ? 'bg-accent-500 text-white shadow-2xs'
+                  : 'bg-background-secondary-default text-text-secondary hover:bg-background-tertiary-default hover:text-text-primary border border-separator-border'
               }`}
               title="Target today's daily 143 quota"
             >
-              <span>🎯 Daily 143</span>
+              <span>Daily 143</span>
             </button>
 
             {/* All Vault Leads */}
@@ -437,44 +461,61 @@ export default function OsintRunModal({
               disabled={isRunning}
               className={`px-2.5 py-1 text-xs rounded-lg font-semibold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap disabled:opacity-50 ${
                 activeScope === 'all' && selectedCategory === 'all'
-                  ? 'bg-brand text-white shadow-xs'
-                  : 'bg-surface-1 text-gray-700 dark:text-gray-300 hover:bg-surface-3 border border-border-subtle'
+                  ? 'bg-accent-500 text-white shadow-2xs'
+                  : 'bg-background-secondary-default text-text-secondary hover:bg-background-tertiary-default hover:text-text-primary border border-separator-border'
               }`}
               title="Run OSINT across all vault leads"
             >
-              <span>📁 All Vault ({stats?.totalLeads || 0})</span>
+              <span>All Vault ({stats?.totalLeads || 0})</span>
             </button>
 
             {/* Niche Dropdown */}
-            <select
-              value={selectedCategory}
-              disabled={isRunning}
-              onChange={(e) => !isRunning && startBatchRun(activeScope, e.target.value)}
-              className="bg-surface-1 text-gray-700 dark:text-gray-200 text-xs rounded-lg px-2.5 py-1 border border-border-subtle focus:outline-hidden focus:ring-1 focus:ring-brand cursor-pointer font-medium disabled:opacity-50 shrink-0 ml-1"
-            >
-              <option value="all">🏷️ Any Niche / Category</option>
-              {collections.map(col => (
-                <option key={col.name} value={col.name}>
-                  {col.name} ({col.count})
-                </option>
-              ))}
-            </select>
+            <div className="relative inline-flex items-center shrink-0 ml-1">
+              <select
+                value={selectedCategory}
+                disabled={isRunning}
+                onChange={(e) => !isRunning && startBatchRun(activeScope, e.target.value)}
+                className="appearance-none bg-background-secondary-default text-text-primary text-xs rounded-lg px-2.5 pr-7 py-1 border border-separator-border focus:border-accent-500 cursor-pointer font-medium disabled:opacity-50"
+              >
+                <option value="all">Any Niche / Category</option>
+                {collections.map(col => (
+                  <option key={col.name} value={col.name}>
+                    {col.name} ({col.count})
+                  </option>
+                ))}
+              </select>
+              <RiArrowDownSLine className="pointer-events-none absolute right-1.5 size-3.5 text-text-tertiary" />
+            </div>
+
+            {/* Force Refresh Cache Bypass Toggle */}
+            <div className="ml-auto flex items-center bg-background-secondary-default px-2.5 py-1 rounded-lg border border-separator-border" title="When checked, bypasses the 14-day local cache and forces live web & DNS checks on all leads">
+              <Switch
+                size="sm"
+                isSelected={forceRefresh}
+                onChange={setForceRefresh}
+                isDisabled={isRunning}
+              >
+                <span className="font-semibold text-[11px] text-text-primary">
+                  Force Fresh Re-Scan
+                </span>
+              </Switch>
+            </div>
           </div>
         </div>
 
         {/* Progress Strip & KPI Grid */}
-        <div className="p-5 border-b border-border-subtle bg-surface-2/40 space-y-4 shrink-0">
+        <div className="p-5 border-b border-separator-border bg-background-secondary-default space-y-4 shrink-0">
           {/* Progress Bar */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-xs font-mono">
-              <span className="font-semibold text-gray-900 dark:text-white">
-                Progress: <strong className="text-brand">{processed}</strong> of <strong>{total}</strong> leads processed
+              <span className="font-semibold text-text-primary">
+                Progress: <strong className="text-accent-500">{processed}</strong> of <strong>{total}</strong> leads processed
               </span>
-              <span className="font-bold text-brand">{progressPercent}%</span>
+              <span className="font-bold text-accent-500">{progressPercent}%</span>
             </div>
-            <div className="w-full h-2.5 bg-surface-2 rounded-full overflow-hidden border border-border-subtle">
+            <div className="w-full h-2.5 bg-background-tertiary-default rounded-full overflow-hidden border border-separator-border">
               <div 
-                className="h-full bg-gradient-to-r from-brand via-indigo-500 to-emerald-500 transition-all duration-300 rounded-full"
+                className="h-full bg-linear-to-r from-accent-500 via-indigo-500 to-emerald-500 transition-all duration-300 rounded-full"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
@@ -482,27 +523,27 @@ export default function OsintRunModal({
 
           {/* Telemetry Metrics */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
-            <div className="p-2.5 rounded-xl bg-surface-1 border border-border-subtle">
-              <span className="text-[10px] text-gray-400 font-mono uppercase block">Has Website 🌐</span>
+            <div className="p-2.5 rounded-xl bg-background-primary-default border border-separator-border">
+              <span className="text-[10px] text-text-tertiary font-mono uppercase block">Has Website</span>
               <span className="text-lg font-bold font-mono text-blue-600 dark:text-blue-400">
                 {job?.hasWebsiteCount || 0}
               </span>
             </div>
-            <div className="p-2.5 rounded-xl bg-surface-1 border border-border-subtle">
-              <span className="text-[10px] text-gray-400 font-mono uppercase block">No Website 🌐❌</span>
-              <span className="text-lg font-bold font-mono text-rose-600 dark:text-rose-400">
+            <div className="p-2.5 rounded-xl bg-background-primary-default border border-separator-border">
+              <span className="text-[10px] text-text-tertiary font-mono uppercase block">No Website</span>
+              <span className="text-lg font-bold font-mono text-danger-primary">
                 {job?.noWebsiteCount || 0}
               </span>
             </div>
-            <div className="p-2.5 rounded-xl bg-surface-1 border border-border-subtle">
-              <span className="text-[10px] text-gray-400 font-mono uppercase block">Uncertain (Review) ⚠️</span>
-              <span className="text-lg font-bold font-mono text-amber-600 dark:text-amber-400">
+            <div className="p-2.5 rounded-xl bg-background-primary-default border border-separator-border">
+              <span className="text-[10px] text-text-tertiary font-mono uppercase block">Uncertain</span>
+              <span className="text-lg font-bold font-mono text-warning-primary">
                 {job?.uncertainCount || 0}
               </span>
             </div>
-            <div className="p-2.5 rounded-xl bg-surface-1 border border-border-subtle">
-              <span className="text-[10px] text-gray-400 font-mono uppercase block">Failed / Errors ❌</span>
-              <span className="text-lg font-bold font-mono text-gray-500">
+            <div className="p-2.5 rounded-xl bg-background-primary-default border border-separator-border">
+              <span className="text-[10px] text-text-tertiary font-mono uppercase block">Failed / Errors</span>
+              <span className="text-lg font-bold font-mono text-text-tertiary">
                 {job?.failedCount || 0}
               </span>
             </div>
@@ -510,43 +551,43 @@ export default function OsintRunModal({
 
           {/* Currently Active Lead Banner */}
           {job?.currentLead && isRunning && (
-            <div className="p-3 rounded-xl bg-brand/10 border border-brand/30 flex items-center justify-between gap-3 animate-in fade-in">
+            <div className="p-3 rounded-xl bg-accent-500/10 border border-accent-500/30 flex items-center justify-between gap-3 animate-in fade-in">
               <div className="flex items-center gap-2.5 min-w-0">
-                <Loader2 className="h-4 w-4 text-brand animate-spin shrink-0" />
+                <RiLoader4Line className="h-4 w-4 text-accent-500 animate-spin shrink-0" />
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                    <span className="text-xs font-bold text-text-primary truncate">
                       {job.currentLead.businessName}
                     </span>
                     {job.currentLead.city && (
-                      <span className="text-[11px] text-gray-500 font-mono">
+                      <span className="text-[11px] text-text-tertiary font-mono">
                         ({job.currentLead.city})
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-brand font-mono truncate mt-0.5">
+                  <p className="text-[11px] text-accent-500 font-mono truncate mt-0.5">
                     {job.currentLead.message || 'Processing lead...'}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-1.5 shrink-0 text-[10px] font-mono">
                 <span className={`px-2 py-0.5 rounded font-medium ${
-                  job.currentLead.step === 'finding_profiles' ? 'bg-brand text-white font-bold' : 'bg-surface-2 text-gray-400'
+                  job.currentLead.step === 'finding_profiles' ? 'bg-accent-500 text-white font-bold' : 'bg-background-tertiary-default text-text-tertiary'
                 }`}>
                   1. Profiles
                 </span>
                 <span className={`px-2 py-0.5 rounded font-medium ${
-                  job.currentLead.step === 'scanning_bio' ? 'bg-brand text-white font-bold' : 'bg-surface-2 text-gray-400'
+                  job.currentLead.step === 'scanning_bio' ? 'bg-accent-500 text-white font-bold' : 'bg-background-tertiary-default text-text-tertiary'
                 }`}>
                   2. Bios
                 </span>
                 <span className={`px-2 py-0.5 rounded font-medium ${
-                  job.currentLead.step === 'verifying_site' ? 'bg-brand text-white font-bold' : 'bg-surface-2 text-gray-400'
+                  job.currentLead.step === 'verifying_site' ? 'bg-accent-500 text-white font-bold' : 'bg-background-tertiary-default text-text-tertiary'
                 }`}>
                   3. Verify
                 </span>
                 <span className={`px-2 py-0.5 rounded font-medium ${
-                  job.currentLead.step === 'enriching_contacts' ? 'bg-brand text-white font-bold' : 'bg-surface-2 text-gray-400'
+                  job.currentLead.step === 'enriching_contacts' ? 'bg-accent-500 text-white font-bold' : 'bg-background-tertiary-default text-text-tertiary'
                 }`}>
                   4. Contacts
                 </span>
@@ -555,8 +596,8 @@ export default function OsintRunModal({
           )}
 
           {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 shrink-0" />
+            <div className="p-3 rounded-xl bg-danger-primary/10 border border-danger-primary/30 text-danger-primary text-xs flex items-center gap-2">
+              <RiErrorWarningLine className="h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -565,8 +606,8 @@ export default function OsintRunModal({
         {/* Live Queue Items Table */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {(!job?.items || job.items.length === 0) ? (
-            <div className="h-40 flex flex-col items-center justify-center text-gray-400 text-xs gap-2">
-              <Loader2 className="h-6 w-6 animate-spin text-brand" />
+            <div className="h-40 flex flex-col items-center justify-center text-text-tertiary text-xs gap-2">
+              <RiLoader4Line className="h-6 w-6 animate-spin text-accent-500" />
               <span>Initializing OSINT batch worker...</span>
             </div>
           ) : (
@@ -574,25 +615,25 @@ export default function OsintRunModal({
               <div 
                 key={item.leadId}
                 className={`p-3 rounded-xl border transition-all text-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 ${
-                  item.status === 'running' ? 'bg-brand/5 border-brand/40 shadow-xs' :
+                  item.status === 'running' ? 'bg-accent-500/5 border-accent-500/40 shadow-2xs' :
                   item.decision === 'has_website' ? 'bg-blue-500/5 border-blue-500/20' :
-                  item.decision === 'no_website' ? 'bg-surface-1 border-border-subtle' :
-                  item.decision === 'uncertain' ? 'bg-amber-500/5 border-amber-500/20' :
-                  'bg-surface-1 border-border-subtle opacity-75'
+                  item.decision === 'no_website' ? 'bg-background-secondary-default border-separator-border' :
+                  item.decision === 'uncertain' ? 'bg-warning-primary/5 border-warning-primary/20' :
+                  'bg-background-secondary-default border-separator-border opacity-75'
                 }`}
               >
                 {/* Left: Lead identifier + city */}
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="font-mono text-[10px] font-bold text-gray-400 bg-surface-2 px-1.5 py-0.5 rounded shrink-0">
+                  <span className="font-mono text-[10px] font-bold text-text-tertiary bg-background-tertiary-default px-1.5 py-0.5 rounded shrink-0">
                     #{idx + 1}
                   </span>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-gray-900 dark:text-white truncate">
+                      <span className="font-semibold text-text-primary truncate">
                         {item.businessName}
                       </span>
                       {item.city && (
-                        <span className="text-[11px] text-gray-500 truncate">
+                        <span className="text-[11px] text-text-secondary truncate">
                           • {item.city}
                         </span>
                       )}
@@ -604,14 +645,14 @@ export default function OsintRunModal({
                         href={item.verifiedWebsite}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 mt-0.5 truncate"
+                        className="text-[11px] text-accent-500 hover:underline flex items-center gap-1 mt-0.5 truncate"
                       >
-                        <Globe className="h-3 w-3 shrink-0" />
+                        <RiGlobalLine className="h-3 w-3 shrink-0" />
                         <span className="truncate">{item.verifiedWebsite}</span>
-                        <ExternalLink className="h-2.5 w-2.5 shrink-0" />
+                        <RiExternalLinkLine className="h-2.5 w-2.5 shrink-0" />
                       </a>
                     ) : (
-                      <span className="text-[10px] text-gray-400 block mt-0.5">
+                      <span className="text-[10px] text-text-tertiary block mt-0.5">
                         {item.status === 'queued' ? 'Queued for social scan...' :
                          item.status === 'running' ? 'Scanning profiles & verifying links...' :
                          item.decision === 'no_website' ? 'Verified zero standalone website (authentic prospect)' :
@@ -626,15 +667,15 @@ export default function OsintRunModal({
                 <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                   {/* Contacts Summary */}
                   {item.contacts && (
-                    <div className="flex items-center gap-1.5 text-[10px] font-mono text-gray-500">
+                    <div className="flex items-center gap-1.5 text-[10px] font-mono text-text-tertiary">
                       {item.contacts.primary_email && (
-                        <span className="px-1.5 py-0.5 rounded bg-surface-2 text-gray-700 dark:text-gray-300 flex items-center gap-1">
-                          <Mail className="h-2.5 w-2.5 text-brand" />
+                        <span className="px-1.5 py-0.5 rounded bg-background-tertiary-default text-text-secondary flex items-center gap-1">
+                          <RiMailLine className="h-2.5 w-2.5 text-accent-500" />
                           <span className="truncate max-w-[120px]">{item.contacts.primary_email}</span>
                         </span>
                       )}
                       {item.contacts.whatsapp && (
-                        <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold">
+                        <span className="px-1.5 py-0.5 rounded bg-success-primary/15 text-success-primary font-bold">
                           WhatsApp
                         </span>
                       )}
@@ -643,38 +684,38 @@ export default function OsintRunModal({
 
                   {/* Decision Badge */}
                   {item.status === 'queued' && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-gray-500/10 text-gray-500 border border-gray-500/20">
-                      ⏳ Queued
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-background-tertiary-default text-text-tertiary border border-separator-border">
+                      Queued
                     </span>
                   )}
                   {item.status === 'running' && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-brand/15 text-brand border border-brand/30 flex items-center gap-1">
-                      <Loader2 className="h-3 w-3 animate-spin" />
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-accent-500/15 text-accent-500 border border-accent-500/30 flex items-center gap-1">
+                      <RiLoader4Line className="h-3 w-3 animate-spin" />
                       <span>Running</span>
                     </span>
                   )}
                   {item.status === 'done' && item.decision === 'has_website' && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30">
-                      🌐 Has Website
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-accent-500/10 text-accent-500 border border-accent-500/30">
+                      Has Website
                     </span>
                   )}
                   {item.status === 'done' && item.decision === 'no_website' && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30">
-                      🌐❌ No Website
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-danger-primary/10 text-danger-primary border border-danger-primary/30">
+                      No Website
                     </span>
                   )}
                   {item.status === 'uncertain' && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                      ⚠️ Uncertain
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-warning-primary/10 text-warning-primary border border-warning-primary/30">
+                      Uncertain
                     </span>
                   )}
                   {item.status === 'failed' && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/30">
-                      ❌ Failed
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-danger-primary/10 text-danger-primary border border-danger-primary/30">
+                      Failed
                     </span>
                   )}
                   {item.status === 'cancelled' && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-gray-500/10 text-gray-500">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-background-tertiary-default text-text-tertiary">
                       Cancelled
                     </span>
                   )}
@@ -683,61 +724,60 @@ export default function OsintRunModal({
             ))
           )}
         </div>
+      </ModalBody>
 
-        {/* Footer Actions */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-t border-border-subtle bg-surface-1 shrink-0">
-          <div className="text-xs text-gray-500">
-            {isRunning ? (
-              <span className="flex items-center gap-1.5 text-brand font-medium">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                <span>Engine active in background...</span>
-              </span>
-            ) : isCompleted ? (
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                <span>Batch verification finished!</span>
-              </span>
-            ) : isCancelled ? (
-              <span className="text-amber-500 font-medium">
-                Run stopped by user.
-              </span>
-            ) : null}
-          </div>
-
-          <div className="flex items-center gap-2">
-            {isRunning && (
-              <button
-                onClick={handleCancel}
-                className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <StopCircle className="h-3.5 w-3.5" />
-                <span>Cancel Run</span>
-              </button>
-            )}
-
-            {!isRunning && (job?.failedCount > 0 || job?.uncertainCount > 0) && (
-              <button
-                onClick={handleRetryFailed}
-                className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30 flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-                <span>Retry Failed / Uncertain ({job.failedCount + job.uncertainCount})</span>
-              </button>
-            )}
-
-            <button
-              onClick={onClose}
-              className={`px-4 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
-                isCompleted
-                  ? 'bg-brand hover:bg-brand-hover text-white shadow-xs'
-                  : 'bg-surface-2 hover:bg-surface-3 text-gray-700 dark:text-gray-300 border border-border-subtle'
-              }`}
-            >
-              {isRunning ? 'Run in Background' : 'Done'}
-            </button>
-          </div>
+      {/* Footer Actions */}
+      <ModalFooter className="flex items-center justify-between px-5 py-3.5 border-t border-separator-border bg-background-secondary-default shrink-0">
+        <div className="text-xs text-text-secondary">
+          {isRunning ? (
+            <span className="flex items-center gap-1.5 text-accent-500 font-medium">
+              <RiLoader4Line className="h-3.5 w-3.5 animate-spin" />
+              <span>Engine active in background...</span>
+            </span>
+          ) : isCompleted ? (
+            <span className="flex items-center gap-1 text-success-primary font-medium">
+              <RiCheckboxCircleLine className="h-3.5 w-3.5" />
+              <span>Batch verification finished!</span>
+            </span>
+          ) : isCancelled ? (
+            <span className="text-warning-primary font-medium">
+              Run stopped by user.
+            </span>
+          ) : null}
         </div>
-      </div>
-    </div>
+
+        <div className="flex items-center gap-2">
+          {isRunning && (
+            <Button
+              variant="danger"
+              size="small"
+              leadingIcon={RiStopCircleLine}
+              onClick={handleCancel}
+            >
+              Cancel Run
+            </Button>
+          )}
+
+          {!isRunning && (job?.failedCount > 0 || job?.uncertainCount > 0) && (
+            <Button
+              variant="secondary"
+              size="small"
+              leadingIcon={RiRefreshLine}
+              onClick={handleRetryFailed}
+            >
+              Retry Failed / Uncertain ({job.failedCount + job.uncertainCount})
+            </Button>
+          )}
+
+          <Button
+            variant={isCompleted ? "primary" : "secondary"}
+            size="small"
+            onClick={onClose}
+          >
+            {isRunning ? 'Run in Background' : 'Done'}
+          </Button>
+        </div>
+      </ModalFooter>
+    </Modal>
   );
 }

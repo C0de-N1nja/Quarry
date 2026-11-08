@@ -79,7 +79,7 @@ class TunnelService {
             this.publicUrl = match[0];
             // Persist as active base_url so all generated mockup/report links use it
             Setting.set('base_url', this.publicUrl);
-            console.log(`🌐 Cloudflare Public Tunnel established: ${this.publicUrl}`);
+            console.log(`[Tunnel] Cloudflare Public Tunnel established: ${this.publicUrl}`);
             if (!resolved) {
               resolved = true;
               resolve(this.getStatus());
