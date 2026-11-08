@@ -40,7 +40,14 @@ fi
 # 5. Native In-Repo Harvester Recon Engine
 echo "✅ Native passive subdomain & certificate recon engine active (Zero external repo needed)"
 
-# 5. Check optional CLI helpers (Holehe, Cloudflared)
+# 6. Chromium for Website Health, Speed & ADA Auditor
+if command -v chromium &>/dev/null || [ -f "/snap/bin/chromium" ]; then
+  echo "✅ Chromium browser engine detected for Pa11y WCAG 2.1 & Performance audits"
+else
+  echo "ℹ️  Chromium can be installed via 'sudo apt install chromium-browser' or snap for deep ADA audits"
+fi
+
+# 7. Check optional CLI helpers (Holehe, Cloudflared)
 if command -v holehe &>/dev/null; then
   echo "✅ Holehe email-to-social auditor is installed globally"
 else

@@ -59,7 +59,9 @@ const leadColumns = [
   'latitude REAL',
   'longitude REAL',
   'lat REAL',
-  'lng REAL'
+  'lng REAL',
+  'audit_status TEXT',
+  'audit_summary TEXT'
 ];
 
 for (const col of leadColumns) {
@@ -126,6 +128,24 @@ db.exec(`
     expires_at DATETIME NOT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_osint_cache_expires ON osint_cache (expires_at);
+
+  CREATE TABLE IF NOT EXISTS website_audits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    lead_id INTEGER NOT NULL UNIQUE,
+    url TEXT NOT NULL,
+    performance_score INTEGER DEFAULT 0,
+    accessibility_score INTEGER DEFAULT 0,
+    seo_score INTEGER DEFAULT 0,
+    security_score INTEGER DEFAULT 0,
+    overall_score INTEGER DEFAULT 0,
+    load_time_ms INTEGER DEFAULT 0,
+    violations_count INTEGER DEFAULT 0,
+    flaws_summary TEXT,
+    audit_data TEXT NOT NULL,
+    audited_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (lead_id) REFERENCES leads (id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_website_audits_lead_id ON website_audits (lead_id);
 `);
 
 // Multi-Inbox Pool Table for 300+ Emails/Day Scale

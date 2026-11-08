@@ -18,6 +18,7 @@ import {
   RiFireLine,
   RiStarLine,
   RiRefreshLine,
+  RiSpeedUpLine,
   RiCloseLine
 } from '@remixicon/react';
 
@@ -72,6 +73,7 @@ export default function BoardLeadTable({
   onFocusTierChange,
   onCleanWebsites,
   onResetOsint,
+  onOpenAudit,
   searchTerm = '',
   onSearchChange,
   currentPage = 1,
@@ -605,6 +607,18 @@ export default function BoardLeadTable({
                           title="View Prospect Dossier"
                           onClick={() => onOpenLeadDrawer ? onOpenLeadDrawer(lead) : onSelectLead(lead)}
                         />
+
+                        {lead.website && lead.has_no_website !== 1 && (
+                          <IconButton
+                            icon={RiSpeedUpLine}
+                            size="small"
+                            variant="ghost"
+                            aria-label="Full Website Audit Report"
+                            title="Open Full Website Audit Report (Speed, ADA, SEO)"
+                            className="text-cyan-400 hover:text-cyan-300"
+                            onClick={() => onOpenAudit ? onOpenAudit(lead.id) : window.open('/audit/' + lead.id)}
+                          />
+                        )}
 
                         <IconButton
                           icon={RiShieldCheckLine}

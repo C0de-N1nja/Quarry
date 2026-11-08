@@ -37,6 +37,7 @@ import {
   RiServerLine,
   RiLockLine,
   RiMailCheckLine,
+  RiSpeedUpLine,
   RiArrowDownSLine
 } from '@remixicon/react';
 import { Drawer } from '@/components/base/drawer/drawer';
@@ -49,7 +50,7 @@ import { StatusDot } from '@/components/base/badges/status-dot';
 import { PillTabList, PillTab } from '@/components/base/tabs/pill-tab';
 import AgentProgress from './boardui/AgentProgress';
 
-export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdated }) {
+export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdated, onOpenAudit }) {
   const [activeTab, setActiveTab] = useState(lead?.initialTab || 'pitch'); // 'osint', 'pitch', 'mockup', 'sequence'
   const [loading, setLoading] = useState(false);
   const [ownerLoading, setOwnerLoading] = useState(false);
@@ -645,6 +646,13 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
   }
   const emailDeliverability = contact?.email_deliverability || emailIntel?.reachability || null;
   const isEmailDeliverable = emailDeliverability === 'safe' || emailIntel?.is_deliverable;
+
+  let auditSummary = null;
+  if (currentLead?.audit_summary) {
+    try {
+      auditSummary = typeof currentLead.audit_summary === 'string' ? JSON.parse(currentLead.audit_summary) : currentLead.audit_summary;
+    } catch {}
+  }
 
   // Pipeline Dependency DAG & Gating States
   const hasDomain = Boolean(currentLead.website && !isNoWebsiteLead);
@@ -2353,6 +2361,75 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
                   </span>
                 )}
               </div>
+
+            {/* 9. Comprehensive Website Health, Speed & ADA Audit */}
+            <div className="p-4 rounded-xl bg-background-secondary-default border border-separator-border space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <RiSpeedUpLine className="h-4 w-4 text-emerald-400" />
+                  <span className="text-xs font-semibold text-text-primary">
+                    Website Health & Core Web Vitals Audit
+                  </span>
+                  {auditSummary ? (
+                    <Chip variant="subtle" color={auditSummary.overall_score >= 80 ? 'emerald' : auditSummary.overall_score >= 50 ? 'amber' : 'rose'} size="sm">
+                      Score: {auditSummary.overall_score}/100
+                    </Chip>
+                  ) : !hasDomain ? (
+                    <Chip variant="subtle" color="gray" size="sm">
+                      No Website (Locked)
+                    </Chip>
+                  ) : null}
+                </div>
+                {hasDomain ? (
+                  <Button
+                    onClick={() => {
+                      if (onOpenAudit) onOpenAudit(currentLead.id);
+                      else window.location.href = `/audit/${currentLead.id}`;
+                    }}
+                    variant="primary"
+                    size="small"
+                    leadingIcon={RiSpeedUpLine}
+                  >
+                    Open Full Audit Page ↗
+                  </Button>
+                ) : (
+                  <Button
+                    disabled={true}
+                    variant="secondary"
+                    size="small"
+                    leadingIcon={RiLockLine}
+                    title="Locked: Lead has no custom website to audit"
+                  >
+                    Locked (No Website)
+                  </Button>
+                )}
+              </div>
+              <p className="text-[11px] text-text-secondary">
+                Deep multi-factor audit powered by Google Lighthouse metrics, Pa11y WCAG 2.1 ADA compliance tests, and search engine technical diagnostics:
+              </p>
+              {auditSummary ? (
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Chip variant="subtle" color="cyan" size="sm">
+                      Performance: {auditSummary.performance_score}/100
+                    </Chip>
+                    <Chip variant="subtle" color={auditSummary.violations_count > 0 ? 'rose' : 'emerald'} size="sm">
+                      ADA Violations: {auditSummary.violations_count}
+                    </Chip>
+                    <Chip variant="subtle" color="purple" size="sm">
+                      SEO Score: {auditSummary.seo_score}/100
+                    </Chip>
+                    <span className="text-[10px] text-text-tertiary">
+                      Load Time: {auditSummary.load_time_ms ? `${(auditSummary.load_time_ms / 1000).toFixed(1)}s` : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <span className="text-xs text-text-tertiary italic">
+                  No full website audit report generated yet (Click 'Open Full Audit Page' to run live)
+                </span>
+              )}
+            </div>
           </div>
         )}
 

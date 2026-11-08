@@ -386,6 +386,45 @@ class LeadController {
       res.status(500).json({ success: false, error: err.message });
     }
   }
+
+  async auditWebsite(req, res) {
+    try {
+      const id = req.params.id;
+      const lead = Lead.findById(id);
+      if (!lead) return res.status(404).json({ success: false, error: 'Lead not found' });
+
+      const targetUrl = req.body?.url || lead.website;
+      if (!targetUrl) {
+        return res.status(400).json({ success: false, error: 'Lead does not have an active website to audit' });
+      }
+
+      const websiteAuditService = require('../services/website-audit-service');
+      const audit = await websiteAuditService.auditWebsite(targetUrl, id);
+      const updatedLead = Lead.findById(id);
+
+      res.json({
+        success: true,
+        audit,
+        lead: updatedLead
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
+  async getWebsiteAudit(req, res) {
+    try {
+      const id = req.params.id;
+      const WebsiteAudit = require('../models/WebsiteAudit');
+      const audit = WebsiteAudit.findByLeadId(id);
+      res.json({
+        success: true,
+        audit
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  }
 }
 
 module.exports = new LeadController();

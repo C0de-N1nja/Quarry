@@ -39,6 +39,7 @@ export default function LeadTable({
   onCleanWebsites,
   onPurgeAllLeads,
   onResetOsint,
+  onOpenAudit,
   onRefresh
 }) {
   const kpiStats = [
@@ -134,6 +135,7 @@ export default function LeadTable({
         onFocusTierChange={onFocusTierChange}
         onCleanWebsites={onCleanWebsites}
         onResetOsint={onResetOsint}
+        onOpenAudit={onOpenAudit}
         searchTerm={searchTerm}
         onSearchChange={onSearchChange}
         currentPage={currentPage}

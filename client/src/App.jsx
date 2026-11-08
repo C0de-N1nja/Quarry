@@ -11,6 +11,7 @@ import QueueManager from './components/QueueManager';
 import SettingsModal from './components/SettingsModal';
 import AutoPilotModal from './components/AutoPilotModal';
 import OsintRunModal from './components/OsintRunModal';
+import AuditPage from './components/audit/AuditPage';
 
 export default function App() {
   const [theme, setTheme] = useState(() => {
@@ -57,6 +58,35 @@ export default function App() {
     return localStorage.getItem('viewMode') || 'table';
   });
   const [toast, setToast] = useState(null); // { message, time, type }
+  const [auditLeadId, setAuditLeadId] = useState(() => {
+    const path = window.location.pathname;
+    if (path.startsWith('/audit/')) {
+      const id = path.replace('/audit/', '');
+      return id ? parseInt(id, 10) : null;
+    }
+    const params = new URLSearchParams(window.location.search);
+    const auditParam = params.get('auditLeadId');
+    return auditParam ? parseInt(auditParam, 10) : null;
+  });
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      if (path.startsWith('/audit/')) {
+        const id = path.replace('/audit/', '');
+        setAuditLeadId(id ? parseInt(id, 10) : null);
+      } else {
+        setAuditLeadId(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const handleOpenAudit = (leadId) => {
+    setAuditLeadId(leadId);
+    window.history.pushState({}, '', '/audit/' + leadId);
+  };
 
   const handleViewModeChange = (mode) => {
     setViewMode(mode);
@@ -333,6 +363,25 @@ export default function App() {
     }
   };
 
+  // Dedicated Website Audit Page Route View
+  if (auditLeadId) {
+    return (
+      <AuditPage
+        leadId={auditLeadId}
+        onBack={() => {
+          setAuditLeadId(null);
+          window.history.pushState({}, '', '/');
+        }}
+        onOpenPitch={(lead) => {
+          setAuditLeadId(null);
+          window.history.pushState({}, '', '/');
+          setSelectedLead(lead);
+          setActiveModal('drawer');
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-canvas text-text-primary flex font-sans transition-colors duration-200 antialiased overflow-x-hidden">
       {/* BoardUI Floating Sidebar */}
@@ -431,6 +480,7 @@ export default function App() {
           onCleanWebsites={handleCleanWebsites}
           onPurgeAllLeads={handlePurgeAllLeads}
           onResetOsint={handleResetOsint}
+          onOpenAudit={handleOpenAudit}
           onRefresh={() => {
             fetchLeads();
             fetchStats();
@@ -443,6 +493,7 @@ export default function App() {
       {selectedLead && (viewMode !== 'split' || activeModal === 'drawer') && (
         <LeadDrawer
           lead={selectedLead}
+          onOpenAudit={handleOpenAudit}
           onClose={() => {
             if (activeModal === 'drawer') {
               setActiveModal(null);

@@ -2023,6 +2023,30 @@ async function run() {
     assert(contactRow.email_intel && contactRow.email_intel.includes('apple.com'), 'email_intel must be stored in database');
   });
 
+  // Test 65: WebsiteAuditService & Pa11y/Core Web Vitals Integration
+  await testAsync('WebsiteAuditService executes DOM & WCAG diagnostics, calculates scores, and saves to website_audits', async () => {
+    const auditService = require('../services/website-audit-service');
+    const WebsiteAudit = require('../models/WebsiteAudit');
+
+    assert.strictEqual(auditService.cleanUrl('example.com'), 'https://example.com/');
+    assert.strictEqual(auditService.cleanUrl('not a url'), null);
+
+    const auditResult = await auditService.auditWebsite('https://example.com', testLeadId);
+    assert.strictEqual(auditResult.url, 'https://example.com/');
+    assert(typeof auditResult.performance_score === 'number' && auditResult.performance_score >= 0, 'Performance score must be a number');
+    assert(typeof auditResult.accessibility_score === 'number' && auditResult.accessibility_score >= 0, 'Accessibility score must be a number');
+    assert(typeof auditResult.seo_score === 'number' && auditResult.seo_score >= 0, 'SEO score must be a number');
+    assert(typeof auditResult.security_score === 'number' && auditResult.security_score >= 0, 'Security score must be a number');
+    assert(Array.isArray(auditResult.flaws_summary), 'Flaws summary must be an array');
+    assert(auditResult.pitch_draft && auditResult.pitch_draft.subject, 'Pitch draft must be synthesized');
+
+    const savedRow = WebsiteAudit.findByLeadId(testLeadId);
+    assert(savedRow, 'WebsiteAudit must be persisted in SQLite');
+    assert.strictEqual(savedRow.url, 'https://example.com/');
+    assert.strictEqual(savedRow.lead_id, testLeadId);
+    assert(savedRow.audit_data && savedRow.audit_data.url, 'Full audit data must be stored in JSON');
+  });
+
   // Cleanup test lead
   Mockup.deleteByLeadId(testLeadId);
   db.prepare('DELETE FROM leads WHERE id = ?').run(testLeadId);
