@@ -57,11 +57,18 @@ export default function DashboardSidebar({
       }`}
     >
       {/* Top Branding & Workspace */}
-      <div className="p-3.5 border-b border-separator-border flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="h-9 w-9 rounded-xl bg-linear-to-tr from-accent-500 to-indigo-500 flex items-center justify-center text-white shadow-2xs ring-1 ring-white/20 shrink-0">
+      <div className={`p-3.5 border-b border-separator-border flex items-center ${collapsed ? 'justify-center relative' : 'justify-between gap-2'}`}>
+        <div className={`flex items-center gap-2.5 min-w-0 ${collapsed ? 'justify-center' : ''}`}>
+          <button
+            type="button"
+            onClick={() => collapsed && setCollapsed(false)}
+            className={`h-9 w-9 rounded-xl bg-linear-to-tr from-accent-500 to-indigo-500 flex items-center justify-center text-white shadow-2xs ring-1 ring-white/20 shrink-0 ${
+              collapsed ? 'cursor-pointer hover:scale-105 transition-transform' : ''
+            }`}
+            title={collapsed ? "Quarry OS — Click to expand sidebar" : "Quarry OS"}
+          >
             <RiFlashlightFill className="h-5 w-5" />
-          </div>
+          </button>
           {!collapsed && (
             <div className="min-w-0">
               <h1 className="text-xs font-bold text-text-primary tracking-tight flex items-center gap-1.5 truncate">
@@ -73,14 +80,29 @@ export default function DashboardSidebar({
           )}
         </div>
 
-        <IconButton
-          size="small"
-          icon={collapsed ? RiArrowRightSLine : RiArrowLeftSLine}
-          aria-label={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-          onClick={() => setCollapsed(!collapsed)}
-          title={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-          className="shrink-0 text-text-tertiary hover:text-text-primary"
-        />
+        {!collapsed && (
+          <IconButton
+            size="small"
+            icon={RiArrowLeftSLine}
+            aria-label="Collapse Sidebar"
+            onClick={() => setCollapsed(true)}
+            title="Collapse Sidebar"
+            className="shrink-0 text-text-tertiary hover:text-text-primary"
+          />
+        )}
+
+        {/* Floating Border Expand Toggle when Collapsed */}
+        {collapsed && (
+          <button
+            type="button"
+            onClick={() => setCollapsed(false)}
+            aria-label="Expand Sidebar"
+            title="Expand Sidebar"
+            className="absolute -right-3 top-5 z-40 size-6 rounded-full border border-separator-border bg-background-primary-default text-text-secondary hover:text-text-primary shadow-xs hover:shadow-md flex items-center justify-center cursor-pointer hover:scale-110 transition-all"
+          >
+            <RiArrowRightSLine className="size-3.5" />
+          </button>
+        )}
       </div>
 
       {/* Main Navigation */}
@@ -249,7 +271,7 @@ export default function DashboardSidebar({
 
       {/* Bottom Footer: Theme, Settings & Status */}
       <div className="p-3 border-t border-separator-border bg-background-secondary-default space-y-2">
-        <div className="flex items-center justify-between gap-1">
+        <div className={`flex items-center gap-1 ${collapsed ? 'justify-center' : 'justify-between'}`}>
           {/* Theme Toggle Button (BoardUI Moon-Star / Sun Icon Button) */}
           <IconButton
             size="small"
