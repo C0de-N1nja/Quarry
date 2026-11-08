@@ -31,7 +31,13 @@ if [ -d "$SERVER_TOOLS/whatslookup" ]; then
   echo "✅ Bundled WhatsLookup ready"
 fi
 
-# 4. Native In-Repo Harvester Recon Engine
+# 4. Bundled check-if-email-exists Rust Binary (Option 1)
+if [ -f "$SERVER_TOOLS/email-verifier/check_if_email_exists" ]; then
+  chmod +x "$SERVER_TOOLS/email-verifier/check_if_email_exists"
+  echo "✅ Bundled check-if-email-exists Rust binary executable ready"
+fi
+
+# 5. Native In-Repo Harvester Recon Engine
 echo "✅ Native passive subdomain & certificate recon engine active (Zero external repo needed)"
 
 # 5. Check optional CLI helpers (Holehe, Cloudflared)

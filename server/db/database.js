@@ -69,7 +69,9 @@ for (const col of leadColumns) {
 const contactColumns = [
   'whatsapp TEXT',
   'avatar_url TEXT',
-  'gravatar_data TEXT'
+  'gravatar_data TEXT',
+  'email_deliverability TEXT',
+  'email_intel TEXT'
 ];
 
 for (const col of contactColumns) {

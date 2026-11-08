@@ -1999,6 +1999,30 @@ async function run() {
     assert(leadRow?.osint_evidence && leadRow.osint_evidence.includes('harvester_intel'), 'Lead osint_evidence must record harvester_intel');
   });
 
+  // Test 64: EmailVerifierService Rust check-if-email-exists Integration
+  await testAsync('EmailVerifierService detects invalid syntax, verifies MX records, and updates contact deliverability', async () => {
+    const verifier = require('../services/email-verifier-service');
+    assert.strictEqual(verifier.isAvailable(), true, 'check_if_email_exists binary must be present in server/tools/email-verifier');
+
+    // 1. Invalid syntax check
+    const invalidRes = await verifier.verifyEmail('notanemailaddress');
+    assert.strictEqual(invalidRes.is_deliverable, false, 'Invalid email format must not be deliverable');
+    assert.strictEqual(invalidRes.deliverability, 'invalid', 'Invalid email format must return invalid deliverability');
+
+    // 2. Real domain MX verification with leadId persistence
+    const testEmail = 'info@apple.com';
+    const validRes = await verifier.verifyEmail(testEmail, testLeadId, { timeoutMs: 4000 });
+    assert.strictEqual(validRes.ok, true, 'Email verifier should return ok');
+    assert.strictEqual(validRes.mx_accepts_mail, true, 'apple.com must accept mail');
+    assert(Array.isArray(validRes.mx_records) && validRes.mx_records.length > 0, 'Must have MX records');
+
+    const contactRow = db.prepare('SELECT email, is_mx_valid, email_deliverability, email_intel FROM contacts WHERE lead_id = ?').get(testLeadId);
+    assert.strictEqual(contactRow.email, testEmail, 'Contact email must match');
+    assert.strictEqual(contactRow.is_mx_valid, 1, 'is_mx_valid must be 1');
+    assert(contactRow.email_deliverability, 'email_deliverability must be persisted');
+    assert(contactRow.email_intel && contactRow.email_intel.includes('apple.com'), 'email_intel must be stored in database');
+  });
+
   // Cleanup test lead
   Mockup.deleteByLeadId(testLeadId);
   db.prepare('DELETE FROM leads WHERE id = ?').run(testLeadId);

@@ -21,13 +21,17 @@ class Contact {
       holehe_results,
       avatar_url,
       gravatar_data,
-      is_mx_valid = 0
+      is_mx_valid = 0,
+      email_deliverability = null,
+      email_intel = null
     } = data;
 
     const existing = this.findByLeadId(lead_id);
     const socialLinksJson = typeof social_links === 'string' ? social_links : JSON.stringify(social_links || {});
     const holeheJson = typeof holehe_results === 'string' ? holehe_results : JSON.stringify(holehe_results || []);
     const gravatarJson = gravatar_data ? (typeof gravatar_data === 'string' ? gravatar_data : JSON.stringify(gravatar_data)) : null;
+    const emailIntelJson = email_intel ? (typeof email_intel === 'string' ? email_intel : JSON.stringify(email_intel)) : (existing ? existing.email_intel : null);
+    const emailDeliverability = email_deliverability !== undefined ? email_deliverability : (existing ? existing.email_deliverability : null);
     let cleanEmail = email;
     if (cleanEmail && cleanEmail.trim()) {
       const collision = db.prepare(`
@@ -50,7 +54,8 @@ class Contact {
         SET email = ?, email_type = ?, contact_name = ?, contact_title = ?,
             phone = ?, whatsapp = ?, social_links = ?, holehe_results = ?,
             avatar_url = COALESCE(?, avatar_url), gravatar_data = COALESCE(?, gravatar_data),
-            is_mx_valid = ?, verified_at = CURRENT_TIMESTAMP
+            is_mx_valid = ?, email_deliverability = COALESCE(?, email_deliverability),
+            email_intel = COALESCE(?, email_intel), verified_at = CURRENT_TIMESTAMP
         WHERE lead_id = ?
       `).run(
         cleanEmail,
@@ -64,14 +69,17 @@ class Contact {
         avatar_url || null,
         gravatarJson,
         is_mx_valid,
+        emailDeliverability,
+        emailIntelJson,
         lead_id
       );
     } else {
       db.prepare(`
         INSERT INTO contacts (
           lead_id, email, email_type, contact_name, contact_title,
-          phone, whatsapp, social_links, holehe_results, avatar_url, gravatar_data, is_mx_valid
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          phone, whatsapp, social_links, holehe_results, avatar_url, gravatar_data, is_mx_valid,
+          email_deliverability, email_intel
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         lead_id,
         cleanEmail,
@@ -84,7 +92,9 @@ class Contact {
         holeheJson,
         avatar_url || null,
         gravatarJson,
-        is_mx_valid
+        is_mx_valid,
+        emailDeliverability,
+        emailIntelJson
       );
     }
 

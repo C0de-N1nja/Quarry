@@ -353,6 +353,39 @@ class LeadController {
       res.status(500).json({ success: false, error: err.message });
     }
   }
+
+  async verifyEmail(req, res) {
+    try {
+      const id = req.params.id;
+      const lead = Lead.findById(id);
+      if (!lead) return res.status(404).json({ success: false, error: 'Lead not found' });
+
+      const Contact = require('../models/Contact');
+      const contact = Contact.findByLeadId(id);
+
+      const targetEmail = req.body?.email || contact?.email || lead.email;
+      if (!targetEmail) {
+        return res.status(400).json({ success: false, error: 'Lead has no email address to verify deliverability' });
+      }
+
+      const emailVerifierService = require('../services/email-verifier-service');
+      const result = await emailVerifierService.verifyEmail(targetEmail, id, {
+        timeoutMs: 8000
+      });
+
+      const updatedLead = Lead.findById(id);
+      const updatedContact = Contact.findByLeadId(id);
+
+      res.json({
+        success: true,
+        emailVerification: result,
+        lead: updatedLead,
+        contact: updatedContact
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  }
 }
 
 module.exports = new LeadController();

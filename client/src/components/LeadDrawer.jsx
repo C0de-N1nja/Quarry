@@ -36,6 +36,7 @@ import {
   RiFingerprintLine,
   RiServerLine,
   RiLockLine,
+  RiMailCheckLine,
   RiArrowDownSLine
 } from '@remixicon/react';
 import { Drawer } from '@/components/base/drawer/drawer';
@@ -86,6 +87,7 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
   const [whatsappVerifying, setWhatsappVerifying] = useState(false);
   const [blackbirdScanning, setBlackbirdScanning] = useState(false);
   const [harvesterScanning, setHarvesterScanning] = useState(false);
+  const [emailVerifying, setEmailVerifying] = useState(false);
   const [socialResolveLoading, setSocialResolveLoading] = useState(false);
   const [socialResolveReport, setSocialResolveReport] = useState(null);
 
@@ -376,6 +378,26 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
     }
   };
 
+  const handleVerifyEmail = async () => {
+    setEmailVerifying(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch(`/api/leads/${lead.id}/verify-email`, { method: 'POST' });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+
+      const status = data.emailVerification?.reachability || 'verified';
+      setActionMsg(`Email verification complete: ${status.toUpperCase()} (${data.emailVerification?.mx_accepts_mail ? 'MX Valid' : 'No MX'}).`);
+      await fetchLeadDetail();
+      if (onRefreshLead) onRefreshLead();
+      setTimeout(() => setActionMsg(null), 3500);
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to verify email deliverability');
+    } finally {
+      setEmailVerifying(false);
+    }
+  };
+
   // Re-run OSINT
   const handleRunOsint = async () => {
     setLoading(true);
@@ -617,6 +639,13 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
   const harvesterSubdomains = Array.isArray(harvesterIntel?.subdomains) ? harvesterIntel.subdomains : [];
   const harvesterEmails = Array.isArray(harvesterIntel?.emails) ? harvesterIntel.emails : [];
 
+  let emailIntel = null;
+  if (contact?.email_intel) {
+    try { emailIntel = typeof contact.email_intel === 'string' ? JSON.parse(contact.email_intel) : contact.email_intel; } catch {}
+  }
+  const emailDeliverability = contact?.email_deliverability || emailIntel?.reachability || null;
+  const isEmailDeliverable = emailDeliverability === 'safe' || emailIntel?.is_deliverable;
+
   // Pipeline Dependency DAG & Gating States
   const hasDomain = Boolean(currentLead.website && !isNoWebsiteLead);
   const hasPhone = Boolean(currentLead.phone || contact?.phone);
@@ -650,6 +679,11 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
       id: 'email',
       label: 'Email & Inboxes',
       status: !hasEmail ? 'locked' : (parsedHolehe.length > 0 ? 'completed' : 'ready')
+    },
+    {
+      id: 'deliverability',
+      label: 'Email Deliverability',
+      status: !hasEmail ? 'locked' : (emailDeliverability ? 'completed' : 'ready')
     },
     {
       id: 'social',
@@ -2082,7 +2116,107 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
               </div>
             </div>
 
-            {/* 6. Blackbird OSINT Footprint (574+ Networks) */}
+            {/* 6. Reacher Email Deliverability (check-if-email-exists Rust Engine) */}
+            <div className="p-4 rounded-xl bg-background-secondary-default border border-separator-border space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <RiMailCheckLine className="h-4 w-4 text-emerald-400" />
+                  <span className="text-xs font-semibold text-text-primary">
+                    Email Deliverability (check-if-email-exists)
+                  </span>
+                  {emailDeliverability ? (
+                    <Chip
+                      variant="subtle"
+                      color={
+                        emailDeliverability === 'safe'
+                          ? 'emerald'
+                          : emailDeliverability === 'risky'
+                          ? 'amber'
+                          : 'rose'
+                      }
+                      size="sm"
+                    >
+                      {emailDeliverability === 'safe'
+                        ? 'Safe (Deliverable)'
+                        : emailDeliverability === 'risky'
+                        ? 'Risky (Catch-All / Filtered)'
+                        : 'Invalid / Dead Mailbox'}
+                    </Chip>
+                  ) : !hasEmail ? (
+                    <Chip variant="subtle" color="gray" size="sm">
+                      Needs Email (Locked)
+                    </Chip>
+                  ) : null}
+                </div>
+                {hasEmail ? (
+                  <Button
+                    onClick={handleVerifyEmail}
+                    disabled={emailVerifying}
+                    variant="secondary"
+                    size="small"
+                    leadingIcon={emailVerifying ? Loader2 : RefreshCw}
+                  >
+                    {emailDeliverability ? 'Re-Verify Email' : 'Verify Deliverability'}
+                  </Button>
+                ) : (
+                  <Button
+                    disabled={true}
+                    variant="secondary"
+                    size="small"
+                    leadingIcon={RiLockLine}
+                    title="Locked: Discover or enter decision-maker email first"
+                  >
+                    Locked (Needs Email)
+                  </Button>
+                )}
+              </div>
+              <p className="text-[11px] text-text-secondary">
+                Rust-powered SMTP handshake, MX validation, catch-all detection, and burner email check without sending mail:
+              </p>
+              {emailIntel ? (
+                <div className="space-y-2 pt-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Chip variant="subtle" color={emailIntel.mx_accepts_mail ? 'emerald' : 'rose'} size="sm">
+                      {emailIntel.mx_accepts_mail ? 'MX Valid' : 'No MX Records'}
+                    </Chip>
+                    {emailIntel.is_deliverable && (
+                      <Chip variant="subtle" color="emerald" size="sm">
+                        SMTP 250 Deliverable
+                      </Chip>
+                    )}
+                    {emailIntel.is_catch_all && (
+                      <Chip variant="subtle" color="amber" size="sm">
+                        Catch-All Server
+                      </Chip>
+                    )}
+                    {emailIntel.is_disposable && (
+                      <Chip variant="subtle" color="rose" size="sm">
+                        Disposable / Burner Email
+                      </Chip>
+                    )}
+                    {emailIntel.is_role_account && (
+                      <Chip variant="subtle" color="blue" size="sm">
+                        Role / Alias Account
+                      </Chip>
+                    )}
+                    <span className="text-[10px] text-text-tertiary">
+                      Verified via {emailIntel.verified_via || 'Rust Engine'}
+                    </span>
+                  </div>
+                  {emailIntel.mx_records?.length > 0 && (
+                    <div className="text-[10px] text-text-tertiary truncate">
+                      Primary MX: <code className="text-text-secondary">{emailIntel.mx_records[0]}</code>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <span className="text-xs text-text-tertiary italic">
+                  No email deliverability check executed yet (Click 'Verify Deliverability')
+                </span>
+              )}
+            </div>
+
+            {/* 7. Blackbird OSINT Footprint (574+ Networks) */}
             <div className="p-4 rounded-xl bg-background-secondary-default border border-separator-border space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
@@ -2143,7 +2277,7 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
               </div>
             </div>
 
-            {/* 7. theHarvester Domain & Infrastructure Recon */}
+            {/* 8. theHarvester Domain & Infrastructure Recon */}
             <div className="p-4 rounded-xl bg-background-secondary-default border border-separator-border space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
