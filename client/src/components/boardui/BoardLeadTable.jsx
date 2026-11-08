@@ -20,7 +20,9 @@ import {
   RiStarLine,
   RiRefreshLine,
   RiSpeedUpLine,
-  RiCloseLine
+  RiCloseLine,
+  RiMailCheckLine,
+  RiTimeLine
 } from '@remixicon/react';
 
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '@/components/base/table/table';
@@ -182,10 +184,11 @@ export default function BoardLeadTable({
           <PillTabList className="flex-wrap">
             <PillTab
               variant="blue"
-              isSelected={activeFilter === 'all' && focusTier === 'vault'}
+              isSelected={activeFilter === 'all' && contactChannel === 'all' && focusTier === 'vault'}
               onSelect={() => {
                 if (onNicheChange) onNicheChange('all');
                 if (onFocusTierChange) onFocusTierChange('vault');
+                if (onContactChannelChange) onContactChannelChange('all');
                 if (onFilterChange) onFilterChange('all');
               }}
             >
@@ -194,10 +197,24 @@ export default function BoardLeadTable({
 
             <PillTab
               variant="blue"
+              icon={RiMailCheckLine}
+              isSelected={contactChannel === 'has_email'}
+              onSelect={() => {
+                if (onFocusTierChange) onFocusTierChange('vault');
+                if (onContactChannelChange) onContactChannelChange(contactChannel === 'has_email' ? 'all' : 'has_email');
+                if (onFilterChange) onFilterChange('all');
+              }}
+            >
+              <span>Ready to Pitch ({stats?.enriched || 0})</span>
+            </PillTab>
+
+            <PillTab
+              variant="blue"
               icon={RiFireLine}
               isSelected={activeFilter === 'no_website'}
               onSelect={() => {
                 if (onFocusTierChange) onFocusTierChange('vault');
+                if (onContactChannelChange) onContactChannelChange('all');
                 if (onFilterChange) onFilterChange(activeFilter === 'no_website' ? 'all' : 'no_website');
               }}
             >
@@ -209,6 +226,7 @@ export default function BoardLeadTable({
               icon={RiStarLine}
               isSelected={focusTier === 'gold'}
               onSelect={() => {
+                if (onContactChannelChange) onContactChannelChange('all');
                 if (onFocusTierChange) onFocusTierChange(focusTier === 'gold' ? 'vault' : 'gold');
               }}
             >
@@ -216,19 +234,24 @@ export default function BoardLeadTable({
             </PillTab>
 
             <PillTab
-              variant="gray"
-              isSelected={activeFilter === 'enriched'}
+              variant="blue"
+              icon={RiTimeLine}
+              isSelected={activeFilter === 'pitched'}
               onSelect={() => {
-                if (onFilterChange) onFilterChange(activeFilter === 'enriched' ? 'all' : 'enriched');
+                if (onFocusTierChange) onFocusTierChange('vault');
+                if (onContactChannelChange) onContactChannelChange('all');
+                if (onFilterChange) onFilterChange(activeFilter === 'pitched' ? 'all' : 'pitched');
               }}
             >
-              <span>Enriched ({stats?.enriched || 0})</span>
+              <span>Follow-Ups Due ({stats?.pitched || 0})</span>
             </PillTab>
 
             <PillTab
               variant="gray"
               isSelected={activeFilter === 'won'}
               onSelect={() => {
+                if (onFocusTierChange) onFocusTierChange('vault');
+                if (onContactChannelChange) onContactChannelChange('all');
                 if (onFilterChange) onFilterChange(activeFilter === 'won' ? 'all' : 'won');
               }}
             >

@@ -14,6 +14,7 @@ import OsintRunModal from './components/OsintRunModal';
 import AuditPage from './components/audit/AuditPage';
 import CommandPalette from './components/boardui/CommandPalette';
 import KeyboardShortcutsModal from './components/boardui/KeyboardShortcutsModal';
+import DailyFocusHero from './components/boardui/DailyFocusHero';
 import { Toaster, toast } from '@/components/base/toast/toast';
 
 export default function App() {
@@ -447,6 +448,17 @@ export default function App() {
 
         {/* Main Content Area */}
         <main className="flex-1 w-full max-w-(--breakpoint-2xl) mx-auto px-3 sm:px-6 lg:px-8 py-4">
+        {/* Daily Outreach Focus Cockpit */}
+        <DailyFocusHero
+          stats={stats}
+          leads={leads}
+          onStartOutreachBatch={() => {
+            setAutoPilotSelectedLeads(null);
+            setActiveModal('autopilot');
+          }}
+          onOpenQueue={() => setActiveModal('queue')}
+        />
+
         <LeadTable
           leads={leads}
           activeFilter={activeFilter}

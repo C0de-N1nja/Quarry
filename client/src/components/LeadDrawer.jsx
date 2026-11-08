@@ -49,9 +49,12 @@ import { Chip } from '@/components/base/badges/chip';
 import { StatusDot } from '@/components/base/badges/status-dot';
 import { PillTabList, PillTab } from '@/components/base/tabs/pill-tab';
 import AgentProgress from './boardui/AgentProgress';
+import WhatsAppModal from './boardui/WhatsAppModal';
+import { toast } from '@/components/base/toast/toast';
 
 export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdated, onOpenAudit }) {
   const [activeTab, setActiveTab] = useState(lead?.initialTab || 'pitch'); // 'osint', 'pitch', 'mockup', 'sequence'
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [ownerLoading, setOwnerLoading] = useState(false);
   const [manualOwnerName, setManualOwnerName] = useState('');
@@ -774,6 +777,29 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
               <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-background-tertiary-default border border-separator-border text-text-secondary font-mono text-[11px]">
                 <RiPhoneLine className="size-3 text-foreground-icon-secondary" />
                 <a href={`tel:${currentLead.phone}`} className="hover:underline">{currentLead.phone}</a>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(currentLead.phone);
+                    toast.success('Phone copied to clipboard!', { description: currentLead.phone });
+                  }}
+                  className="p-0.5 text-text-tertiary hover:text-text-primary rounded hover:bg-background-secondary-hover cursor-pointer transition-colors"
+                  title="Copy Phone Number"
+                >
+                  <RiFileCopyLine className="size-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsWhatsAppModalOpen(true);
+                  }}
+                  className="p-0.5 text-emerald-500 hover:text-emerald-400 rounded hover:bg-emerald-500/10 cursor-pointer transition-colors"
+                  title="Open WhatsApp Outreach Modal"
+                >
+                  <RiWhatsappLine className="size-3" />
+                </button>
                 {currentLead.phone_type && currentLead.phone_type !== 'unknown' ? (
                   <Chip variant="subtle" color={currentLead.phone_type.includes('Mobile') ? "emerald" : "blue"} size="sm">
                     {currentLead.phone_type} {currentLead.carrier && currentLead.carrier !== 'unknown' ? `• ${currentLead.carrier}` : ''}
@@ -947,11 +973,34 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
                     <>
                       <Mail className="h-3.5 w-3.5 text-accent-500 shrink-0" />
                       <span>{contact.contact_name || lead.business_name} ({contact.email})</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(contact.email);
+                          toast.success('Email copied to clipboard!', { description: contact.email });
+                        }}
+                        className="p-0.5 text-text-tertiary hover:text-text-primary rounded hover:bg-background-secondary-hover cursor-pointer transition-colors"
+                        title="Copy Email Address"
+                      >
+                        <RiFileCopyLine className="size-3" />
+                      </button>
                     </>
                   ) : (contact?.whatsapp || currentLead?.whatsapp) ? (
                     <>
                       <MessageCircle className="h-3.5 w-3.5 text-success-primary shrink-0" />
                       <span>WhatsApp Direct Outreach ({contact?.phone || currentLead?.phone || 'Available'})</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsWhatsAppModalOpen(true);
+                        }}
+                        className="p-0.5 text-emerald-500 hover:text-emerald-400 rounded hover:bg-emerald-500/10 cursor-pointer transition-colors"
+                        title="Open WhatsApp Outreach Modal"
+                      >
+                        <RiExternalLinkLine className="size-3" />
+                      </button>
                     </>
                   ) : currentLead?.phone ? (
                     <>
@@ -1149,13 +1198,13 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
 
               {(contact?.whatsapp || currentLead?.whatsapp) ? (
                 <Button
-                  onClick={handleShareWhatsApp}
+                  onClick={() => setIsWhatsAppModalOpen(true)}
                   variant="whatsapp"
                   size="small"
                   leadingIcon={MessageCircle}
-                  title="Open WhatsApp in new tab"
+                  title="Open WhatsApp Outreach Cockpit"
                 >
-                  Open WhatsApp
+                  WhatsApp Direct
                 </Button>
               ) : (
                 <Button
@@ -1189,6 +1238,36 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
               <p className="text-text-secondary text-[11px] leading-relaxed">
                 Over 70% of high-ticket B2B deals close on the 1st or 2nd follow-up. This cadence keeps you top-of-mind with respectful, high-value touches without being spammy.
               </p>
+            </div>
+
+            {/* Visual Sequence Drip Stepper & Connection Line */}
+            <div className="relative flex items-center justify-between px-8 py-2">
+              <div className="absolute left-8 right-8 top-1/2 -translate-y-1/2 h-1 bg-separator-border rounded-full -z-0" />
+              <div 
+                className="absolute left-8 top-1/2 -translate-y-1/2 h-1 bg-accent-500 rounded-full transition-all duration-300 -z-0" 
+                style={{ width: sequenceStep >= 3 ? '100%' : sequenceStep >= 2 ? '50%' : '0%' }}
+              />
+
+              {/* Step 1 Node */}
+              <div className={`relative z-10 flex size-8 items-center justify-center rounded-full text-caption-1-bold transition-all ${
+                sequenceStep >= 1 ? 'bg-accent-600 text-white shadow-xs ring-4 ring-background-primary-default' : 'bg-background-tertiary-default text-text-tertiary border border-separator-border'
+              }`}>
+                {sequenceStep >= 1 ? <RiCheckLine className="size-4" /> : '1'}
+              </div>
+
+              {/* Step 2 Node */}
+              <div className={`relative z-10 flex size-8 items-center justify-center rounded-full text-caption-1-bold transition-all ${
+                sequenceStep >= 2 ? 'bg-accent-600 text-white shadow-xs ring-4 ring-background-primary-default' : selectedSequenceStep === 2 ? 'bg-accent-500/20 text-accent-500 ring-4 ring-background-primary-default border-2 border-accent-500' : 'bg-background-tertiary-default text-text-tertiary border border-separator-border'
+              }`}>
+                {sequenceStep >= 2 ? <RiCheckLine className="size-4" /> : '2'}
+              </div>
+
+              {/* Step 3 Node */}
+              <div className={`relative z-10 flex size-8 items-center justify-center rounded-full text-caption-1-bold transition-all ${
+                sequenceStep >= 3 ? 'bg-accent-600 text-white shadow-xs ring-4 ring-background-primary-default' : selectedSequenceStep === 3 ? 'bg-accent-500/20 text-accent-500 ring-4 ring-background-primary-default border-2 border-accent-500' : 'bg-background-tertiary-default text-text-tertiary border border-separator-border'
+              }`}>
+                {sequenceStep >= 3 ? <RiCheckLine className="size-4" /> : '3'}
+              </div>
             </div>
 
             {/* 3 Step Pipeline Cards */}
@@ -2029,12 +2108,12 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
                     </Button>
                     <Button
                       type="button"
-                      onClick={handleShareWhatsApp}
+                      onClick={() => setIsWhatsAppModalOpen(true)}
                       variant="whatsapp"
                       size="small"
                       leadingIcon={ExternalLink}
                     >
-                      Chat on WhatsApp
+                      WhatsApp Cockpit
                     </Button>
                   </div>
                 </div>
@@ -2691,6 +2770,14 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
           </Button>
         </div>
       </div>
+
+      {/* Direct WhatsApp Outreach Cockpit Modal */}
+      <WhatsAppModal
+        isOpen={isWhatsAppModalOpen}
+        onClose={() => setIsWhatsAppModalOpen(false)}
+        lead={currentLead}
+        prototypeUrl={`${window.location.origin}${prototypePath}`}
+      />
     </Drawer>
   );
 }
