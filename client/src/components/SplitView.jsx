@@ -397,7 +397,7 @@ export default function SplitView({
                       target="_blank"
                       rel="noopener noreferrer"
                       size="small"
-                      variant="secondary"
+                      variant="google-subtle"
                       leadingIcon={RiMapPinLine}
                       trailingIcon={RiArrowRightUpLine}
                       title="Open Google Maps Profile"
@@ -427,8 +427,7 @@ export default function SplitView({
                     target="_blank"
                     rel="noopener noreferrer"
                     size="small"
-                    variant="primary"
-                    className="!bg-emerald-600 hover:!bg-emerald-700 !text-white"
+                    variant="whatsapp"
                     leadingIcon={RiWhatsappLine}
                     trailingIcon={RiArrowRightUpLine}
                     title="Open 1-Click WhatsApp outreach chat with prefilled pitch"
@@ -443,7 +442,6 @@ export default function SplitView({
                     href={`mailto:${currentLead.email}?subject=${encodeURIComponent(`Website concept for ${currentLead.business_name}`)}`}
                     size="small"
                     variant="primary"
-                    className="!bg-blue-600 hover:!bg-blue-700 !text-white"
                     leadingIcon={RiMailLine}
                     trailingIcon={RiArrowRightUpLine}
                   >
@@ -465,7 +463,7 @@ export default function SplitView({
                   <ButtonLink
                     href={`tel:${currentLead.phone}`}
                     size="small"
-                    variant="secondary"
+                    variant="phone"
                     leadingIcon={RiPhoneLine}
                   >
                     Call {currentLead.phone}
@@ -588,7 +586,7 @@ export default function SplitView({
                       target="_blank"
                       rel="noopener noreferrer"
                       size="xs"
-                      variant="secondary"
+                      variant="instagram"
                       leadingIcon={RiInstagramLine}
                     >
                       Instagram
@@ -600,7 +598,7 @@ export default function SplitView({
                       target="_blank"
                       rel="noopener noreferrer"
                       size="xs"
-                      variant="secondary"
+                      variant="facebook"
                       leadingIcon={RiFacebookCircleLine}
                     >
                       Facebook
@@ -612,7 +610,7 @@ export default function SplitView({
                       target="_blank"
                       rel="noopener noreferrer"
                       size="xs"
-                      variant="secondary"
+                      variant="linkedin"
                       leadingIcon={RiLinkedinBoxLine}
                     >
                       LinkedIn
@@ -624,7 +622,7 @@ export default function SplitView({
                       target="_blank"
                       rel="noopener noreferrer"
                       size="xs"
-                      variant="secondary"
+                      variant="twitter"
                       leadingIcon={RiTwitterXLine}
                     >
                       X

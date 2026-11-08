@@ -44,7 +44,24 @@ import { directionalIconClass } from "@/utils/directional-icon";
  * `variant` to avoid the clash.
  */
 
-type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "ghost"
+  | "danger"
+  | "whatsapp"
+  | "whatsapp-subtle"
+  | "facebook"
+  | "facebook-subtle"
+  | "linkedin"
+  | "linkedin-subtle"
+  | "instagram"
+  | "instagram-subtle"
+  | "twitter"
+  | "twitter-subtle"
+  | "google"
+  | "google-subtle"
+  | "phone";
 type ButtonSize = "medium" | "small" | "xs" | "md" | "sm";
 type ResolvedButtonSize = "medium" | "small" | "xs";
 
@@ -139,6 +156,58 @@ const styles = sortCx({
       "hover:bg-button-ghost-hover active:bg-button-ghost-active",
       "disabled:bg-button-ghost-disabled disabled:text-button-ghost-disabled-foreground disabled:shadow-none",
       "aria-disabled:bg-button-ghost-disabled aria-disabled:text-button-ghost-disabled-foreground aria-disabled:shadow-none",
+    ].join(" "),
+    whatsapp: [
+      "bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-white shadow-xs font-medium",
+      "disabled:opacity-50 disabled:shadow-none aria-disabled:opacity-50 aria-disabled:shadow-none",
+    ].join(" "),
+    "whatsapp-subtle": [
+      "bg-emerald-500/10 hover:bg-emerald-500/20 active:bg-emerald-500/25 text-emerald-500 border border-emerald-500/30 shadow-xs",
+      "disabled:opacity-50 disabled:shadow-none aria-disabled:opacity-50 aria-disabled:shadow-none",
+    ].join(" "),
+    facebook: [
+      "bg-[#1877F2] hover:bg-[#166fe5] active:bg-[#1465d2] text-white shadow-xs font-medium",
+      "disabled:opacity-50 disabled:shadow-none aria-disabled:opacity-50 aria-disabled:shadow-none",
+    ].join(" "),
+    "facebook-subtle": [
+      "bg-blue-500/10 hover:bg-blue-500/20 active:bg-blue-500/25 text-blue-500 border border-blue-500/30 shadow-xs",
+      "disabled:opacity-50 disabled:shadow-none aria-disabled:opacity-50 aria-disabled:shadow-none",
+    ].join(" "),
+    linkedin: [
+      "bg-[#0A66C2] hover:bg-[#095196] active:bg-[#08447d] text-white shadow-xs font-medium",
+      "disabled:opacity-50 disabled:shadow-none aria-disabled:opacity-50 aria-disabled:shadow-none",
+    ].join(" "),
+    "linkedin-subtle": [
+      "bg-sky-500/10 hover:bg-sky-500/20 active:bg-sky-500/25 text-sky-500 border border-sky-500/30 shadow-xs",
+      "disabled:opacity-50 disabled:shadow-none aria-disabled:opacity-50 aria-disabled:shadow-none",
+    ].join(" "),
+    instagram: [
+      "bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#FCB045] hover:opacity-95 active:opacity-90 text-white shadow-xs font-medium",
+      "disabled:opacity-50 disabled:shadow-none aria-disabled:opacity-50 aria-disabled:shadow-none",
+    ].join(" "),
+    "instagram-subtle": [
+      "bg-pink-500/10 hover:bg-pink-500/20 active:bg-pink-500/25 text-pink-500 border border-pink-500/30 shadow-xs",
+      "disabled:opacity-50 disabled:shadow-none aria-disabled:opacity-50 aria-disabled:shadow-none",
+    ].join(" "),
+    twitter: [
+      "bg-black dark:bg-[#18181b] hover:bg-neutral-800 dark:hover:bg-[#27272a] text-white border border-neutral-700/60 shadow-xs font-medium",
+      "disabled:opacity-50 disabled:shadow-none aria-disabled:opacity-50 aria-disabled:shadow-none",
+    ].join(" "),
+    "twitter-subtle": [
+      "bg-neutral-500/10 hover:bg-neutral-500/20 active:bg-neutral-500/25 text-neutral-300 border border-neutral-500/30 shadow-xs",
+      "disabled:opacity-50 disabled:shadow-none aria-disabled:opacity-50 aria-disabled:shadow-none",
+    ].join(" "),
+    google: [
+      "bg-[#4285F4] hover:bg-[#3367d6] active:bg-[#2a56c6] text-white shadow-xs font-medium",
+      "disabled:opacity-50 disabled:shadow-none aria-disabled:opacity-50 aria-disabled:shadow-none",
+    ].join(" "),
+    "google-subtle": [
+      "bg-rose-500/10 hover:bg-rose-500/20 active:bg-rose-500/25 text-rose-500 border border-rose-500/30 shadow-xs",
+      "disabled:opacity-50 disabled:shadow-none aria-disabled:opacity-50 aria-disabled:shadow-none",
+    ].join(" "),
+    phone: [
+      "bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-xs font-medium",
+      "disabled:opacity-50 disabled:shadow-none aria-disabled:opacity-50 aria-disabled:shadow-none",
     ].join(" "),
   },
 });

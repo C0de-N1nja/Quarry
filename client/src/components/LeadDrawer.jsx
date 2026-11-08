@@ -37,7 +37,7 @@ import {
 } from '@remixicon/react';
 import { Drawer } from '@/components/base/drawer/drawer';
 import { CloseButton } from '@/components/base/buttons/close-button';
-import { Button } from '@/components/base/buttons/button';
+import { Button, ButtonLink } from '@/components/base/buttons/button';
 import { IconButton } from '@/components/base/buttons/icon-button';
 import { ButtonGroup, ButtonGroupItem } from '@/components/base/buttons/button-group';
 import { Chip } from '@/components/base/badges/chip';
@@ -759,7 +759,7 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
                   <Button
                     type="button"
                     onClick={handleShareWhatsApp}
-                    variant="primary"
+                    variant="whatsapp"
                     size="small"
                     leadingIcon={MessageCircle}
                   >
@@ -767,23 +767,33 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
                   </Button>
                 )}
                 {/* Discovered Social Channel Direct Buttons */}
-                {parsedSocialProfiles && parsedSocialProfiles.length > 0 && parsedSocialProfiles.map((sp, idx) => (
-                  <a
-                    key={idx}
-                    href={sp.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-2 py-1 text-xs font-semibold rounded-lg bg-background-tertiary-default hover:bg-background-secondary-default border border-separator-border text-text-secondary flex items-center gap-1 shadow-2xs transition-all"
-                    title={`Open ${sp.platform}`}
-                  >
-                    {sp.platform === 'facebook' && <Facebook className="h-3 w-3 text-accent-500" />}
-                    {sp.platform === 'instagram' && <Instagram className="h-3 w-3 text-accent-500" />}
-                    {sp.platform === 'linkedin' && <Linkedin className="h-3 w-3 text-accent-500" />}
-                    {sp.platform === 'twitter' && <Twitter className="h-3 w-3 text-text-secondary" />}
-                    <span className="capitalize">{sp.platform}</span>
-                    <ExternalLink className="h-2 w-2 opacity-60" />
-                  </a>
-                ))}
+                {parsedSocialProfiles && parsedSocialProfiles.length > 0 && parsedSocialProfiles.map((sp, idx) => {
+                  const plat = sp.platform?.toLowerCase();
+                  const icon = plat === 'facebook' ? Facebook 
+                    : plat === 'instagram' ? Instagram 
+                    : plat === 'linkedin' ? Linkedin 
+                    : Twitter;
+                  const variant = plat === 'facebook' ? 'facebook' 
+                    : plat === 'instagram' ? 'instagram' 
+                    : plat === 'linkedin' ? 'linkedin' 
+                    : 'twitter';
+
+                  return (
+                    <ButtonLink
+                      key={idx}
+                      href={sp.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      size="small"
+                      variant={variant}
+                      leadingIcon={icon}
+                      trailingIcon={ExternalLink}
+                      title={`Open ${sp.platform}`}
+                    >
+                      <span className="capitalize">{sp.platform}</span>
+                    </ButtonLink>
+                  );
+                })}
               </div>
             </div>
 
@@ -875,7 +885,7 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
               ) : (contact?.whatsapp || currentLead?.whatsapp) ? (
                 <Button
                   onClick={handleShareWhatsApp}
-                  variant="primary"
+                  variant="whatsapp"
                   size="small"
                   leadingIcon={MessageCircle}
                   title="Direct 1-click WhatsApp outreach"
@@ -883,14 +893,15 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
                   WhatsApp Pitch
                 </Button>
               ) : currentLead?.phone ? (
-                <a
+                <ButtonLink
                   href={`tel:${currentLead.phone}`}
-                  className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-success-primary hover:bg-success-primary/90 text-white transition-colors shadow-sm cursor-pointer"
+                  variant="phone"
+                  size="small"
+                  leadingIcon={Phone}
                   title={`Dial ${currentLead.phone}`}
                 >
-                  <Phone className="h-3.5 w-3.5" />
-                  <span>Call Line</span>
-                </a>
+                  Call Line
+                </ButtonLink>
               ) : (
                 <Button
                   disabled
@@ -925,7 +936,7 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
               {(contact?.whatsapp || currentLead?.whatsapp) ? (
                 <Button
                   onClick={handleShareWhatsApp}
-                  variant="secondary"
+                  variant="whatsapp"
                   size="small"
                   leadingIcon={MessageCircle}
                   title="Open WhatsApp in new tab"
@@ -1431,40 +1442,43 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
                       <span className="text-[10px] uppercase font-mono text-text-tertiary block">Personal Social Footprint</span>
                       <div className="flex flex-wrap gap-1.5">
                         {personalSocials.linkedin && (
-                          <a
+                          <ButtonLink
                             href={personalSocials.linkedin}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-medium hover:bg-blue-500/20 border border-blue-500/20"
+                            size="xs"
+                            variant="linkedin"
+                            leadingIcon={Linkedin}
+                            trailingIcon={ExternalLink}
                           >
-                            <Linkedin className="h-3 w-3" />
-                            <span>Owner LinkedIn</span>
-                            <ExternalLink className="h-2.5 w-2.5" />
-                          </a>
+                            Owner LinkedIn
+                          </ButtonLink>
                         )}
                         {personalSocials.facebook && (
-                          <a
+                          <ButtonLink
                             href={personalSocials.facebook}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-medium hover:bg-indigo-500/20 border border-indigo-500/20"
+                            size="xs"
+                            variant="facebook"
+                            leadingIcon={Facebook}
+                            trailingIcon={ExternalLink}
                           >
-                            <Facebook className="h-3 w-3" />
-                            <span>Personal FB</span>
-                            <ExternalLink className="h-2.5 w-2.5" />
-                          </a>
+                            Personal FB
+                          </ButtonLink>
                         )}
                         {personalSocials.instagram && (
-                          <a
+                          <ButtonLink
                             href={personalSocials.instagram}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-pink-500/10 text-pink-600 dark:text-pink-400 text-xs font-medium hover:bg-pink-500/20 border border-pink-500/20"
+                            size="xs"
+                            variant="instagram"
+                            leadingIcon={Instagram}
+                            trailingIcon={ExternalLink}
                           >
-                            <Instagram className="h-3 w-3" />
-                            <span>Personal IG</span>
-                            <ExternalLink className="h-2.5 w-2.5" />
-                          </a>
+                            Personal IG
+                          </ButtonLink>
                         )}
                         {sherlockProfiles.map((sp, idx) => (
                           <a
@@ -1780,7 +1794,7 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
                   <Button
                     type="button"
                     onClick={handleShareWhatsApp}
-                    variant="primary"
+                    variant="whatsapp"
                     size="small"
                     leadingIcon={ExternalLink}
                   >
@@ -1999,10 +2013,10 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
 
               <Button
                 onClick={handleShareWhatsApp}
-                variant="secondary"
+                variant="whatsapp"
                 size="small"
                 leadingIcon={MessageSquare}
-                className="w-full justify-center text-success-primary"
+                className="w-full justify-center"
               >
                 WhatsApp Pitch
               </Button>
