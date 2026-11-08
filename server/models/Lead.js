@@ -13,6 +13,7 @@ class Lead {
         c.email,
         c.email_type,
         c.contact_name,
+        c.contact_title,
         c.is_mx_valid,
         c.holehe_results,
         c.whatsapp,

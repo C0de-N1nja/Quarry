@@ -418,7 +418,11 @@ export default function BoardLeadTable({
                 const businessName = lead.business_name || lead.company_name || 'Prospect';
                 const category = lead.category || lead.niche || 'General';
                 const hasWebsite = lead.website && lead.website.trim() !== '' && lead.website !== 'None';
-                const hasOwner = lead.decision_maker_name && lead.decision_maker_name.trim() !== '';
+                const ownerName = lead.decision_maker_name || 
+                  (lead.contact_name && lead.contact_name.toLowerCase().trim() !== businessName.toLowerCase().trim() ? lead.contact_name : null) || 
+                  (lead.email_type === 'decision_maker' && lead.contact_name ? lead.contact_name : null) || 
+                  lead.owner_name || null;
+                const hasOwner = Boolean(ownerName && ownerName.trim() !== '');
 
                 return (
                   <TableRow
@@ -514,10 +518,10 @@ export default function BoardLeadTable({
                           </div>
                           <div className="flex flex-col min-w-0">
                             <span className="truncate text-body-small font-medium text-text-primary">
-                              {lead.decision_maker_name}
+                              {ownerName}
                             </span>
                             <span className="truncate text-[10px] text-text-tertiary">
-                              {lead.decision_maker_title || 'Owner / Founder'}
+                              {lead.contact_title || lead.decision_maker_title || 'Owner / Founder'}
                             </span>
                           </div>
                         </div>
