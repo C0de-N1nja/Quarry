@@ -868,7 +868,7 @@ export default function LeadDrawer({
             <div className="mt-1.5 flex items-center gap-1">
               {currentLead.rating ? (
                 <>
-                  <span className="text-xs font-bold font-mono text-text-primary">★ {currentLead.rating}</span>
+                  <span className="text-xs font-bold font-mono text-text-primary">{currentLead.rating}</span>
                   <span className="text-[10px] text-text-tertiary">({currentLead.reviews_count || 0})</span>
                 </>
               ) : (

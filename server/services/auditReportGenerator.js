@@ -75,39 +75,38 @@ class AuditReportGenerator {
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>${businessName} - Website & Growth Audit</title>
+  <title>${businessName} - Website Performance & Growth Audit</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    * { box-sizing: border-box; }
-    body {
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    html, body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       margin: 0;
-      padding: 32px 36px;
+      padding: 28px 36px;
       color: #0f172a;
       background: #ffffff;
       line-height: 1.45;
       font-size: 13px;
     }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
+    .header-table {
+      width: 100%;
+      border-collapse: collapse;
       border-bottom: 2px solid #e2e8f0;
-      padding-bottom: 20px;
-      margin-bottom: 22px;
+      padding-bottom: 16px;
+      margin-bottom: 20px;
     }
     .tag {
-      font-size: 11px;
+      font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 1.2px;
       font-weight: 700;
       color: #64748b;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
     h1 {
       font-size: 24px;
       font-weight: 800;
-      margin: 0 0 4px 0;
+      margin: 0 0 3px 0;
       color: #0f172a;
       letter-spacing: -0.5px;
     }
@@ -119,32 +118,45 @@ class AuditReportGenerator {
     .reputation-box {
       background: #f8fafc;
       border: 1px solid #e2e8f0;
-      border-radius: 12px;
+      border-radius: 10px;
       padding: 10px 16px;
       text-align: right;
-      min-width: 170px;
+      display: inline-block;
+      min-width: 160px;
     }
-    .stars {
-      font-size: 20px;
+    .rating-val {
+      font-size: 18px;
       font-weight: 800;
-      color: #f59e0b;
+      color: #0f172a;
       margin: 2px 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .rating-star {
+      color: #f59e0b;
+      margin-right: 4px;
+    }
+    .reviews-count {
+      font-size: 10.5px;
+      color: #64748b;
+      font-weight: 500;
     }
     .section-title {
-      font-size: 11px;
+      font-size: 10.5px;
       text-transform: uppercase;
       letter-spacing: 1px;
       font-weight: 700;
-      color: #334155;
-      margin: 20px 0 10px 0;
+      color: #475569;
+      margin: 18px 0 10px 0;
     }
-    .scorecard {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 20px;
+    .scorecard-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 10px 0;
+      margin: 0 -10px 18px -10px;
     }
-    .card {
-      flex: 1;
+    .scorecard-col {
+      width: 33.333%;
+      vertical-align: top;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
       border-radius: 10px;
@@ -156,158 +168,172 @@ class AuditReportGenerator {
       text-transform: uppercase;
       color: #64748b;
       letter-spacing: 0.5px;
+      margin-bottom: 4px;
     }
     .card-val {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 800;
-      margin: 4px 0 2px 0;
+      margin-bottom: 2px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     }
     .card-desc {
       font-size: 10.5px;
       color: #64748b;
       margin: 0;
+      line-height: 1.35;
     }
     .green { color: #16a34a; }
     .amber { color: #d97706; }
     .red { color: #dc2626; }
-    .opportunity {
+
+    .opportunity-card {
       background: #ffffff;
       border: 1px solid #e2e8f0;
-      border-radius: 10px;
-      padding: 12px 14px;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
+      border-left: 3px solid #2563eb;
+      border-radius: 8px;
+      padding: 11px 14px;
+      margin-bottom: 9px;
     }
-    .num {
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      background: #eff6ff;
-      color: #2563eb;
-      font-weight: 800;
-      font-size: 11px;
+    .opp-header {
       display: flex;
       align-items: center;
-      justify-content: center;
-      shrink: 0;
-      margin-top: 2px;
-      border: 1px solid #bfdbfe;
+      gap: 8px;
+      margin-bottom: 3px;
     }
-    .opp-content h3 {
+    .opp-num {
+      font-size: 10px;
+      font-weight: 800;
+      color: #2563eb;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .opp-title {
       font-size: 12.5px;
       font-weight: 700;
-      margin: 0 0 3px 0;
       color: #0f172a;
-    }
-    .opp-content p {
-      font-size: 11.5px;
-      color: #475569;
       margin: 0;
+    }
+    .opp-desc {
+      font-size: 11px;
+      color: #475569;
+      margin: 0 0 0 28px;
       line-height: 1.45;
     }
-    .footer {
-      margin-top: 24px;
+    .footer-table {
+      width: 100%;
+      border-collapse: collapse;
       border-top: 2px solid #e2e8f0;
       padding-top: 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 11.5px;
+      margin-top: 20px;
     }
-    .footer-left strong {
-      color: #0f172a;
-      font-size: 12px;
-    }
-    .cta-badge {
+    .cta-pill {
       background: #eff6ff;
       border: 1px solid #bfdbfe;
       color: #1d4ed8;
       font-weight: 700;
       padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 11px;
+      border-radius: 6px;
+      font-size: 10.5px;
+      display: inline-block;
+      text-decoration: none;
     }
     @media print {
-      body { padding: 0; margin: 0; }
-      @page { size: A4 portrait; margin: 10mm; }
+      body { padding: 12mm 14mm; margin: 0; font-size: 12px; }
+      @page { size: A4 portrait; margin: 0; }
     }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div>
-      <div class="tag">Confidential Growth & Website Performance Audit</div>
-      <h1>${businessName}</h1>
-      <p class="subtitle">${category} · ${city} ${website ? `· ${website.replace(/^https?:\/\//, '')}` : '· No Official Website'}</p>
-    </div>
-    <div class="reputation-box">
-      <div class="tag">Google Reputation</div>
-      <div class="stars">★ ${rating || '4.8'}</div>
-      <div style="font-size: 11px; color: #64748b;">${reviewsCount > 0 ? `${reviewsCount.toLocaleString()} verified reviews` : 'Top local provider'}</div>
-    </div>
-  </div>
 
-  <div class="section-title">Technical Health & Conversion Scorecard</div>
-  <div class="scorecard">
-    <div class="card">
-      <div class="card-label">Security (SSL)</div>
-      <div class="card-val ${isHttps ? 'green' : 'red'}">${isHttps ? 'Secure (HTTPS)' : 'Insecure (HTTP)'}</div>
-      <p class="card-desc">${isHttps ? 'Encrypted visitor data' : 'Triggers browser security alert'}</p>
-    </div>
-    <div class="card">
-      <div class="card-label">Mobile Experience</div>
-      <div class="card-val ${isMobileFriendly ? 'green' : 'amber'}">${isMobileFriendly ? 'Mobile Ready' : 'Needs Viewport Fix'}</div>
-      <p class="card-desc">${isMobileFriendly ? 'Adapts to phone screens' : 'Pinch-to-zoom required'}</p>
-    </div>
-    <div class="card">
-      <div class="card-label">Page Load Speed</div>
-      <div class="card-val ${perfScore >= 80 ? 'green' : perfScore >= 50 ? 'amber' : 'red'}">${perfScore}/100 (${seconds}s)</div>
-      <p class="card-desc">${perfScore >= 80 ? 'Fast mobile response' : 'Slow mobile load speed'}</p>
-    </div>
-  </div>
+  <!-- Top Header Table (Fixed 2-Column Grid) -->
+  <table class="header-table">
+    <tr>
+      <td style="vertical-align: top;">
+        <div class="tag">Confidential Technical & Growth Audit</div>
+        <h1>${businessName}</h1>
+        <p class="subtitle">${category} · ${city} ${website ? `· ${website.replace(/^https?:\/\//, '')}` : '· No Official Website Detected'}</p>
+      </td>
+      <td style="vertical-align: top; text-align: right; width: 200px;">
+        <div class="reputation-box">
+          <div class="tag">Google Reputation</div>
+          <div class="rating-val"><span class="rating-star">★</span>${rating || '4.8'}</div>
+          <div class="reviews-count">${reviewsCount > 0 ? `${reviewsCount.toLocaleString()} verified customer reviews` : 'Verified local business'}</div>
+        </div>
+      </td>
+    </tr>
+  </table>
 
+  <!-- 3-Column Scorecard Table (Guaranteed 3 Side-by-Side Cards) -->
+  <div class="section-title">Technical Health & Performance Scorecard</div>
+  <table class="scorecard-table">
+    <tr>
+      <td class="scorecard-col">
+        <div class="card-label">Security (SSL)</div>
+        <div class="card-val ${isHttps ? 'green' : 'red'}">${isHttps ? 'Secure (HTTPS)' : 'Insecure (HTTP)'}</div>
+        <p class="card-desc">${isHttps ? 'Full TLS encryption active across all pages' : 'Triggers browser security alert for visitors'}</p>
+      </td>
+      <td class="scorecard-col">
+        <div class="card-label">Mobile Experience</div>
+        <div class="card-val ${isMobileFriendly ? 'green' : 'amber'}">${isMobileFriendly ? 'Responsive' : 'Needs Viewport Fix'}</div>
+        <p class="card-desc">${isMobileFriendly ? 'Clean layout scaling on iOS and Android' : 'Requires horizontal scrolling or zooming'}</p>
+      </td>
+      <td class="scorecard-col">
+        <div class="card-label">Page Load Speed</div>
+        <div class="card-val ${perfScore >= 80 ? 'green' : perfScore >= 50 ? 'amber' : 'red'}">${perfScore}/100 (${seconds}s)</div>
+        <p class="card-desc">${perfScore >= 80 ? 'Sub-second mobile server response' : 'Slow latency causes higher mobile bounce rate'}</p>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Opportunities -->
   <div class="section-title">Top 3 Revenue-Impacting Opportunities</div>
 
-  <div class="opportunity">
-    <div class="num">1</div>
-    <div class="opp-content">
-      <h3>1-Click Mobile Calling & Immediate Quote Booking</h3>
-      <p>Over 68% of local homeowner service searches originate on mobile phones. Adding a persistent, floating "Tap to Call" and quote request button prevents qualified visitors from bouncing to competitors.</p>
+  <div class="opportunity-card">
+    <div class="opp-header">
+      <span class="opp-num">01</span>
+      <h3 class="opp-title">1-Click Mobile Calling & Immediate Quote Booking</h3>
     </div>
+    <p class="opp-desc">Over 68% of local service queries originate directly on smartphones. Adding a persistent, 1-click "Tap to Call" and quote request button prevents qualified high-intent visitors from bouncing to competitors.</p>
   </div>
 
-  <div class="opportunity">
-    <div class="num">2</div>
-    <div class="opp-content">
-      <h3>Showcase Google 5-Star Reviews Above the Fold</h3>
-      <p>${rating && reviewsCount > 0 
-        ? `Your verified ${rating}★ rating from ${reviewsCount} happy clients in ${city} is your strongest sales asset. Displaying live verified review badges directly in the hero header increases form conversion by up to 34%.` 
-        : `Displaying authentic local customer testimonials and verified trust seals directly in the website header builds immediate buyer confidence.`}
-      </p>
+  <div class="opportunity-card">
+    <div class="opp-header">
+      <span class="opp-num">02</span>
+      <h3 class="opp-title">Showcase Google 5-Star Reviews Above the Fold</h3>
     </div>
+    <p class="opp-desc">${rating && reviewsCount > 0 
+      ? `Your verified ${rating} rating from ${reviewsCount} happy clients in ${city} is your strongest sales asset. Displaying verified review badges directly in the hero section increases lead capture by up to 34%.` 
+      : `Displaying authentic local customer testimonials and verified trust seals directly in the website header establishes immediate buyer confidence.`}
+    </p>
   </div>
 
-  <div class="opportunity">
-    <div class="num">3</div>
-    <div class="opp-content">
-      <h3>Sub-Second Mobile Page Speed Optimization</h3>
-      <p>Google search algorithm penalizes pages with high load latency. Compressing large assets, enabling browser caching, and streamlining web fonts will drop load time below 1.2s and improve Google Local search rankings.</p>
+  <div class="opportunity-card">
+    <div class="opp-header">
+      <span class="opp-num">03</span>
+      <h3 class="opp-title">Sub-Second Mobile Page Speed Optimization</h3>
     </div>
+    <p class="opp-desc">Google search ranking algorithms penalize pages with high Time-to-First-Byte (TTFB). Compressing large hero assets, enabling browser caching, and streamlining web fonts will drop load latency below 1.2s and improve Google Local search rankings.</p>
   </div>
 
-  <div class="footer">
-    <div class="footer-left">
-      <div style="font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold;">Audit Prepared By</div>
-      <strong>${consultantName}</strong> · ${agencyName} · ${email} ${portfolioUrl ? `· ${portfolioUrl.replace(/^https?:\/\//, '')}` : ''}
-    </div>
-    <div>
-      <span class="cta-badge">Next Step: 15-Min Strategy Walkthrough</span>
-    </div>
-  </div>
+  <!-- Footer Table -->
+  <table class="footer-table">
+    <tr>
+      <td style="vertical-align: middle;">
+        <div style="font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Audit Prepared By</div>
+        <div style="font-size: 12px; font-weight: 700; color: #0f172a; margin-top: 2px;">
+          ${consultantName} <span style="font-weight: 400; color: #94a3b8;">·</span> ${agencyName} <span style="font-weight: 400; color: #94a3b8;">·</span> <span style="font-family: monospace; font-size: 11px; color: #475569;">${email}</span>
+        </div>
+      </td>
+      <td style="text-align: right; vertical-align: middle;">
+        <span class="cta-pill">Next Step: 15-Minute Strategy Review</span>
+      </td>
+    </tr>
+  </table>
 
-  ${autoPrint ? '<script>window.onload = function() { setTimeout(function() { window.print(); }, 250); };</script>' : ''}
+  ${autoPrint ? '<script>window.onload = function() { setTimeout(function() { window.print(); }, 200); };</script>' : ''}
 </body>
 </html>`;
   }

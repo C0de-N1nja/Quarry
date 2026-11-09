@@ -584,14 +584,14 @@ export default function BoardLeadTable({
               selectedKey={ratingFilter}
               onSelectionChange={(k) => onRatingFilterChange && onRatingFilterChange(String(k))}
             >
-              <SelectItem id="all" textValue="All Ratings">★ All Ratings</SelectItem>
-              <SelectItem id="5_star" textValue="5 Stars">★ 5 Stars (4.5–5.0)</SelectItem>
-              <SelectItem id="4_star" textValue="4 Stars">★ 4 Stars (3.5–4.4)</SelectItem>
-              <SelectItem id="3_star" textValue="3 Stars">★ 3 Stars (2.5–3.4)</SelectItem>
-              <SelectItem id="2_star" textValue="2 Stars">★ 2 Stars (1.5–2.4)</SelectItem>
-              <SelectItem id="1_star" textValue="1 Star">★ 1 Star (1.0–1.4)</SelectItem>
-              <SelectItem id="under_4" textValue="Under 4.0 Stars">★ Under 4.0 (Needs Help)</SelectItem>
-              <SelectItem id="unrated" textValue="Unrated (No Stars)">★ Unrated (No Stars)</SelectItem>
+              <SelectItem id="all" textValue="All Ratings">All Ratings</SelectItem>
+              <SelectItem id="5_star" textValue="5 Stars">5 Stars (4.5–5.0)</SelectItem>
+              <SelectItem id="4_star" textValue="4 Stars">4 Stars (3.5–4.4)</SelectItem>
+              <SelectItem id="3_star" textValue="3 Stars">3 Stars (2.5–3.4)</SelectItem>
+              <SelectItem id="2_star" textValue="2 Stars">2 Stars (1.5–2.4)</SelectItem>
+              <SelectItem id="1_star" textValue="1 Star">1 Star (1.0–1.4)</SelectItem>
+              <SelectItem id="under_4" textValue="Under 4.0 Stars">Under 4.0 (Needs Help)</SelectItem>
+              <SelectItem id="unrated" textValue="Unrated (No Stars)">Unrated (No Stars)</SelectItem>
             </Select>
 
             {/* Review Count Filter */}
@@ -603,7 +603,7 @@ export default function BoardLeadTable({
               onSelectionChange={(k) => onReviewsFilterChange && onReviewsFilterChange(String(k))}
             >
               <SelectItem id="all" textValue="All Reviews">All Reviews</SelectItem>
-              <SelectItem id="has_reviews" textValue="With Reviews Only">★ With Reviews (&gt; 0)</SelectItem>
+              <SelectItem id="has_reviews" textValue="With Reviews Only">With Reviews (&gt; 0)</SelectItem>
               <SelectItem id="50_plus" textValue="50+ Reviews">50+ Reviews (Leaders)</SelectItem>
               <SelectItem id="10_to_50" textValue="10–50 Reviews">10–50 Reviews</SelectItem>
               <SelectItem id="under_10" textValue="< 10 Reviews">&lt; 10 Reviews (Low)</SelectItem>
@@ -621,10 +621,10 @@ export default function BoardLeadTable({
               <SelectItem id="all" textValue="All Notes">All Notes</SelectItem>
               <SelectItem id="has_notes" textValue="With Notes">With Notes</SelectItem>
               <SelectItem id="no_notes" textValue="Untouched (No Notes)">Untouched (No Notes)</SelectItem>
-              <SelectItem id="high_intent" textValue="🔥 High Intent">🔥 High Intent</SelectItem>
-              <SelectItem id="called_owner" textValue="📞 Called Owner">📞 Called Owner</SelectItem>
-              <SelectItem id="needs_redesign" textValue="🎨 Needs Redesign">🎨 Needs Redesign</SelectItem>
-              <SelectItem id="follow_up" textValue="⏰ Follow Up">⏰ Follow Up</SelectItem>
+              <SelectItem id="high_intent" textValue="High Intent">High Intent</SelectItem>
+              <SelectItem id="called_owner" textValue="Called Owner">Called Owner</SelectItem>
+              <SelectItem id="needs_redesign" textValue="Needs Redesign">Needs Redesign</SelectItem>
+              <SelectItem id="follow_up" textValue="Follow Up">Follow Up</SelectItem>
             </Select>
 
             {/* Channel Filter */}
@@ -677,14 +677,14 @@ export default function BoardLeadTable({
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30">
                 <RiStarLine className="size-3" />
                 <span>
-                  {ratingFilter === '5_star' || ratingFilter === '5' ? '★ 5 Stars' :
-                   ratingFilter === '4_star' || ratingFilter === '4' ? '★ 4 Stars' :
-                   ratingFilter === '3_star' || ratingFilter === '3' ? '★ 3 Stars' :
-                   ratingFilter === '2_star' || ratingFilter === '2' ? '★ 2 Stars' :
-                   ratingFilter === '1_star' || ratingFilter === '1' ? '★ 1 Star' :
-                   ratingFilter === '4.5' ? '4.5+ Stars ★' :
-                   ratingFilter === '4.0' ? '4.0+ Stars ★' :
-                   ratingFilter === 'unrated' ? 'Unrated ★' : 'Under 4.0 Stars ★'}
+                  {ratingFilter === '5_star' || ratingFilter === '5' ? '5 Stars' :
+                   ratingFilter === '4_star' || ratingFilter === '4' ? '4 Stars' :
+                   ratingFilter === '3_star' || ratingFilter === '3' ? '3 Stars' :
+                   ratingFilter === '2_star' || ratingFilter === '2' ? '2 Stars' :
+                   ratingFilter === '1_star' || ratingFilter === '1' ? '1 Star' :
+                   ratingFilter === '4.5' ? '4.5+ Stars' :
+                   ratingFilter === '4.0' ? '4.0+ Stars' :
+                   ratingFilter === 'unrated' ? 'Unrated' : 'Under 4.0 Stars'}
                 </span>
                 <button
                   type="button"
@@ -724,10 +724,10 @@ export default function BoardLeadTable({
                 <span>
                   {noteFilter === 'has_notes' ? 'With Notes' : 
                    noteFilter === 'no_notes' ? 'Untouched (No Notes)' : 
-                   noteFilter === 'high_intent' ? '🔥 High Intent' : 
-                   noteFilter === 'called_owner' ? '📞 Called Owner' : 
-                   noteFilter === 'needs_redesign' ? '🎨 Needs Redesign' : 
-                   noteFilter === 'follow_up' ? '⏰ Follow Up' : noteFilter}
+                   noteFilter === 'high_intent' ? 'High Intent' : 
+                   noteFilter === 'called_owner' ? 'Called Owner' : 
+                   noteFilter === 'needs_redesign' ? 'Needs Redesign' : 
+                   noteFilter === 'follow_up' ? 'Follow Up' : noteFilter}
                 </span>
                 <button
                   type="button"
@@ -1085,7 +1085,7 @@ export default function BoardLeadTable({
                               </span>
                             ) : (
                               <span className="text-text-tertiary font-mono text-[10px] shrink-0">
-                                ★ Unrated
+                                Unrated
                               </span>
                             )}
 

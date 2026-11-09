@@ -910,7 +910,7 @@ export default function LeadDossierPage({
                   disabled={osintLoading}
                   className="shrink-0"
                 >
-                  ⚡ Find Owner & Contacts
+                  Find Owner & Contacts
                 </Button>
               </div>
             )}
@@ -985,7 +985,7 @@ export default function LeadDossierPage({
                     onSelect={() => handleUpdateStage('won')}
                   >
                     <StatusDot color="green" className="mr-1.5" />
-                    4. Deal Won 🎉
+                    4. Deal Won
                   </PillTab>
                   <PillTab
                     variant="gray"
@@ -1188,7 +1188,7 @@ export default function LeadDossierPage({
                     className="flex-1 sm:flex-none font-semibold"
                     title="Open Gmail compose tab with recipient, subject, and body prefilled"
                   >
-                    Open in Gmail ↗
+                    Open in Gmail
                   </Button>
 
                   <Button
@@ -1214,7 +1214,7 @@ export default function LeadDossierPage({
                     onClick={() => handleMarkContacted(3)}
                     title="Mark lead as contacted and schedule a 3-day follow-up reminder"
                   >
-                    ✓ Mark Contacted (+3d)
+                    Mark Contacted (+3d)
                   </Button>
                 </div>
               </div>
@@ -1436,7 +1436,7 @@ export default function LeadDossierPage({
                       onClick={handleRunAudit}
                       disabled={auditLoading}
                     >
-                      {auditLoading ? 'Testing Speed & Quality...' : audit ? 'Re-test Speed' : '⚡ Run Speed & Quality Check'}
+                      {auditLoading ? 'Testing Speed & Quality...' : audit ? 'Re-test Speed' : 'Run Speed & Quality Check'}
                     </Button>
                     {audit && onOpenAudit && (
                       <Button
@@ -1611,8 +1611,12 @@ export default function LeadDossierPage({
                         <span className="text-text-secondary">Google Search (SEO) Score:</span>
                         <span className="font-bold font-mono text-blue-400">{audit.seo_score || 85}%</span>
                       </div>
-                      <div className="text-[11px] text-text-secondary">
-                        {audit.seo?.has_meta_description ? '✓ Meta tags present' : '⚠ Missing meta description'}
+                      <div className="text-[11px] text-text-secondary flex items-center gap-1">
+                        {audit.seo?.has_meta_description ? (
+                          <span className="text-emerald-400">Meta tags present</span>
+                        ) : (
+                          <span className="text-amber-400">Missing meta description</span>
+                        )}
                       </div>
                     </div>
 
@@ -1662,7 +1666,7 @@ export default function LeadDossierPage({
                       </div>
                       {onOpenAudit && (
                         <Button size="small" variant="ghost" onClick={() => onOpenAudit(currentLead.id)} className="shrink-0 text-accent-400">
-                          View Interactive Report ↗
+                          View Interactive Report
                         </Button>
                       )}
                     </div>
@@ -1679,7 +1683,7 @@ export default function LeadDossierPage({
                       onClick={handleRunAudit}
                       disabled={auditLoading}
                     >
-                      ⚡ Run Speed & Quality Check
+                      Run Speed & Quality Check
                     </Button>
                   </div>
                 ) : null}

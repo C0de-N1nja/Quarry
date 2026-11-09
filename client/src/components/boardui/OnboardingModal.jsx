@@ -137,7 +137,7 @@ export default function OnboardingModal({
           const isNoWeb = place.hasNoWebsite || !place.website;
           addLog(
             'TARGET',
-            `Discovered: ${title} • ${place.phone || 'Phone on file'} • ${isNoWeb ? '★ NO WEBSITE (Hot Lead)' : 'Website Active'}`,
+            `Discovered: ${title} • ${place.phone || 'Phone on file'} • ${isNoWeb ? 'NO WEBSITE (High Opportunity)' : 'Website Active'}`,
             isNoWeb ? 'text-rose-400 font-semibold' : 'text-slate-300'
           );
         }
