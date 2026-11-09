@@ -1,22 +1,9 @@
 import React from 'react';
-import { 
-  RiCopperCoinLine, RiBuildingLine, RiShieldCheckLine, 
-  RiFireLine, RiArrowUpLine, RiArrowDownLine 
-} from '@remixicon/react';
+import { RiFireLine, RiArrowUpLine } from '@remixicon/react';
 import { Chip } from '@/components/base/badges/chip';
 
 export default function BoardStatCards({ stats }) {
   const cards = [
-    {
-      label: 'Pipeline Value',
-      value: `$${(stats?.totalPipelineValue || 0).toLocaleString()}`,
-      delta: '+$142k',
-      isPositive: true,
-      caption: 'vs previous batch',
-      icon: RiCopperCoinLine,
-      gradient: 'from-blue-500 to-indigo-600',
-      glow: 'shadow-blue-500/10'
-    },
     {
       label: 'No-Website Targets',
       value: String(stats?.noWebsite || 0),
@@ -26,31 +13,11 @@ export default function BoardStatCards({ stats }) {
       icon: RiFireLine,
       gradient: 'from-rose-500 to-orange-500',
       glow: 'shadow-rose-500/10'
-    },
-    {
-      label: 'Decision Makers Found',
-      value: String(stats?.decisionMakers || 0),
-      delta: `${stats?.totalLeads ? Math.round(((stats.decisionMakers || 0) / stats.totalLeads) * 100) : 0}%`,
-      isPositive: true,
-      caption: 'Direct owners & verified cell/email',
-      icon: RiShieldCheckLine,
-      gradient: 'from-emerald-500 to-teal-600',
-      glow: 'shadow-emerald-500/10'
-    },
-    {
-      label: 'Total Leads Vault',
-      value: String(stats?.totalLeads || 0),
-      delta: `${stats?.goldLeads || 0} Gold`,
-      isPositive: true,
-      caption: 'Enriched prospects ready for outreach',
-      icon: RiBuildingLine,
-      gradient: 'from-purple-500 to-indigo-600',
-      glow: 'shadow-purple-500/10'
     }
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-4">
+    <div className="grid grid-cols-1 sm:max-w-sm gap-3.5 mb-4">
       {cards.map((c, idx) => {
         const Icon = c.icon;
         return (
@@ -69,7 +36,6 @@ export default function BoardStatCards({ stats }) {
               </Chip>
             </div>
 
-            {/* Bottom row: Value, Label, and Caption */}
             <div>
               <div className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">
                 {c.value}

@@ -4,7 +4,7 @@ import SplitView from './SplitView';
 import BoardStatCards from './boardui/BoardStatCards';
 import BoardLeadTable from './boardui/BoardLeadTable';
 import { StatCards } from '@/components/application/dashboard/stat-cards';
-import { RiCoinsFill, RiGlobalLine, RiShieldCheckLine, RiGroupFill } from '@remixicon/react';
+import { RiGlobalLine } from '@remixicon/react';
 
 export default function LeadTable({ 
   leads = [], 
@@ -44,32 +44,11 @@ export default function LeadTable({
 }) {
   const kpiStats = [
     {
-      icon: RiCoinsFill,
-      label: "Pipeline Value",
-      value: `$${(((stats?.totalLeads || totalCount || leads.length) * 2250) || 2691000).toLocaleString()}`,
-      delta: "+18.4%",
-      deltaColor: "lime",
-    },
-    {
       icon: RiGlobalLine,
       label: "No-Website Targets",
-      value: (stats?.noWebsite ?? 342).toLocaleString(),
+      value: (stats?.noWebsite ?? 0).toLocaleString(),
       delta: "+24%",
       deltaColor: "lime",
-    },
-    {
-      icon: RiShieldCheckLine,
-      label: "Decision Makers Found",
-      value: (stats?.hasOwner ?? 580).toLocaleString(),
-      delta: "+12.8%",
-      deltaColor: "lime",
-    },
-    {
-      icon: RiGroupFill,
-      label: "Total Prospect Vault",
-      value: (totalCount || stats?.totalLeads || leads.length).toLocaleString(),
-      delta: `${leads.length} in view`,
-      deltaColor: "neutral",
     },
   ];
 
@@ -109,7 +88,7 @@ export default function LeadTable({
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <StatCards stats={kpiStats} />
+      <StatCards stats={kpiStats} columns={1} className="sm:max-w-sm" />
       <BoardLeadTable
         leads={leads}
         totalCount={totalCount}

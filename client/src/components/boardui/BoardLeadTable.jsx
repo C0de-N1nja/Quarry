@@ -360,27 +360,22 @@ export default function BoardLeadTable({
               </TableColumn>
 
               {/* Company & Niche Column */}
-              <TableColumn id="company" isRowHeader className="min-w-[190px] px-3 py-3">
+              <TableColumn id="company" isRowHeader className="min-w-[260px] px-4 py-3.5">
                 <span className="text-body-medium font-medium text-text-tertiary">Company & Niche</span>
               </TableColumn>
 
               {/* Website & Digital Audit */}
-              <TableColumn id="website" className="w-36 px-2.5 py-3">
+              <TableColumn id="website" className="w-48 px-4 py-3.5">
                 <span className="text-body-medium font-medium text-text-tertiary">Website Audit</span>
               </TableColumn>
 
-              {/* Verified Owner & Decision Maker */}
-              <TableColumn id="decision_maker" className="w-40 px-2.5 py-3">
-                <span className="text-body-medium font-medium text-text-tertiary">Decision Maker</span>
-              </TableColumn>
-
               {/* Contact Channels */}
-              <TableColumn id="contact" className="w-44 px-3 py-3">
+              <TableColumn id="contact" className="w-64 px-4 py-3.5">
                 <span className="text-body-medium font-medium text-text-tertiary">Contact Channels</span>
               </TableColumn>
 
               {/* Actions */}
-              <TableColumn id="actions" className="w-28 px-3 py-3 text-right">
+              <TableColumn id="actions" className="w-32 px-4 py-3.5 text-right">
                 <span className="text-body-medium font-medium text-text-tertiary">Actions</span>
               </TableColumn>
             </TableHeader>
@@ -418,11 +413,6 @@ export default function BoardLeadTable({
                 const businessName = lead.business_name || lead.company_name || 'Prospect';
                 const category = lead.category || lead.niche || 'General';
                 const hasWebsite = lead.website && lead.website.trim() !== '' && lead.website !== 'None';
-                const ownerName = lead.decision_maker_name || 
-                  (lead.contact_name && lead.contact_name.toLowerCase().trim() !== businessName.toLowerCase().trim() ? lead.contact_name : null) || 
-                  (lead.email_type === 'decision_maker' && lead.contact_name ? lead.contact_name : null) || 
-                  lead.owner_name || null;
-                const hasOwner = Boolean(ownerName && ownerName.trim() !== '');
 
                 return (
                   <TableRow
@@ -452,7 +442,7 @@ export default function BoardLeadTable({
                     </TableCell>
 
                     {/* Company & Niche Cell */}
-                    <TableCell className="min-w-[190px] px-3 py-3" onClick={() => onSelectLead && onSelectLead(lead)}>
+                    <TableCell className="min-w-[260px] px-4 py-3.5" onClick={() => onSelectLead && onSelectLead(lead)}>
                       <div className="flex items-center gap-2.5">
                         <Avatar
                           initials={getInitials(businessName)}
@@ -481,7 +471,7 @@ export default function BoardLeadTable({
                     </TableCell>
 
                     {/* Website Audit Cell with BoardUI StatusDot + Chip */}
-                    <TableCell className="w-36 px-2.5 py-3" onClick={() => onSelectLead && onSelectLead(lead)}>
+                    <TableCell className="w-48 px-4 py-3.5" onClick={() => onSelectLead && onSelectLead(lead)}>
                       {!hasWebsite ? (
                         <div className="flex items-center gap-1.5">
                           <StatusDot color="indigo" />
@@ -509,31 +499,8 @@ export default function BoardLeadTable({
                       )}
                     </TableCell>
 
-                    {/* Decision Maker Cell */}
-                    <TableCell className="w-40 px-2.5 py-3" onClick={() => onSelectLead && onSelectLead(lead)}>
-                      {hasOwner ? (
-                        <div className="flex items-center gap-1.5">
-                          <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-accent-100 text-accent-700 dark:bg-accent-900/50 dark:text-accent-300">
-                            <RiShieldCheckLine className="size-3.5" />
-                          </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="truncate text-body-small font-medium text-text-primary">
-                              {ownerName}
-                            </span>
-                            <span className="truncate text-[10px] text-text-tertiary">
-                              {lead.contact_title || lead.decision_maker_title || 'Owner / Founder'}
-                            </span>
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="text-[11px] text-text-tertiary">
-                          Not verified yet
-                        </span>
-                      )}
-                    </TableCell>
-
                     {/* Contact Channels Cell */}
-                    <TableCell className="w-44 px-3 py-3" onClick={() => onSelectLead && onSelectLead(lead)}>
+                    <TableCell className="w-64 px-4 py-3.5" onClick={() => onSelectLead && onSelectLead(lead)}>
                       <div className="flex flex-col gap-0.5">
                         {lead.phone ? (
                           <div className="flex items-center gap-1 text-[11px] font-mono text-text-secondary">
@@ -554,7 +521,7 @@ export default function BoardLeadTable({
                     </TableCell>
 
                     {/* Row Action Buttons */}
-                    <TableCell className="w-28 px-3 py-3 text-right">
+                    <TableCell className="w-32 px-4 py-3.5 text-right">
                       <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                         <IconButton
                           icon={RiEditLine}
