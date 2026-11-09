@@ -586,11 +586,16 @@ export default function LeadDossierPage({
                       <span className="truncate">{currentLead.address}</span>
                     </span>
                   )}
-                  {currentLead.rating && (
+                  {currentLead.rating > 0 ? (
                     <span className="inline-flex items-center gap-1 font-mono text-text-tertiary">
                       <RiStarFill className="size-3 text-amber-500" />
                       <strong className="text-text-primary">{currentLead.rating}</strong>
                       <span>({(currentLead.reviews_count || 0).toLocaleString()} reviews)</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 font-mono text-text-tertiary">
+                      <RiStarLine className="size-3 text-text-tertiary" />
+                      <span>Unrated</span>
                     </span>
                   )}
                 </div>

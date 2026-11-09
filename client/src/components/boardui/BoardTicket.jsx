@@ -151,7 +151,7 @@ function BoardTicket({
         {lead.rating > 0 && (
           <Chip variant="subtle" color="amber" size="sm" className="gap-1 inline-flex items-center font-mono">
             <RiStarFill className="size-2.5 shrink-0 text-amber-500" />
-            <span>{lead.rating} / 5.0</span>
+            <span>{lead.rating} ({lead.reviews_count ? lead.reviews_count.toLocaleString() : '0'})</span>
           </Chip>
         )}
       </div>

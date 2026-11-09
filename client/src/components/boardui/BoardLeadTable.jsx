@@ -12,6 +12,7 @@ import {
   RiRefreshLine,
   RiMore2Fill,
   RiStarLine,
+  RiStarFill,
   RiCheckDoubleLine,
   RiUploadCloud2Line,
   RiDownload2Line,
@@ -867,7 +868,7 @@ export default function BoardLeadTable({
               <TableColumn 
                 id="company" 
                 isRowHeader 
-                className="w-[280px] px-4 py-3 sticky top-0 left-0 z-30 bg-background-primary-default border-r border-separator-border/60"
+                className="w-[320px] px-4 py-3 sticky top-0 left-0 z-30 bg-background-primary-default border-r border-separator-border/60"
               >
                 <span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">Company</span>
               </TableColumn>
@@ -1000,7 +1001,7 @@ export default function BoardLeadTable({
 
                     {/* Company Column (Sticky Left, solid background) */}
                     <TableCell 
-                      className="w-[280px] px-4 py-2 sticky left-0 z-10 bg-background-primary-default border-r border-separator-border/60" 
+                      className="w-[320px] px-4 py-2 sticky left-0 z-10 bg-background-primary-default border-r border-separator-border/60" 
                       onClick={() => onSelectLead && onSelectLead(lead)}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
@@ -1024,11 +1025,31 @@ export default function BoardLeadTable({
                               </Chip>
                             )}
                           </div>
-                          {/* niche · city underneath with normalized niche casing */}
-                          <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+                          {/* niche · city · ★ rating (reviews) underneath */}
+                          <div className="flex items-center gap-1.5 mt-0.5 min-w-0 flex-wrap">
+                            {lead.rating > 0 ? (
+                              <span 
+                                className="inline-flex items-center gap-0.5 font-mono text-[11px] font-semibold text-amber-500 shrink-0" 
+                                title={`Google Rating: ${lead.rating} out of 5 (${(lead.reviews_count || 0).toLocaleString()} reviews)`}
+                              >
+                                <RiStarFill className="size-2.5 fill-amber-500 text-amber-500 shrink-0" />
+                                <span>{lead.rating}</span>
+                                <span className="text-text-tertiary font-normal text-[10px]">
+                                  ({(lead.reviews_count || 0).toLocaleString()})
+                                </span>
+                              </span>
+                            ) : (
+                              <span className="text-text-tertiary font-mono text-[10px] shrink-0">
+                                ★ Unrated
+                              </span>
+                            )}
+
+                            <span className="text-separator-border/80 text-[10px]">·</span>
+
                             <p className="truncate text-caption-1-medium text-text-tertiary">
                               {niche}{city ? ` · ${city}` : ''}
                             </p>
+
                             {savedNote && (
                               <span 
                                 className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] bg-amber-500/15 text-amber-400 border border-amber-500/30 font-medium shrink-0 cursor-help" 
