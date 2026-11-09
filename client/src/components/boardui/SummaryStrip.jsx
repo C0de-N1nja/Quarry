@@ -1,12 +1,13 @@
 import React from 'react';
 import { 
-  RiDashboardLine, 
+  RiFolderUserLine, 
   RiGlobalLine, 
   RiCheckDoubleLine, 
-  RiChat3Line,
+  RiChat1Line,
   RiFlashlightFill
 } from '@remixicon/react';
 import { Button } from '@/components/base/buttons/button';
+import { Chip } from '@/components/base/badges/chip';
 import { cx } from '@/utils/cx';
 
 export default function SummaryStrip({
@@ -38,8 +39,10 @@ export default function SummaryStrip({
       label: 'Total prospects',
       count: totalLeads,
       isActive: isTotalActive,
-      icon: RiDashboardLine,
-      iconSquareClass: 'bg-[var(--brand-tint-bg)] text-[var(--brand-tint-text)] border border-[var(--brand-tint-border)]',
+      icon: RiFolderUserLine,
+      chipColor: 'blue',
+      chipText: 'Vault',
+      tileTone: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
       onClick: () => {
         if (onFocusTierChange) onFocusTierChange('vault');
         if (onContactChannelChange) onContactChannelChange('all');
@@ -52,7 +55,9 @@ export default function SummaryStrip({
       count: noWebsite,
       isActive: isNoWebsiteActive,
       icon: RiGlobalLine,
-      iconSquareClass: 'bg-[var(--tint-danger-bg)] text-[var(--tint-danger-text)] border border-[var(--tint-danger-border)]',
+      chipColor: 'rose',
+      chipText: 'High intent',
+      tileTone: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
       onClick: () => {
         if (onFocusTierChange) onFocusTierChange('vault');
         if (onContactChannelChange) onContactChannelChange('all');
@@ -65,7 +70,9 @@ export default function SummaryStrip({
       count: readyToPitch,
       isActive: isReadyToPitchActive,
       icon: RiCheckDoubleLine,
-      iconSquareClass: 'bg-[var(--tint-success-bg)] text-[var(--tint-success-text)] border border-[var(--tint-success-border)]',
+      chipColor: 'lime',
+      chipText: 'Verified',
+      tileTone: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
       onClick: () => {
         if (onFocusTierChange) onFocusTierChange('vault');
         if (onContactChannelChange) onContactChannelChange('all');
@@ -77,8 +84,10 @@ export default function SummaryStrip({
       label: 'Replied',
       count: replied,
       isActive: isRepliedActive,
-      icon: RiChat3Line,
-      iconSquareClass: 'bg-[var(--tint-violet-bg)] text-[var(--tint-violet-text)] border border-[var(--tint-violet-border)]',
+      icon: RiChat1Line,
+      chipColor: 'purple',
+      chipText: 'In conversation',
+      tileTone: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
       onClick: () => {
         if (onFocusTierChange) onFocusTierChange('vault');
         if (onContactChannelChange) onContactChannelChange('all');
@@ -88,60 +97,61 @@ export default function SummaryStrip({
   ];
 
   return (
-    <div className="w-full mb-3 rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] px-4 py-2.5 sm:px-5 flex flex-col md:flex-row items-center justify-between gap-3 min-h-[72px] shadow-xs">
-      {/* 4 Clickable Metric Counters */}
-      <div className="flex items-center gap-1.5 sm:gap-2.5 w-full md:w-auto overflow-x-auto py-1 scrollbar-none">
-        {metrics.map((m, index) => {
+    <div className="w-full mb-3 rounded-2xl border border-separator-border bg-background-secondary-default p-2 sm:px-3 sm:py-2 flex flex-col xl:flex-row items-center justify-between gap-2.5 shadow-xs">
+      {/* 4 Clickable BoardUI Metric Tiles */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 w-full xl:w-auto">
+        {metrics.map((m) => {
           const Icon = m.icon;
           return (
-            <React.Fragment key={m.id}>
-              {index > 0 && (
-                <div className="h-8 w-px bg-[var(--card-border)] shrink-0 mx-0.5 hidden sm:block" />
+            <button
+              key={m.id}
+              type="button"
+              onClick={m.onClick}
+              className={cx(
+                "group flex items-center gap-2 px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer text-left shrink-0",
+                "button-press-motion focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring focus-visible:ring-offset-2",
+                m.isActive
+                  ? "bg-background-primary-default border-accent-500 text-text-primary shadow-xs ring-1 ring-accent-500"
+                  : "bg-background-primary-default/60 hover:bg-background-primary-default border-separator-border/70 hover:border-border-button-hover text-text-secondary hover:text-text-primary"
               )}
-              <button
-                type="button"
-                onClick={m.onClick}
-                className={cx(
-                  "group flex items-center gap-2.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer text-left shrink-0",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2",
-                  m.isActive
-                    ? "bg-[var(--brand-tint-bg)] border border-[var(--brand-tint-border)] ring-1 ring-[var(--brand-tint-border)] shadow-2xs"
-                    : "hover:bg-[var(--tint-neutral-bg)] border border-transparent"
-                )}
-                title={`Filter by ${m.label} (${m.count.toLocaleString()})`}
-                aria-label={`Filter by ${m.label}: ${m.count.toLocaleString()}`}
-              >
-                {/* Rounded Icon Square with Tint */}
-                <div className={cx(
-                  "flex size-8 items-center justify-center rounded-lg shrink-0",
-                  m.iconSquareClass
-                )}>
-                  <Icon className="size-4" aria-hidden="true" />
-                </div>
+              title={`Filter by ${m.label} (${m.count.toLocaleString()})`}
+              aria-label={`Filter by ${m.label}: ${m.count.toLocaleString()}`}
+            >
+              {/* BoardUI Icon Tile */}
+              <div className={cx(
+                "flex size-8 items-center justify-center rounded-lg border shrink-0 shadow-2xs transition-transform group-hover:scale-105",
+                m.tileTone
+              )}>
+                <Icon className="size-4" aria-hidden="true" />
+              </div>
 
-                {/* Metric Label & Count */}
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-medium text-[var(--text-secondary)]">
-                    {m.label}
-                  </span>
-                  <span className="text-base font-bold font-mono tracking-tight leading-tight text-[var(--text-primary)]">
-                    {m.count.toLocaleString()}
-                  </span>
-                </div>
-              </button>
-            </React.Fragment>
+              {/* Metric Label & Count */}
+              <div className="flex flex-col min-w-0">
+                <span className="text-[11px] font-medium text-text-secondary group-hover:text-text-primary transition-colors truncate">
+                  {m.label}
+                </span>
+                <span className="text-base sm:text-lg font-bold font-mono tracking-tight text-text-primary leading-tight mt-0.5">
+                  {m.count.toLocaleString()}
+                </span>
+              </div>
+            </button>
           );
         })}
       </div>
 
-      {/* Right Action: Sent today X / 143 + One Solid Indigo Primary Button */}
-      <div className="flex items-center justify-end gap-3 w-full md:w-auto shrink-0 border-t md:border-t-0 border-[var(--card-border)] pt-2 md:pt-0">
-        <span className="text-xs font-medium text-[var(--text-secondary)] whitespace-nowrap">
-          Sent today <strong className="font-semibold text-[var(--text-primary)] font-mono">{pitchedToday}</strong> / 143
-        </span>
+      {/* Right Action: Sent today X / 143 + One BoardUI Primary Action Button */}
+      <div className="flex items-center justify-between xl:justify-end gap-3 w-full xl:w-auto shrink-0 border-t xl:border-t-0 border-separator-border/60 pt-2 xl:pt-0">
+        <div className="flex flex-col items-start xl:items-end text-left xl:text-right">
+          <span className="text-[10px] text-text-tertiary font-medium">Daily Outbox</span>
+          <span className="text-xs font-semibold text-text-secondary whitespace-nowrap">
+            Sent today <strong className="font-bold text-text-primary font-mono">{pitchedToday}</strong> / 143
+          </span>
+        </div>
 
-        <button
-          type="button"
+        <Button
+          size="small"
+          variant="primary"
+          leadingIcon={RiFlashlightFill}
           onClick={() => {
             if (onStartDailyOutreach) {
               onStartDailyOutreach();
@@ -149,12 +159,11 @@ export default function SummaryStrip({
               onFilterChange('enriched');
             }
           }}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[var(--brand-solid)] hover:bg-[var(--brand-solid-hover)] text-white shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2 transition-colors shrink-0"
-          title="Launch daily outreach triage on high-intent prospects"
+          className="shadow-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer whitespace-nowrap text-xs"
+          title="Launch 1-click triage & pitch on ready prospects"
         >
-          <RiFlashlightFill className="size-3.5" aria-hidden="true" />
-          <span>Start Daily Outreach</span>
-        </button>
+          Start Daily Outreach
+        </Button>
       </div>
     </div>
   );

@@ -21,12 +21,16 @@ import {
 } from '@remixicon/react';
 
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '@/components/base/table/table';
+import { Avatar } from '@/components/base/avatar/avatar';
+import { Chip } from '@/components/base/badges/chip';
+import { StatusDot } from '@/components/base/badges/status-dot';
 import { Checkbox } from '@/components/base/checkbox/checkbox';
 import { Select, SelectItem } from '@/components/base/select/select';
 import { SearchField } from '@/components/base/search-field/search-field';
 import { IconButton } from '@/components/base/buttons/icon-button';
 import { Button } from '@/components/base/buttons/button';
 import { Pagination } from '@/components/base/pagination/pagination';
+import { PillTabList, PillTab } from '@/components/base/tabs/pill-tab';
 import { Dropdown, DropdownTrigger, DropdownPopover, DropdownGroup, DropdownItem, DropdownDivider } from '@/components/base/dropdown/dropdown';
 import { isSocialOrAggregator } from '@/utils/is-social';
 import { cx } from '@/utils/cx';
@@ -39,37 +43,30 @@ function getInitials(name = '') {
 }
 
 /**
- * Stable avatar tint palette (6 tints: indigo, green, amber, blue, violet, rose)
+ * Stable avatar color selection matching BoardUI's official Avatar palette
  */
-const AVATAR_TINTS = [
-  { bg: 'var(--brand-tint-bg)', text: 'var(--brand-tint-text)', border: 'var(--brand-tint-border)' },
-  { bg: 'var(--tint-success-bg)', text: 'var(--tint-success-text)', border: 'var(--tint-success-border)' },
-  { bg: 'var(--tint-warning-bg)', text: 'var(--tint-warning-text)', border: 'var(--tint-warning-border)' },
-  { bg: 'var(--tint-info-bg)', text: 'var(--tint-info-text)', border: 'var(--tint-info-border)' },
-  { bg: 'var(--tint-violet-bg)', text: 'var(--tint-violet-text)', border: 'var(--tint-violet-border)' },
-  { bg: 'var(--tint-rose-bg)', text: 'var(--tint-rose-text)', border: 'var(--tint-rose-border)' },
-];
-
-function getAvatarTint(name = '') {
+const AVATAR_COLORS = ['blue', 'lime', 'pink', 'neutral'];
+function getAvatarColor(name = '') {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = (hash << 5) - hash + name.charCodeAt(i);
     hash |= 0;
   }
-  const index = Math.abs(hash) % AVATAR_TINTS.length;
-  return AVATAR_TINTS[index];
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
 /**
- * Stage chip styling and text:
- * Discovered = neutral, Audited = info, Enriched = info, Pitched = violet,
- * Sent = brand indigo, Replied = success, Won = success (stronger fill), Archived = neutral (muted).
+ * Stage chip styling and text using BoardUI's semantic Chip & StatusDot tokens:
+ * Discovered = neutral + dot, Audited/Enriched = cyan + green dot, Pitched = purple,
+ * Sent = blue, Replied = lime bold, Won = lime bold solid, Archived = soft.
  */
 function getStageBadge(lead, isOptedOut) {
   if (isOptedOut) {
     return {
       label: 'Opted out',
-      className: 'bg-[var(--tint-neutral-bg)] text-[var(--text-secondary)] border border-[var(--tint-neutral-border)]'
+      chipColor: 'soft',
+      variant: 'subtle',
+      dotColor: null
     };
   }
   const status = (lead?.status || '').toLowerCase();
@@ -77,47 +74,65 @@ function getStageBadge(lead, isOptedOut) {
     case 'discovered':
       return {
         label: 'Discovered',
-        className: 'bg-[var(--tint-neutral-bg)] text-[var(--tint-neutral-text)] border border-[var(--tint-neutral-border)]'
+        chipColor: 'neutral',
+        variant: 'subtle',
+        dotColor: 'indigo'
       };
     case 'audited':
       return {
         label: 'Audited',
-        className: 'bg-[var(--tint-info-bg)] text-[var(--tint-info-text)] border border-[var(--tint-info-border)]'
+        chipColor: 'cyan',
+        variant: 'subtle',
+        dotColor: 'green'
       };
     case 'enriched':
       return {
         label: 'Enriched',
-        className: 'bg-[var(--tint-info-bg)] text-[var(--tint-info-text)] border border-[var(--tint-info-border)]'
+        chipColor: 'cyan',
+        variant: 'subtle',
+        dotColor: 'green'
       };
     case 'pitched':
       return {
         label: 'Pitched',
-        className: 'bg-[var(--tint-violet-bg)] text-[var(--tint-violet-text)] border border-[var(--tint-violet-border)]'
+        chipColor: 'purple',
+        variant: 'subtle',
+        dotColor: 'indigo'
       };
     case 'sent':
       return {
         label: 'Sent',
-        className: 'bg-[var(--brand-tint-bg)] text-[var(--brand-tint-text)] border border-[var(--brand-tint-border)]'
+        chipColor: 'blue',
+        variant: 'subtle',
+        dotColor: 'indigo'
       };
     case 'replied':
       return {
         label: 'Replied',
-        className: 'bg-[var(--tint-success-bg)] text-[var(--tint-success-text)] border border-[var(--tint-success-border)]'
+        chipColor: 'lime',
+        variant: 'bold',
+        dotColor: 'green'
       };
     case 'won':
       return {
         label: 'Won',
-        className: 'bg-[var(--solid-won-bg)] text-white border border-transparent font-bold shadow-xs'
+        chipColor: 'lime',
+        variant: 'bold',
+        dotColor: null
       };
     case 'archived':
       return {
         label: 'Archived',
-        className: 'bg-[var(--tint-neutral-bg)] text-[var(--text-secondary)] border border-[var(--tint-neutral-border)]'
+        chipColor: 'soft',
+        variant: 'subtle',
+        dotColor: null
       };
     default:
       return {
         label: status ? (status.charAt(0).toUpperCase() + status.slice(1)) : 'Discovered',
-        className: 'bg-[var(--tint-neutral-bg)] text-[var(--tint-neutral-text)] border border-[var(--tint-neutral-border)]'
+        chipColor: 'neutral',
+        variant: 'subtle',
+        dotColor: 'indigo'
       };
   }
 }
@@ -347,163 +362,139 @@ export default function BoardLeadTable({
   return (
     <div className="flex w-full flex-col gap-3">
 
-      {/* Main Table Container Card */}
-      <section className="flex w-full flex-col rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] p-3 sm:p-5 shadow-xs">
+      {/* Main BoardUI Table Container Card */}
+      <section className="flex w-full flex-col rounded-2xl border border-separator-border bg-background-primary-default p-3 sm:p-5 shadow-xs">
         
-        {/* Tier 1: Tabs + Saved-filter Chip + Action Groups */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[var(--card-border)]">
+        {/* Tier 1: BoardUI PillTabs + Gold Vault Chip + Action Groups */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-separator-border/60">
           
-          {/* Tabs: All, Ready to Pitch, No Website + Gold Vault saved-filter chip */}
+          {/* Authentic BoardUI PillTabList with sliding indicator */}
           <div className="flex flex-wrap items-center gap-3">
-            <nav className="flex items-center gap-1 border-b-2 border-transparent" aria-label="Lead triage tabs">
-              {/* Tab: All */}
-              <button
-                type="button"
-                onClick={() => {
+            <PillTabList className="flex-wrap">
+              <PillTab
+                variant="gray"
+                isSelected={activeFilter === 'all' && contactChannel === 'all' && focusTier === 'vault'}
+                onSelect={() => {
                   if (onFocusTierChange) onFocusTierChange('vault');
                   if (onContactChannelChange) onContactChannelChange('all');
                   if (onFilterChange) onFilterChange('all');
                 }}
-                className={cx(
-                  "inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold transition-colors cursor-pointer relative",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2 rounded-lg",
-                  activeFilter === 'all' && contactChannel === 'all' && focusTier === 'vault'
-                    ? "text-[var(--brand-solid)] border-b-2 border-[var(--brand-solid)] -mb-[1px]"
-                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] border-b-2 border-transparent -mb-[1px]"
-                )}
-                aria-current={activeFilter === 'all' && contactChannel === 'all' && focusTier === 'vault' ? 'page' : undefined}
               >
                 <span>All</span>
-                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[var(--brand-tint-bg)] text-[var(--brand-tint-text)] border border-[var(--brand-tint-border)]">
+                <span className="ms-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-mono font-bold bg-background-tertiary-default text-text-secondary">
                   {(stats?.totalLeads || totalCount || leads.length).toLocaleString()}
                 </span>
-              </button>
+              </PillTab>
 
-              {/* Tab: Ready to Pitch */}
-              <button
-                type="button"
-                onClick={() => {
+              <PillTab
+                variant="gray"
+                isSelected={activeFilter === 'enriched'}
+                onSelect={() => {
                   if (onFocusTierChange) onFocusTierChange('vault');
                   if (onContactChannelChange) onContactChannelChange('all');
                   if (onFilterChange) onFilterChange(activeFilter === 'enriched' ? 'all' : 'enriched');
                 }}
-                className={cx(
-                  "inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold transition-colors cursor-pointer relative",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2 rounded-lg",
-                  activeFilter === 'enriched'
-                    ? "text-[var(--brand-solid)] border-b-2 border-[var(--brand-solid)] -mb-[1px]"
-                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] border-b-2 border-transparent -mb-[1px]"
-                )}
-                aria-current={activeFilter === 'enriched' ? 'page' : undefined}
               >
                 <span>Ready to Pitch</span>
-                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[var(--brand-tint-bg)] text-[var(--brand-tint-text)] border border-[var(--brand-tint-border)]">
+                <span className="ms-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-mono font-bold bg-status-lime-background text-status-lime-text">
                   {(stats?.enriched || 0).toLocaleString()}
                 </span>
-              </button>
+              </PillTab>
 
-              {/* Tab: No Website */}
-              <button
-                type="button"
-                onClick={() => {
+              <PillTab
+                variant="gray"
+                isSelected={activeFilter === 'no_website'}
+                onSelect={() => {
                   if (onFocusTierChange) onFocusTierChange('vault');
                   if (onContactChannelChange) onContactChannelChange('all');
                   if (onFilterChange) onFilterChange(activeFilter === 'no_website' ? 'all' : 'no_website');
                 }}
-                className={cx(
-                  "inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold transition-colors cursor-pointer relative",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2 rounded-lg",
-                  activeFilter === 'no_website'
-                    ? "text-[var(--brand-solid)] border-b-2 border-[var(--brand-solid)] -mb-[1px]"
-                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] border-b-2 border-transparent -mb-[1px]"
-                )}
-                aria-current={activeFilter === 'no_website' ? 'page' : undefined}
               >
                 <span>No Website</span>
-                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[var(--brand-tint-bg)] text-[var(--brand-tint-text)] border border-[var(--brand-tint-border)]">
+                <span className="ms-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-mono font-bold bg-status-rose-background text-status-rose-text">
                   {(stats?.noWebsite || 0).toLocaleString()}
                 </span>
-              </button>
-            </nav>
+              </PillTab>
+            </PillTabList>
 
-            {/* Gold Vault Saved-Filter Chip (Warning tint with star icon) */}
+            {/* Gold Vault Saved-Filter Chip (BoardUI Chip & Button design) */}
             <button
               type="button"
               onClick={() => {
                 if (onFocusTierChange) onFocusTierChange(focusTier === 'gold' ? 'vault' : 'gold');
               }}
               className={cx(
-                "inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold border transition-all cursor-pointer",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2",
+                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2lg text-xs font-semibold border transition-all cursor-pointer shadow-2xs button-press-motion",
                 focusTier === 'gold'
-                  ? "bg-[var(--tint-warning-bg)] border-[var(--tint-warning-border)] text-[var(--tint-warning-text)] ring-1 ring-[var(--tint-warning-border)] shadow-2xs"
-                  : "bg-[var(--tint-warning-bg)]/60 border-[var(--tint-warning-border)]/80 text-[var(--tint-warning-text)] hover:bg-[var(--tint-warning-bg)]"
+                  ? "bg-amber-500/15 border-amber-500/50 text-amber-500 ring-1 ring-amber-500/30"
+                  : "border-border-button-default bg-background-secondary-default text-text-secondary hover:text-text-primary hover:bg-background-secondary-hover"
               )}
               title="Toggle Gold Vault high-intent prospects"
               aria-pressed={focusTier === 'gold'}
             >
-              <RiStarLine className="size-3.5 fill-current text-[var(--tint-warning-text)]" aria-hidden="true" />
+              <RiStarLine className={cx("size-3.5", focusTier === 'gold' ? "fill-amber-500 text-amber-500" : "text-amber-500/70")} />
               <span>Gold Vault</span>
-              <span className="font-mono text-[11px] opacity-90">({stats?.goldLeads || 0})</span>
+              <span className="font-mono text-[11px] opacity-80">({stats?.goldLeads || 0})</span>
             </button>
           </div>
 
-          {/* Right Toolbar Actions: Secondary Run OSINT (indigo tint), More Menu, Import/Export Menu */}
+          {/* Right Toolbar Actions: BoardUI Buttons and Dropdowns */}
           <div className="flex items-center gap-2 shrink-0">
-            {/* ONE Run OSINT Button (Secondary indigo tint button) */}
-            <button
-              type="button"
+            {/* Run OSINT Button (BoardUI Secondary Button with Icon) */}
+            <Button
+              size="small"
+              variant="secondary"
+              leadingIcon={RiShieldCheckLine}
               onClick={() => {
                 setOsintScopeChoice(selectedLeadIds.size > 0 ? 'selected' : 'filter');
                 setIsOsintScopeModalOpen(true);
               }}
               title="Run OSINT intelligence pipeline with scope selector"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--brand-tint-bg)] text-[var(--brand-tint-text)] border border-[var(--brand-tint-border)] hover:opacity-90 cursor-pointer shadow-2xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2 transition-colors"
+              className="cursor-pointer font-semibold shadow-xs"
             >
-              <RiShieldCheckLine className="size-3.5" aria-hidden="true" />
-              <span>Run OSINT</span>
-            </button>
+              Run OSINT
+            </Button>
 
-            {/* "More" Menu: Reset OSINT + Clean N Sites (Neutral outline) */}
+            {/* "More" Menu: Reset OSINT + Clean N Sites (BoardUI Dropdown) */}
             <Dropdown>
-              <DropdownTrigger className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] hover:bg-[var(--tint-neutral-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs font-medium transition-colors cursor-pointer shadow-2xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+              <DropdownTrigger className="inline-flex items-center gap-1 px-3 py-1.5 rounded-2lg border border-border-button-default bg-background-primary-default hover:bg-background-primary-hover text-text-secondary hover:text-text-primary text-xs font-medium transition-colors cursor-pointer shadow-2xs button-press-motion">
                 <span>More</span>
-                <RiArrowDownSLine className="size-3.5 text-[var(--text-secondary)]" aria-hidden="true" />
+                <RiArrowDownSLine className="size-3.5 text-text-tertiary" />
               </DropdownTrigger>
-              <DropdownPopover aria-label="More actions" placement="bottom end" className="w-56 bg-[var(--card-bg)] border border-[var(--card-border)] shadow-xl rounded-xl p-1">
+              <DropdownPopover aria-label="More actions" placement="bottom end" className="w-56 p-1 bg-background-primary-default border border-separator-border shadow-xl rounded-xl">
                 <DropdownGroup>
-                  <DropdownItem onSelect={() => setIsResetOsintConfirmOpen(true)} className="rounded-lg hover:bg-[var(--tint-neutral-bg)] text-[var(--text-primary)] text-xs">
-                    <RiRefreshLine className="size-4 text-[var(--text-secondary)]" />
+                  <DropdownItem onSelect={() => setIsResetOsintConfirmOpen(true)} className="px-2.5 py-2 rounded-lg text-body-medium">
+                    <RiRefreshLine className="size-4 text-text-secondary" />
                     <span>Reset OSINT</span>
                   </DropdownItem>
-                  <DropdownItem onSelect={() => setIsCleanSitesConfirmOpen(true)} className="rounded-lg hover:bg-[var(--tint-danger-bg)] text-[var(--tint-danger-text)] text-xs">
-                    <RiDeleteBin6Line className="size-4 text-[var(--tint-danger-text)]" />
+                  <DropdownItem onSelect={() => setIsCleanSitesConfirmOpen(true)} className="px-2.5 py-2 rounded-lg text-body-medium text-status-rose-text hover:bg-status-rose-background">
+                    <RiDeleteBin6Line className="size-4 text-status-rose-text" />
                     <span>Clean {stats?.withWebsites || 0} sites</span>
                   </DropdownItem>
                 </DropdownGroup>
               </DropdownPopover>
             </Dropdown>
 
-            {/* "Import / Export" Menu (Neutral outline) */}
+            {/* "Import / Export" Menu (BoardUI Dropdown) */}
             <Dropdown>
-              <DropdownTrigger className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] hover:bg-[var(--tint-neutral-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs font-medium transition-colors cursor-pointer shadow-2xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
-                <RiDownload2Line className="size-3.5 text-[var(--text-secondary)]" aria-hidden="true" />
+              <DropdownTrigger className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2lg border border-border-button-default bg-background-primary-default hover:bg-background-primary-hover text-text-secondary hover:text-text-primary text-xs font-medium transition-colors cursor-pointer shadow-2xs button-press-motion">
+                <RiDownload2Line className="size-3.5 text-text-tertiary" />
                 <span>Import / Export</span>
-                <RiArrowDownSLine className="size-3.5 text-[var(--text-secondary)]" aria-hidden="true" />
+                <RiArrowDownSLine className="size-3.5 text-text-tertiary" />
               </DropdownTrigger>
-              <DropdownPopover aria-label="Import and export options" placement="bottom end" className="w-52 bg-[var(--card-bg)] border border-[var(--card-border)] shadow-xl rounded-xl p-1">
+              <DropdownPopover aria-label="Import and export options" placement="bottom end" className="w-52 p-1 bg-background-primary-default border border-separator-border shadow-xl rounded-xl">
                 <DropdownGroup>
-                  <DropdownItem onSelect={() => onOpenSearch && onOpenSearch('csv')} className="rounded-lg hover:bg-[var(--tint-neutral-bg)] text-[var(--text-primary)] text-xs">
-                    <RiUploadCloud2Line className="size-4 text-[var(--text-secondary)]" />
+                  <DropdownItem onSelect={() => onOpenSearch && onOpenSearch('csv')} className="px-2.5 py-2 rounded-lg text-body-medium">
+                    <RiUploadCloud2Line className="size-4 text-text-secondary" />
                     <span>Import CSV</span>
                   </DropdownItem>
-                  <DropdownDivider className="border-[var(--card-border)]" />
-                  <DropdownItem onSelect={() => onExportExcel && onExportExcel('excel')} className="rounded-lg hover:bg-[var(--tint-neutral-bg)] text-[var(--text-primary)] text-xs">
-                    <RiDownload2Line className="size-4 text-[var(--text-secondary)]" />
+                  <DropdownDivider className="border-separator-border" />
+                  <DropdownItem onSelect={() => onExportExcel && onExportExcel('excel')} className="px-2.5 py-2 rounded-lg text-body-medium">
+                    <RiDownload2Line className="size-4 text-text-secondary" />
                     <span>Export Excel (.xlsx)</span>
                   </DropdownItem>
-                  <DropdownItem onSelect={() => onExportExcel && onExportExcel('csv')} className="rounded-lg hover:bg-[var(--tint-neutral-bg)] text-[var(--text-primary)] text-xs">
-                    <RiDownload2Line className="size-4 text-[var(--text-secondary)]" />
+                  <DropdownItem onSelect={() => onExportExcel && onExportExcel('csv')} className="px-2.5 py-2 rounded-lg text-body-medium">
+                    <RiDownload2Line className="size-4 text-text-secondary" />
                     <span>Export CSV (.csv)</span>
                   </DropdownItem>
                 </DropdownGroup>
@@ -512,10 +503,10 @@ export default function BoardLeadTable({
           </div>
         </div>
 
-        {/* Tier 2: Search + Niche, Channel & City Filters */}
-        <div className="flex w-full flex-col items-start gap-2.5 py-2.5 sm:flex-row sm:items-center sm:justify-between border-b border-[var(--card-border)]">
+        {/* Tier 2: SearchField + BoardUI Select Dropdowns */}
+        <div className="flex w-full flex-col items-start gap-2.5 py-2.5 sm:flex-row sm:items-center sm:justify-between border-b border-separator-border/60">
           
-          {/* Search Field */}
+          {/* BoardUI SearchField */}
           <div className="w-full sm:w-72">
             <SearchField
               aria-label="Search prospects"
@@ -527,7 +518,7 @@ export default function BoardLeadTable({
             />
           </div>
 
-          {/* Filter Dropdowns: Niche, Channel, City */}
+          {/* BoardUI Select Filters: Niche, Channel, City */}
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
             
             {/* Niche Filter */}
@@ -578,9 +569,9 @@ export default function BoardLeadTable({
 
         {/* Bulk Action Header Bar (when 1+ rows selected) */}
         {(selectedLeadIds.size > 0 || isAllMatchingSelected) && (
-          <div className="my-2 flex flex-wrap items-center justify-between gap-3 px-3 py-2 rounded-xl bg-[var(--tint-neutral-bg)] border border-[var(--card-border)] text-xs animate-in fade-in duration-150">
+          <div className="my-2 flex flex-wrap items-center justify-between gap-3 px-3 py-2 rounded-2lg bg-background-secondary-default border border-separator-border text-xs animate-in fade-in duration-150">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-[var(--text-primary)]">
+              <span className="font-semibold text-text-primary">
                 {isAllMatchingSelected ? totalItems.toLocaleString() : selectedLeadIds.size} selected
               </span>
 
@@ -589,14 +580,14 @@ export default function BoardLeadTable({
                 <button
                   type="button"
                   onClick={() => setIsAllMatchingSelected(true)}
-                  className="text-[var(--brand-solid)] underline hover:text-[var(--brand-solid-hover)] cursor-pointer font-medium ml-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--focus-ring)]"
+                  className="text-text-primary underline hover:text-text-secondary cursor-pointer font-medium ml-1"
                 >
                   Select all {totalItems.toLocaleString()} matching
                 </button>
               )}
 
               {isAllMatchingSelected && (
-                <span className="text-[var(--text-secondary)] text-[11px] font-mono">
+                <span className="text-text-tertiary text-[11px] font-mono">
                   (all {totalItems.toLocaleString()} matching filter selected)
                 </span>
               )}
@@ -605,12 +596,13 @@ export default function BoardLeadTable({
             <div className="flex items-center gap-2">
               <Button
                 size="small"
+                variant="secondary"
                 leadingIcon={RiShieldCheckLine}
                 onClick={() => {
                   setOsintScopeChoice('selected');
                   setIsOsintScopeModalOpen(true);
                 }}
-                className="bg-[var(--brand-tint-bg)] text-[var(--brand-tint-text)] border border-[var(--brand-tint-border)] hover:bg-[var(--brand-tint-bg)]/80 font-medium px-2.5 py-1 rounded-lg text-xs"
+                className="text-xs"
               >
                 Run OSINT
               </Button>
@@ -643,7 +635,7 @@ export default function BoardLeadTable({
                 size="small"
                 variant="ghost"
                 onClick={handleClearSelection}
-                className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs"
+                className="text-text-tertiary hover:text-text-primary text-xs"
               >
                 Clear
               </Button>
@@ -657,11 +649,11 @@ export default function BoardLeadTable({
             aria-label="Prospects Triage Table" 
             size="md" 
             selectionMode="none" 
-            className="w-full table-fixed"
+            className="w-full table-fixed bui-table"
           >
             <TableHeader>
               {/* Checkbox Column */}
-              <TableColumn id="select" className="w-11 px-2 py-3 text-center sticky top-0 z-20 bg-[var(--card-bg)]">
+              <TableColumn id="select" className="w-11 px-2 py-3 text-center sticky top-0 z-20 bg-background-primary-default">
                 <Checkbox
                   slot={null}
                   aria-label="Select all on this page"
@@ -675,48 +667,49 @@ export default function BoardLeadTable({
               <TableColumn 
                 id="company" 
                 isRowHeader 
-                className="w-[280px] px-4 py-3 sticky top-0 left-0 z-30 bg-[var(--card-bg)] border-r border-[var(--card-border)]"
+                className="w-[280px] px-4 py-3 sticky top-0 left-0 z-30 bg-background-primary-default border-r border-separator-border/60"
               >
-                <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">Company</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">Company</span>
               </TableColumn>
 
               {/* Best Contact Column */}
-              <TableColumn id="contact" className="w-[300px] px-4 py-3 sticky top-0 z-20 bg-[var(--card-bg)]">
-                <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">Best Contact</span>
+              <TableColumn id="contact" className="w-[300px] px-4 py-3 sticky top-0 z-20 bg-background-primary-default">
+                <span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">Best Contact</span>
               </TableColumn>
 
               {/* Stage Column */}
-              <TableColumn id="stage" className="w-[130px] px-4 py-3 sticky top-0 z-20 bg-[var(--card-bg)]">
-                <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">Stage</span>
+              <TableColumn id="stage" className="w-[140px] px-4 py-3 sticky top-0 z-20 bg-background-primary-default">
+                <span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">Stage</span>
               </TableColumn>
 
               {/* Actions Column (Sticky Right) */}
               <TableColumn 
                 id="actions" 
-                className="w-[160px] px-4 py-3 text-right sticky top-0 right-0 z-30 bg-[var(--card-bg)] border-l border-[var(--card-border)]"
+                className="w-[160px] px-4 py-3 text-right sticky top-0 right-0 z-30 bg-background-primary-default border-l border-separator-border/60"
               >
-                <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">Actions</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">Actions</span>
               </TableColumn>
             </TableHeader>
 
             <TableBody
               renderEmptyState={() => (
                 <div className="flex h-56 flex-col items-center justify-center gap-3 text-center">
-                  <div className="flex size-12 items-center justify-center rounded-2xl bg-[var(--tint-neutral-bg)] text-[var(--text-secondary)] border border-[var(--tint-neutral-border)]">
+                  <div className="flex size-12 items-center justify-center rounded-2xl bg-background-secondary-default text-text-tertiary border border-separator-border">
                     <RiGlobalLine className="size-6" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-[var(--text-primary)]">No prospects match your filters</p>
-                    <p className="text-xs text-[var(--text-secondary)] mt-1">
+                    <p className="text-body-large font-bold text-text-primary">No prospects match your filters</p>
+                    <p className="text-body-medium text-text-secondary mt-1">
                       Clear your search or find new leads to harvest prospects.
                     </p>
                   </div>
                   {onOpenSearch && (
                     <Button
                       size="small"
+                      variant="primary"
                       leadingIcon={RiShieldCheckLine}
                       onClick={() => onOpenSearch('search')}
-                      className="mt-2 bg-[var(--brand-solid)] hover:bg-[var(--brand-solid-hover)] text-white text-xs font-semibold px-3 py-1.5 rounded-xl shadow-xs"
+                      className="mt-2"
                     >
                       Find Leads
                     </Button>
@@ -744,36 +737,35 @@ export default function BoardLeadTable({
                 let bestContact = null;
                 const otherContacts = [];
 
-                // Best contact icon coloring: email = info blue, WhatsApp = success green, phone = neutral slate
                 if (hasEmail) {
                   bestContact = { 
                     type: 'email', 
                     value: lead.email, 
-                    icon: RiMailLine, 
-                    iconColor: 'text-[var(--tint-info-text)]' 
+                    icon: RiMailLine,
+                    iconColor: 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
                   };
-                  if (hasWhatsApp) otherContacts.push({ type: 'whatsapp', value: lead.whatsapp, icon: RiWhatsappLine, iconColor: 'text-[var(--tint-success-text)]' });
-                  if (hasPhone) otherContacts.push({ type: 'phone', value: lead.phone, icon: RiPhoneLine, iconColor: 'text-[var(--tint-neutral-text)]' });
+                  if (hasWhatsApp) otherContacts.push({ type: 'whatsapp', value: lead.whatsapp, icon: RiWhatsappLine, iconColor: 'text-emerald-500 hover:bg-emerald-500/10' });
+                  if (hasPhone) otherContacts.push({ type: 'phone', value: lead.phone, icon: RiPhoneLine, iconColor: 'text-slate-500 hover:bg-slate-500/10' });
                 } else if (hasWhatsApp) {
                   bestContact = { 
                     type: 'whatsapp', 
                     value: lead.whatsapp || lead.phone, 
-                    icon: RiWhatsappLine, 
-                    iconColor: 'text-[var(--tint-success-text)]' 
+                    icon: RiWhatsappLine,
+                    iconColor: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                   };
-                  if (hasPhone && lead.phone !== lead.whatsapp) otherContacts.push({ type: 'phone', value: lead.phone, icon: RiPhoneLine, iconColor: 'text-[var(--tint-neutral-text)]' });
+                  if (hasPhone && lead.phone !== lead.whatsapp) otherContacts.push({ type: 'phone', value: lead.phone, icon: RiPhoneLine, iconColor: 'text-slate-500 hover:bg-slate-500/10' });
                 } else if (hasPhone) {
                   bestContact = { 
                     type: 'phone', 
                     value: lead.phone, 
-                    icon: RiPhoneLine, 
-                    iconColor: 'text-[var(--tint-neutral-text)]' 
+                    icon: RiPhoneLine,
+                    iconColor: 'bg-slate-500/10 text-slate-600 dark:text-slate-400'
                   };
                 }
 
-                // Stage chip resolution with semantic colors
+                // Stage chip resolution with BoardUI Chip & StatusDot
                 const stage = getStageBadge(lead, isOptedOut);
-                const avatarTint = getAvatarTint(businessName);
+                const avatarColor = getAvatarColor(businessName);
 
                 return (
                   <TableRow
@@ -784,13 +776,13 @@ export default function BoardLeadTable({
                       onOpenLeadDrawer && onOpenLeadDrawer(lead);
                     }}
                     className={cx(
-                      "h-[60px] cursor-pointer transition-colors duration-150 border-l-[3px]",
-                      "hover:bg-[var(--row-hover-bg)]",
+                      "h-[60px] cursor-pointer transition-colors duration-150 border-s-[3px]",
+                      "hover:bg-background-secondary-hover",
                       isSelected
-                        ? "bg-[var(--row-selected-bg)] border-l-[var(--brand-solid)]"
-                        : "border-l-transparent",
-                      isCurrentlyActive && "bg-[var(--row-selected-bg)]/60",
-                      isFocused && "ring-1 ring-inset ring-[var(--focus-ring)]"
+                        ? "bg-background-tertiary-default/80 border-s-accent-500"
+                        : "border-s-transparent",
+                      isCurrentlyActive && "bg-background-tertiary-default/50 ring-1 ring-inset ring-separator-border",
+                      isFocused && "ring-1 ring-inset ring-border-focus-ring"
                     )}
                   >
                     {/* Checkbox Cell */}
@@ -807,147 +799,151 @@ export default function BoardLeadTable({
 
                     {/* Company Column (Sticky Left, solid background) */}
                     <TableCell 
-                      className="w-[280px] px-4 py-2 sticky left-0 z-10 bg-[var(--card-bg)] border-r border-[var(--card-border)]" 
+                      className="w-[280px] px-4 py-2 sticky left-0 z-10 bg-background-primary-default border-r border-separator-border/60" 
                       onClick={() => onSelectLead && onSelectLead(lead)}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        {/* Company Avatar with soft stable tint and matching text */}
-                        <div 
-                          style={{
-                            backgroundColor: avatarTint.bg,
-                            color: avatarTint.text,
-                            borderColor: avatarTint.border,
-                          }}
-                          className="size-8 rounded-lg border font-bold text-xs flex items-center justify-center shrink-0 select-none shadow-2xs"
-                        >
-                          {getInitials(businessName)}
-                        </div>
+                        {/* Authentic BoardUI Avatar */}
+                        <Avatar
+                          size="sm"
+                          color={avatarColor}
+                          initials={getInitials(businessName)}
+                          className="shrink-0 font-bold"
+                        />
 
                         <div className="flex min-w-0 flex-col justify-center">
                           <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="truncate text-xs font-semibold text-[var(--text-primary)]">
+                            <span className="truncate text-body-medium font-semibold text-text-primary">
                               {businessName}
                             </span>
-                            {/* Danger Tint "No website" badge ONLY for no-website leads */}
+                            {/* BoardUI Chip "No website" badge ONLY for genuine no-website leads */}
                             {isNoWebsite && (
-                              <span className="shrink-0 text-[10px] py-0.5 px-1.5 font-bold rounded-md bg-[var(--tint-danger-bg)] text-[var(--tint-danger-text)] border border-[var(--tint-danger-border)]">
+                              <Chip variant="bold" color="rose" className="shrink-0 text-[10px] py-0 px-1.5 font-bold">
                                 No website
-                              </span>
+                              </Chip>
                             )}
                           </div>
                           {/* niche · city underneath with normalized niche casing */}
-                          <p className="truncate text-[11px] text-[var(--text-secondary)] mt-0.5">
+                          <p className="truncate text-caption-1-medium text-text-tertiary mt-0.5">
                             {niche}{city ? ` · ${city}` : ''}
                           </p>
                         </div>
                       </div>
                     </TableCell>
 
-                    {/* Best Contact Column (One single line) */}
+                    {/* Best Contact Column (BoardUI contact channels) */}
                     <TableCell className="w-[300px] px-4 py-2" onClick={() => onSelectLead && onSelectLead(lead)}>
                       <div className="flex items-center gap-2 truncate">
                         {bestContact ? (
                           <>
-                            <div className="flex items-center gap-1.5 min-w-0 max-w-[210px] text-xs text-[var(--text-primary)]">
-                              <bestContact.icon className={cx("size-3.5 shrink-0", bestContact.iconColor)} aria-hidden="true" />
-                              <span className="truncate font-mono text-[11px] select-all">{bestContact.value}</span>
+                            <div className="flex items-center gap-1.5 min-w-0 max-w-[210px] text-body-medium text-text-primary">
+                              <span className={cx(
+                                "flex size-5 items-center justify-center rounded-md shrink-0",
+                                bestContact.iconColor
+                              )}>
+                                <bestContact.icon className="size-3.5" aria-hidden="true" />
+                              </span>
+                              <span className="truncate font-mono text-[11px] select-all font-medium">
+                                {bestContact.value}
+                              </span>
                             </div>
                             {otherContacts.length > 0 && (
-                              <div className="flex items-center gap-1 shrink-0 pl-1.5 border-l border-[var(--card-border)]">
+                              <div className="flex items-center gap-1 shrink-0 ps-1.5 border-s border-separator-border/60">
                                 {otherContacts.map((c, i) => (
-                                  <c.icon 
-                                    key={i} 
-                                    className={cx("size-3 shrink-0 transition-opacity hover:opacity-80", c.iconColor)} 
-                                    title={`${c.type}: ${c.value}`} 
-                                    aria-label={`${c.type} available`} 
-                                  />
+                                  <span
+                                    key={i}
+                                    className={cx(
+                                      "flex size-5 items-center justify-center rounded-md transition-colors",
+                                      c.iconColor
+                                    )}
+                                    title={`${c.type}: ${c.value}`}
+                                    aria-label={`${c.type} available`}
+                                  >
+                                    <c.icon className="size-3" />
+                                  </span>
                                 ))}
                               </div>
                             )}
                           </>
                         ) : (
-                          <span className="text-[11px] text-[var(--text-secondary)]">No contact intel</span>
+                          <span className="text-caption-1-medium text-text-tertiary">No contact intel</span>
                         )}
                       </div>
                     </TableCell>
 
-                    {/* Stage Column (One color per stage) */}
-                    <TableCell className="w-[130px] px-4 py-2" onClick={() => onSelectLead && onSelectLead(lead)}>
-                      <span className={cx(
-                        "inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium",
-                        stage.className
-                      )}>
-                        {stage.label}
-                      </span>
+                    {/* Stage Column (BoardUI Chip with StatusDot) */}
+                    <TableCell className="w-[140px] px-4 py-2" onClick={() => onSelectLead && onSelectLead(lead)}>
+                      <Chip variant={stage.variant} color={stage.chipColor} className="gap-1.5 font-medium">
+                        {stage.dotColor && <StatusDot color={stage.dotColor} />}
+                        <span>{stage.label}</span>
+                      </Chip>
                     </TableCell>
 
                     {/* Actions Column (Sticky Right, solid background, 1 Pitch + ⋯ Menu) */}
                     <TableCell 
-                      className="w-[160px] px-4 py-2 text-right sticky right-0 z-10 bg-[var(--card-bg)] border-l border-[var(--card-border)]"
+                      className="w-[160px] px-4 py-2 text-right sticky right-0 z-10 bg-background-primary-default border-l border-separator-border/60"
                     >
                       <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
                         
-                        {/* 1 Visible Pitch Button: Outlined in indigo, filled indigo on hover */}
-                        <button
-                          type="button"
+                        {/* 1 Visible Pitch Button (BoardUI Button) */}
+                        <Button
+                          size="small"
+                          variant="secondary"
                           disabled={isOptedOut}
                           onClick={() => {
                             if (isOptedOut) return;
                             onOpenLeadDrawer ? onOpenLeadDrawer({ ...lead, initialTab: 'pitch' }) : onSelectLead(lead);
                           }}
                           className={cx(
-                            "px-3 py-1 rounded-lg text-xs font-semibold transition-all border cursor-pointer",
-                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2",
-                            isOptedOut
-                              ? "bg-[var(--tint-neutral-bg)] text-[var(--text-secondary)] border-[var(--card-border)] opacity-50 cursor-not-allowed"
-                              : "border-[var(--brand-solid)] text-[var(--brand-solid)] bg-transparent hover:bg-[var(--brand-solid)] hover:text-white"
+                            "text-xs font-semibold px-2.5",
+                            !isOptedOut && "border-accent-500/40 text-accent-600 dark:text-accent-400 hover:bg-accent-500 hover:text-white dark:hover:text-slate-950"
                           )}
                           title={isOptedOut ? "Lead opted out of outreach" : "Open pitch composer"}
                           aria-label={isOptedOut ? "Pitch disabled (opted out)" : `Pitch ${businessName}`}
                         >
                           Pitch
-                        </button>
+                        </Button>
 
-                        {/* ⋯ Overflow Menu */}
+                        {/* ⋯ Overflow Dropdown Menu (BoardUI Dropdown) */}
                         <Dropdown>
                           <DropdownTrigger 
-                            className="size-7 flex items-center justify-center rounded-lg hover:bg-[var(--tint-neutral-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                            className="size-8 flex items-center justify-center rounded-2lg border border-border-button-default bg-background-primary-default hover:bg-background-primary-hover text-foreground-icon-primary shadow-xs transition-colors cursor-pointer button-press-motion"
                             aria-label={`Actions for ${businessName}`}
                             title="More actions"
                           >
                             <RiMore2Fill className="size-4" aria-hidden="true" />
                           </DropdownTrigger>
-                          <DropdownPopover aria-label="Row actions" placement="bottom end" className="w-56 bg-[var(--card-bg)] border border-[var(--card-border)] shadow-xl rounded-xl p-1">
+                          <DropdownPopover aria-label="Row actions" placement="bottom end" className="w-56 p-1 bg-background-primary-default border border-separator-border shadow-xl rounded-xl">
                             <DropdownGroup>
-                              <DropdownItem onSelect={() => onOpenLeadDrawer ? onOpenLeadDrawer(lead) : onSelectLead(lead)} className="rounded-lg hover:bg-[var(--tint-neutral-bg)] text-[var(--text-primary)] text-xs">
-                                <RiEditLine className="size-4 text-[var(--text-secondary)]" />
+                              <DropdownItem onSelect={() => onOpenLeadDrawer ? onOpenLeadDrawer(lead) : onSelectLead(lead)} className="px-2.5 py-2 rounded-lg text-body-medium">
+                                <RiEditLine className="size-4 text-text-secondary" />
                                 <span>Edit</span>
                               </DropdownItem>
 
-                              <DropdownItem onSelect={() => onRunOsint && onRunOsint(lead.id)} className="rounded-lg hover:bg-[var(--tint-neutral-bg)] text-[var(--text-primary)] text-xs">
-                                <RiShieldCheckLine className="size-4 text-[var(--text-secondary)]" />
+                              <DropdownItem onSelect={() => onRunOsint && onRunOsint(lead.id)} className="px-2.5 py-2 rounded-lg text-body-medium">
+                                <RiShieldCheckLine className="size-4 text-text-secondary" />
                                 <span>Run OSINT for this lead</span>
                               </DropdownItem>
 
                               {lead.website && !isNoWebsite && (
-                                <DropdownItem onSelect={() => onOpenAudit ? onOpenAudit(lead.id) : window.open(`/audit/${lead.id}`)} className="rounded-lg hover:bg-[var(--tint-neutral-bg)] text-[var(--text-primary)] text-xs">
-                                  <RiSpeedUpLine className="size-4 text-[var(--text-secondary)]" />
+                                <DropdownItem onSelect={() => onOpenAudit ? onOpenAudit(lead.id) : window.open(`/audit/${lead.id}`)} className="px-2.5 py-2 rounded-lg text-body-medium">
+                                  <RiSpeedUpLine className="size-4 text-text-secondary" />
                                   <span>View Audit Report</span>
                                 </DropdownItem>
                               )}
 
-                              <DropdownItem onSelect={() => onArchiveLead && onArchiveLead(lead.id)} className="rounded-lg hover:bg-[var(--tint-neutral-bg)] text-[var(--text-primary)] text-xs">
-                                <RiArchiveLine className="size-4 text-[var(--text-secondary)]" />
+                              <DropdownItem onSelect={() => onArchiveLead && onArchiveLead(lead.id)} className="px-2.5 py-2 rounded-lg text-body-medium">
+                                <RiArchiveLine className="size-4 text-text-secondary" />
                                 <span>Archive</span>
                               </DropdownItem>
 
-                              <DropdownDivider className="border-[var(--card-border)]" />
+                              <DropdownDivider className="border-separator-border" />
 
                               <DropdownItem 
                                 onSelect={() => setLeadToDelete(lead)} 
-                                className="rounded-lg hover:bg-[var(--tint-danger-bg)] text-[var(--tint-danger-text)] text-xs"
+                                className="px-2.5 py-2 rounded-lg text-body-medium text-status-rose-text hover:bg-status-rose-background"
                               >
-                                <RiDeleteBin6Line className="size-4 text-[var(--tint-danger-text)]" />
+                                <RiDeleteBin6Line className="size-4 text-status-rose-text" />
                                 <span>Delete</span>
                               </DropdownItem>
                             </DropdownGroup>
@@ -963,20 +959,20 @@ export default function BoardLeadTable({
         </div>
 
         {/* Pagination Footer */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-[var(--card-border)] px-2 pt-3.5 mt-2">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-separator-border px-2 pt-3.5 mt-2">
           {/* Showing X-Y of Z */}
-          <div className="text-xs text-[var(--text-secondary)] font-medium">
-            Showing <strong className="text-[var(--text-primary)] font-semibold">{startItem}-{endItem}</strong> of <strong className="text-[var(--text-primary)] font-semibold">{totalItems.toLocaleString()}</strong>
+          <div className="text-body-medium text-text-secondary font-medium">
+            Showing <strong className="text-text-primary font-semibold">{startItem}-{endItem}</strong> of <strong className="text-text-primary font-semibold">{totalItems.toLocaleString()}</strong>
           </div>
 
           <div className="flex items-center gap-3">
             {/* Page Size Selector */}
-            <div className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
+            <div className="flex items-center gap-1.5 text-body-medium text-text-secondary">
               <span>Per page:</span>
               <select
                 value={pageSize}
                 onChange={(e) => onPageSizeChange && onPageSizeChange(e.target.value)}
-                className="rounded-lg border border-[var(--card-border)] bg-[var(--card-bg)] px-2 py-1 text-xs font-mono text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] cursor-pointer"
+                className="rounded-lg border border-border-button-default bg-background-primary-default px-2 py-1 text-xs font-mono text-text-primary focus:outline-hidden focus:ring-1 focus:ring-accent-500 cursor-pointer shadow-xs"
                 aria-label="Select page size"
               >
                 <option value="25">25</option>
@@ -985,7 +981,7 @@ export default function BoardLeadTable({
               </select>
             </div>
 
-            {/* Pagination Controls */}
+            {/* BoardUI Pagination Component */}
             {totalPages > 1 && (
               <Pagination
                 page={currentPage}
@@ -1005,12 +1001,12 @@ export default function BoardLeadTable({
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] p-5 shadow-xl space-y-4 cursor-default"
+            className="w-full max-w-md rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xl space-y-4 cursor-default"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <RiShieldCheckLine className="size-5 text-[var(--brand-solid)]" />
-                <h3 className="text-sm font-bold text-[var(--text-primary)]">Run OSINT Investigation</h3>
+                <RiShieldCheckLine className="size-5 text-accent-500" />
+                <h3 className="text-body-large font-bold text-text-primary">Run OSINT Investigation</h3>
               </div>
               <IconButton
                 icon={RiCloseLine}
@@ -1018,11 +1014,10 @@ export default function BoardLeadTable({
                 variant="ghost"
                 aria-label="Close"
                 onClick={() => setIsOsintScopeModalOpen(false)}
-                className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
               />
             </div>
 
-            <p className="text-xs text-[var(--text-secondary)]">
+            <p className="text-body-medium text-text-secondary">
               Select the prospect scope to harvest contact information, verify social accounts, and detect active websites:
             </p>
 
@@ -1030,11 +1025,11 @@ export default function BoardLeadTable({
               {/* Scope Option 1: Selected */}
               <label 
                 className={cx(
-                  "flex items-center justify-between p-3 rounded-xl border text-xs cursor-pointer transition-colors",
+                  "flex items-center justify-between p-3 rounded-2lg border text-xs cursor-pointer transition-colors",
                   selectedLeadIds.size === 0 && "opacity-50 cursor-not-allowed",
                   osintScopeChoice === 'selected'
-                    ? "border-[var(--brand-solid)] bg-[var(--brand-tint-bg)] font-semibold text-[var(--brand-tint-text)]"
-                    : "border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-secondary)] hover:bg-[var(--tint-neutral-bg)]"
+                    ? "border-accent-500 bg-accent-500/10 font-semibold text-text-primary ring-1 ring-accent-500/30"
+                    : "border-border-button-default bg-background-secondary-default text-text-secondary hover:bg-background-secondary-hover"
                 )}
               >
                 <div className="flex items-center gap-2.5">
@@ -1045,7 +1040,7 @@ export default function BoardLeadTable({
                     disabled={selectedLeadIds.size === 0}
                     checked={osintScopeChoice === 'selected'}
                     onChange={() => setOsintScopeChoice('selected')}
-                    className="cursor-pointer accent-[var(--brand-solid)]"
+                    className="cursor-pointer accent-accent-500"
                   />
                   <span>Selected prospects</span>
                 </div>
@@ -1055,10 +1050,10 @@ export default function BoardLeadTable({
               {/* Scope Option 2: Current Filter */}
               <label 
                 className={cx(
-                  "flex items-center justify-between p-3 rounded-xl border text-xs cursor-pointer transition-colors",
+                  "flex items-center justify-between p-3 rounded-2lg border text-xs cursor-pointer transition-colors",
                   osintScopeChoice === 'filter'
-                    ? "border-[var(--brand-solid)] bg-[var(--brand-tint-bg)] font-semibold text-[var(--brand-tint-text)]"
-                    : "border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-secondary)] hover:bg-[var(--tint-neutral-bg)]"
+                    ? "border-accent-500 bg-accent-500/10 font-semibold text-text-primary ring-1 ring-accent-500/30"
+                    : "border-border-button-default bg-background-secondary-default text-text-secondary hover:bg-background-secondary-hover"
                 )}
               >
                 <div className="flex items-center gap-2.5">
@@ -1068,7 +1063,7 @@ export default function BoardLeadTable({
                     value="filter"
                     checked={osintScopeChoice === 'filter'}
                     onChange={() => setOsintScopeChoice('filter')}
-                    className="cursor-pointer accent-[var(--brand-solid)]"
+                    className="cursor-pointer accent-accent-500"
                   />
                   <span>Current filter slice</span>
                 </div>
@@ -1078,10 +1073,10 @@ export default function BoardLeadTable({
               {/* Scope Option 3: All Leads */}
               <label 
                 className={cx(
-                  "flex items-center justify-between p-3 rounded-xl border text-xs cursor-pointer transition-colors",
+                  "flex items-center justify-between p-3 rounded-2lg border text-xs cursor-pointer transition-colors",
                   osintScopeChoice === 'all'
-                    ? "border-[var(--brand-solid)] bg-[var(--brand-tint-bg)] font-semibold text-[var(--brand-tint-text)]"
-                    : "border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-secondary)] hover:bg-[var(--tint-neutral-bg)]"
+                    ? "border-accent-500 bg-accent-500/10 font-semibold text-text-primary ring-1 ring-accent-500/30"
+                    : "border-border-button-default bg-background-secondary-default text-text-secondary hover:bg-background-secondary-hover"
                 )}
               >
                 <div className="flex items-center gap-2.5">
@@ -1091,7 +1086,7 @@ export default function BoardLeadTable({
                     value="all"
                     checked={osintScopeChoice === 'all'}
                     onChange={() => setOsintScopeChoice('all')}
-                    className="cursor-pointer accent-[var(--brand-solid)]"
+                    className="cursor-pointer accent-accent-500"
                   />
                   <span>All leads in database</span>
                 </div>
@@ -1099,19 +1094,18 @@ export default function BoardLeadTable({
               </label>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--card-border)]">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-separator-border">
               <Button
                 size="small"
                 variant="secondary"
                 onClick={() => setIsOsintScopeModalOpen(false)}
-                className="text-xs"
               >
                 Cancel
               </Button>
               <Button
                 size="small"
+                variant="primary"
                 onClick={handleConfirmRunOsint}
-                className="bg-[var(--brand-solid)] hover:bg-[var(--brand-solid-hover)] text-white text-xs font-semibold px-3 py-1.5 rounded-xl shadow-xs"
               >
                 Confirm & Run
               </Button>
@@ -1123,30 +1117,29 @@ export default function BoardLeadTable({
       {/* Single Lead Delete Confirmation Modal */}
       {leadToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="w-full max-w-sm rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] p-5 shadow-xl space-y-3">
-            <div className="flex items-center gap-2 text-[var(--tint-danger-text)]">
+          <div className="w-full max-w-sm rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xl space-y-3">
+            <div className="flex items-center gap-2 text-status-rose-text">
               <RiAlertLine className="size-5 shrink-0" />
-              <h3 className="text-sm font-bold text-[var(--text-primary)]">Delete Prospect</h3>
+              <h3 className="text-body-large font-bold text-text-primary">Delete Prospect</h3>
             </div>
-            <p className="text-xs text-[var(--text-secondary)]">
-              Are you sure you want to permanently delete <strong className="text-[var(--text-primary)]">{leadToDelete.business_name}</strong>? This action cannot be undone.
+            <p className="text-body-medium text-text-secondary">
+              Are you sure you want to permanently delete <strong className="text-text-primary">{leadToDelete.business_name}</strong>? This action cannot be undone.
             </p>
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--card-border)]">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-separator-border">
               <Button
                 size="small"
                 variant="secondary"
                 onClick={() => setLeadToDelete(null)}
-                className="text-xs"
               >
                 Cancel
               </Button>
               <Button
                 size="small"
+                variant="danger"
                 onClick={() => {
                   onDeleteLead && onDeleteLead(leadToDelete.id);
                   setLeadToDelete(null);
                 }}
-                className="bg-[var(--tint-danger-text)] hover:opacity-90 text-white border-transparent text-xs font-semibold px-3 py-1.5 rounded-xl"
               >
                 Delete
               </Button>
@@ -1158,30 +1151,29 @@ export default function BoardLeadTable({
       {/* Clean Sites Confirmation Modal */}
       {isCleanSitesConfirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="w-full max-w-sm rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] p-5 shadow-xl space-y-3">
-            <div className="flex items-center gap-2 text-[var(--tint-danger-text)]">
+          <div className="w-full max-w-sm rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xl space-y-3">
+            <div className="flex items-center gap-2 text-status-rose-text">
               <RiAlertLine className="size-5 shrink-0" />
-              <h3 className="text-sm font-bold text-[var(--text-primary)]">Clean Sites Confirmation</h3>
+              <h3 className="text-body-large font-bold text-text-primary">Clean Sites Confirmation</h3>
             </div>
-            <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-              This action will permanently purge <strong className="text-[var(--text-primary)] font-bold">{stats?.withWebsites || 0}</strong> prospects that already possess verified active websites, retaining only genuine no-website targets.
+            <p className="text-body-medium text-text-secondary leading-relaxed">
+              This action will permanently purge <strong className="text-text-primary font-bold">{stats?.withWebsites || 0}</strong> prospects that already possess verified active websites, retaining only genuine no-website targets.
             </p>
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--card-border)]">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-separator-border">
               <Button
                 size="small"
                 variant="secondary"
                 onClick={() => setIsCleanSitesConfirmOpen(false)}
-                className="text-xs"
               >
                 Cancel
               </Button>
               <Button
                 size="small"
+                variant="danger"
                 onClick={() => {
                   setIsCleanSitesConfirmOpen(false);
                   onCleanWebsites && onCleanWebsites();
                 }}
-                className="bg-[var(--tint-danger-text)] hover:opacity-90 text-white border-transparent text-xs font-semibold px-3 py-1.5 rounded-xl"
               >
                 Clean {stats?.withWebsites || 0} Sites
               </Button>
@@ -1193,30 +1185,29 @@ export default function BoardLeadTable({
       {/* Reset OSINT Confirmation Modal */}
       {isResetOsintConfirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="w-full max-w-sm rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] p-5 shadow-xl space-y-3">
-            <div className="flex items-center gap-2 text-[var(--tint-warning-text)]">
+          <div className="w-full max-w-sm rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xl space-y-3">
+            <div className="flex items-center gap-2 text-status-yellow-text">
               <RiRefreshLine className="size-5 shrink-0" />
-              <h3 className="text-sm font-bold text-[var(--text-primary)]">Reset OSINT Data</h3>
+              <h3 className="text-body-large font-bold text-text-primary">Reset OSINT Data</h3>
             </div>
-            <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-              Are you sure you want to delete and reset all OSINT verification data for <strong className="text-[var(--text-primary)] font-bold">{activeNiche !== 'all' ? `collection "${activeNiche}"` : `all ${totalItems.toLocaleString()} prospects`}</strong>? This clears contact records and resets status to discovered.
+            <p className="text-body-medium text-text-secondary leading-relaxed">
+              Are you sure you want to delete and reset all OSINT verification data for <strong className="text-text-primary font-bold">{activeNiche !== 'all' ? `collection "${activeNiche}"` : `all ${totalItems.toLocaleString()} prospects`}</strong>? This clears contact records and resets status to discovered.
             </p>
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--card-border)]">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-separator-border">
               <Button
                 size="small"
                 variant="secondary"
                 onClick={() => setIsResetOsintConfirmOpen(false)}
-                className="text-xs"
               >
                 Cancel
               </Button>
               <Button
                 size="small"
+                variant="primary"
                 onClick={() => {
                   setIsResetOsintConfirmOpen(false);
                   onResetOsint && onResetOsint(activeNiche);
                 }}
-                className="bg-[var(--tint-warning-text)] hover:opacity-90 text-white border-transparent text-xs font-semibold px-3 py-1.5 rounded-xl"
               >
                 Reset OSINT
               </Button>
