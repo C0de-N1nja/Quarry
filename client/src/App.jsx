@@ -748,9 +748,10 @@ export default function App() {
           localStorage.setItem('quarry_onboarding_completed', 'true');
           setIsOnboardingOpen(false);
         }}
-        onComplete={({ keyword, city }) => {
+        onComplete={({ keyword, city, filter }) => {
           setIsOnboardingOpen(false);
-          setActiveNiche(keyword);
+          if (keyword) setActiveNiche(keyword);
+          if (filter) setActiveFilter(filter);
           fetchLeads();
           fetchStats();
         }}
