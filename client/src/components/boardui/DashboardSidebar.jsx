@@ -49,7 +49,7 @@ export default function DashboardSidebar({
       label: 'Deal Pipeline (Kanban)',
       icon: RiKanbanView2,
       mode: 'kanban',
-      badge: stats?.totalPipelineValue ? `$${Math.round(stats.totalPipelineValue / 1000)}k` : null
+      badge: stats?.pitched ? `${stats.pitched} In Flight` : null
     }
   ];
 

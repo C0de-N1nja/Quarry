@@ -42,16 +42,6 @@ export default function LeadTable({
   onOpenAudit,
   onRefresh
 }) {
-  const kpiStats = [
-    {
-      icon: RiGlobalLine,
-      label: "No-Website Targets",
-      value: (stats?.noWebsite ?? 0).toLocaleString(),
-      delta: "+24%",
-      deltaColor: "lime",
-    },
-  ];
-
   if (viewMode === 'kanban') {
     return (
       <div className="flex w-full flex-col gap-6">
@@ -88,7 +78,7 @@ export default function LeadTable({
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <StatCards stats={kpiStats} columns={1} className="sm:max-w-sm" />
+      <BoardStatCards stats={stats} />
       <BoardLeadTable
         leads={leads}
         totalCount={totalCount}

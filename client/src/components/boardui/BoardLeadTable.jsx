@@ -22,7 +22,9 @@ import {
   RiSpeedUpLine,
   RiCloseLine,
   RiMailCheckLine,
-  RiTimeLine
+  RiTimeLine,
+  RiWhatsappLine,
+  RiMailSendLine
 } from '@remixicon/react';
 
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '@/components/base/table/table';
@@ -187,7 +189,7 @@ export default function BoardLeadTable({
                 if (onFilterChange) onFilterChange('all');
               }}
             >
-              <span>All Prospects ({(totalCount || stats?.totalLeads || leads.length).toLocaleString()})</span>
+              <span>All Prospects ({(stats?.totalLeads || totalCount || leads.length).toLocaleString()})</span>
             </PillTab>
 
             <PillTab
@@ -228,45 +230,38 @@ export default function BoardLeadTable({
               <span>Gold Vault ({stats?.goldLeads || 0})</span>
             </PillTab>
 
-            <PillTab
-              variant="blue"
-              icon={RiTimeLine}
-              isSelected={activeFilter === 'pitched'}
-              onSelect={() => {
-                if (onFocusTierChange) onFocusTierChange('vault');
-                if (onContactChannelChange) onContactChannelChange('all');
-                if (onFilterChange) onFilterChange(activeFilter === 'pitched' ? 'all' : 'pitched');
-              }}
-            >
-              <span>Follow-Ups Due ({stats?.pitched || 0})</span>
-            </PillTab>
-
-            <PillTab
-              variant="gray"
-              isSelected={activeFilter === 'won'}
-              onSelect={() => {
-                if (onFocusTierChange) onFocusTierChange('vault');
-                if (onContactChannelChange) onContactChannelChange('all');
-                if (onFilterChange) onFilterChange(activeFilter === 'won' ? 'all' : 'won');
-              }}
-            >
-              <span>Won ({stats?.won || 0})</span>
-            </PillTab>
-          </PillTabList>
-
-          {/* Quick Dataset Actions: Run OSINT on current slice, Purge Sites, Reset */}
-          <div className="flex items-center gap-2 shrink-0">
-            {onCleanWebsites && stats && stats.withWebsites > 0 && (
-              <Button
-                size="small"
-                variant="danger"
-                onClick={onCleanWebsites}
-                title="Purge prospects that already have verified websites"
+            {(stats?.pitched > 0 || activeFilter === 'pitched') && (
+              <PillTab
+                variant="blue"
+                icon={RiTimeLine}
+                isSelected={activeFilter === 'pitched'}
+                onSelect={() => {
+                  if (onFocusTierChange) onFocusTierChange('vault');
+                  if (onContactChannelChange) onContactChannelChange('all');
+                  if (onFilterChange) onFilterChange(activeFilter === 'pitched' ? 'all' : 'pitched');
+                }}
               >
-                Purge {stats.withWebsites} Sites
-              </Button>
+                <span>Follow-Ups Due ({stats?.pitched || 0})</span>
+              </PillTab>
             )}
 
+            {(stats?.won > 0 || activeFilter === 'won') && (
+              <PillTab
+                variant="gray"
+                isSelected={activeFilter === 'won'}
+                onSelect={() => {
+                  if (onFocusTierChange) onFocusTierChange('vault');
+                  if (onContactChannelChange) onContactChannelChange('all');
+                  if (onFilterChange) onFilterChange(activeFilter === 'won' ? 'all' : 'won');
+                }}
+              >
+                <span>Won ({stats?.won || 0})</span>
+              </PillTab>
+            )}
+          </PillTabList>
+
+          {/* Quick Dataset Actions: Run OSINT, Reset, Clean Sites */}
+          <div className="flex items-center gap-2 shrink-0">
             {onResetOsint && (
               <Button
                 size="small"
@@ -276,6 +271,31 @@ export default function BoardLeadTable({
                 title="Reset OSINT cache for current slice"
               >
                 Reset OSINT
+              </Button>
+            )}
+
+            {onRunOsint && (
+              <Button
+                size="small"
+                variant="primary"
+                leadingIcon={RiShieldCheckLine}
+                onClick={() => onRunOsint(activeNiche)}
+                title="Run deep OSINT intelligence harvesting"
+              >
+                Run OSINT ({stats?.noWebsite || totalCount || leads.length})
+              </Button>
+            )}
+
+            {onCleanWebsites && stats && stats.withWebsites > 0 && (
+              <Button
+                size="small"
+                variant="secondary"
+                leadingIcon={RiDeleteBin6Line}
+                onClick={onCleanWebsites}
+                className="text-text-tertiary hover:text-danger-primary transition-colors cursor-pointer"
+                title="Clean prospects that already have verified websites"
+              >
+                Clean {stats.withWebsites} Sites
               </Button>
             )}
 
@@ -520,9 +540,33 @@ export default function BoardLeadTable({
                       </div>
                     </TableCell>
 
-                    {/* Row Action Buttons */}
-                    <TableCell className="w-32 px-4 py-3.5 text-right">
-                      <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                    {/* Row Action Buttons: 1-Click Outreach + Utilities */}
+                    <TableCell className="w-44 px-4 py-3.5 text-right">
+                      <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        {lead.phone ? (
+                          <a
+                            href={`https://wa.me/${lead.phone.replace(/\D/g, '')}?text=${encodeURIComponent(
+                              `Hi ${lead.business_name || lead.name || ''}, noticed your business on Google Maps in ${lead.city || ''} and saw your customers are looking for you online. We built a fast modern website prototype for your business—would you like to see it?`
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-mono text-[10px] font-bold border border-emerald-500/30 transition-all shadow-2xs hover:shadow-xs shrink-0 cursor-pointer"
+                            title="1-Click Direct WhatsApp Pitch"
+                          >
+                            <RiWhatsappLine className="size-3.5 shrink-0" />
+                            <span>Pitch</span>
+                          </a>
+                        ) : lead.email ? (
+                          <a
+                            href={`mailto:${lead.email}?subject=${encodeURIComponent(`Website prototype for ${lead.business_name || lead.name || ''}`)}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-mono text-[10px] font-bold border border-blue-500/30 transition-all shadow-2xs shrink-0 cursor-pointer"
+                            title="1-Click Direct Email Pitch"
+                          >
+                            <RiMailSendLine className="size-3.5 shrink-0" />
+                            <span>Email</span>
+                          </a>
+                        ) : null}
+
                         <IconButton
                           icon={RiEditLine}
                           size="small"
@@ -539,7 +583,7 @@ export default function BoardLeadTable({
                             variant="ghost"
                             aria-label="Full Website Audit Report"
                             title="Open Full Website Audit Report (Speed, ADA, SEO)"
-                            className="text-cyan-400 hover:text-cyan-300"
+                            className="text-cyan-500 hover:text-cyan-400"
                             onClick={() => onOpenAudit ? onOpenAudit(lead.id) : window.open('/audit/' + lead.id)}
                           />
                         )}
@@ -567,6 +611,7 @@ export default function BoardLeadTable({
                             variant="ghost"
                             aria-label="Delete Prospect"
                             title="Delete Prospect"
+                            className="text-text-tertiary hover:text-danger-primary transition-colors"
                             onClick={() => onDeleteLead(lead.id)}
                           />
                         )}
