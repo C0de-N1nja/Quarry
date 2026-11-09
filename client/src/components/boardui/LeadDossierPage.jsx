@@ -32,7 +32,8 @@ import {
   RiMailSendLine,
   RiSendPlane2Line,
   RiPrinterLine,
-  RiGoogleFill
+  RiGoogleFill,
+  RiFilePdfLine
 } from '@remixicon/react';
 import { Button } from '@/components/base/buttons/button';
 import { IconButton } from '@/components/base/buttons/icon-button';
