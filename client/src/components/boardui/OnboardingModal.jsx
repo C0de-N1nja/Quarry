@@ -167,9 +167,23 @@ export default function OnboardingModal({
     }
   };
 
-  const handleFinishAndEnter = () => {
+  const persistCompletion = () => {
     localStorage.setItem('quarry_onboarding_completed', 'true');
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ onboarding_completed: 'true' })
+    }).catch(() => {});
+  };
+
+  const handleFinishAndEnter = () => {
+    persistCompletion();
     if (onComplete) onComplete({ keyword, city });
+  };
+
+  const handleSkip = () => {
+    persistCompletion();
+    if (onSkip) onSkip();
   };
 
   return (
@@ -196,8 +210,8 @@ export default function OnboardingModal({
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono text-text-tertiary">Step {step} of 4</span>
             <button
-              onClick={onSkip}
-              className="text-xs font-medium text-text-tertiary hover:text-text-primary px-2.5 py-1 rounded-lg hover:bg-background-secondary-hover transition-colors"
+              onClick={handleSkip}
+              className="text-xs font-medium text-text-tertiary hover:text-text-primary px-2.5 py-1 rounded-lg hover:bg-background-secondary-hover transition-colors cursor-pointer"
             >
               Skip to Dashboard
             </button>

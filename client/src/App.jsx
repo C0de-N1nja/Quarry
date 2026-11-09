@@ -66,10 +66,39 @@ export default function App() {
   const [toast, setToast] = useState(null); // { message, time, type }
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState(() => {
-    return localStorage.getItem('quarry_onboarding_completed') !== 'true';
-  });
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isLiveJobsOpen, setIsLiveJobsOpen] = useState(false);
+
+  // Intelligently detect first-time user vs. normal/returning user
+  useEffect(() => {
+    async function checkFirstTimeStatus() {
+      // 1. Instant check: already marked completed in browser
+      if (localStorage.getItem('quarry_onboarding_completed') === 'true') {
+        return;
+      }
+      try {
+        // 2. Check server-side database: existing leads or server setting
+        const [settingsRes, statsRes] = await Promise.all([
+          fetch('/api/settings'),
+          fetch('/api/leads/stats')
+        ]);
+        const settingsData = settingsRes.ok ? await settingsRes.json() : null;
+        const statsData = statsRes.ok ? await statsRes.json() : null;
+
+        const isCompletedOnServer = settingsData?.settings?.onboarding_completed === 'true';
+        const hasExistingLeads = (statsData?.stats?.totalLeads || 0) > 0;
+
+        if (isCompletedOnServer || hasExistingLeads) {
+          // Normal/returning user with data or prior setup: bypass onboarding
+          localStorage.setItem('quarry_onboarding_completed', 'true');
+        } else {
+          // Genuine first-time user: empty database with 0 leads
+          setIsOnboardingOpen(true);
+        }
+      } catch (e) {}
+    }
+    checkFirstTimeStatus();
+  }, []);
 
   // Global Keyboard Shortcuts (Cmd+K / Ctrl+K for Command Palette, ? for Cheatsheet)
   useEffect(() => {
