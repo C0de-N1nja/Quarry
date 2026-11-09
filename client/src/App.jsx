@@ -495,6 +495,14 @@ export default function App() {
           onContactChannelChange={setContactChannel}
           onFocusTierChange={setFocusTier}
           onOpenSearch={(tab) => setActiveModal(tab === 'csv' ? 'csv' : 'search')}
+          onStartDailyOutreach={() => {
+            setActiveFilter('enriched');
+            const pitchable = leads.find(l => l.status === 'enriched' || (l.email && !l.opted_out));
+            if (pitchable) {
+              setSelectedLead({ ...pitchable, initialTab: 'pitch' });
+              setActiveModal('drawer');
+            }
+          }}
         />
 
         <LeadTable

@@ -244,9 +244,9 @@
   --color-border-table:            var(--color-neutral-200);
   --color-border-button-group:     var(--color-neutral-200);
   --color-border-sidebar-profile-hover: var(--color-neutral-300);
-  --color-separator-border:        var(--color-neutral-200);
-  --color-separator-border-strong: var(--color-neutral-200);
-  --color-border-focus-ring:       var(--color-accent-500);
+  --color-separator-border:        var(--card-border);
+  --color-separator-border-strong: var(--card-border);
+  --color-border-focus-ring:       var(--focus-ring);
 
   /* State */
   --color-state-success-text: var(--color-lime-800);
@@ -566,8 +566,9 @@
   --color-border-table:            var(--color-neutral-800);
   --color-border-button-group:     color-mix(in srgb, var(--color-neutral-600) 60%, transparent);
   --color-border-sidebar-profile-hover: var(--color-neutral-600);
-  --color-separator-border:        var(--color-neutral-800);
-  --color-separator-border-strong: color-mix(in srgb, var(--color-neutral-700) 60%, transparent);
+  --color-separator-border:        var(--card-border);
+  --color-separator-border-strong: var(--card-border);
+  --color-border-focus-ring:       var(--focus-ring);
 
   /* Figma's dark table status pairs. */
   --color-status-lime-background:   color-mix(in srgb, var(--color-lime-950) 60%, transparent);

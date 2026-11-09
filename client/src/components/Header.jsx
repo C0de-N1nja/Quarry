@@ -45,16 +45,16 @@ export default function Header({
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-separator-border bg-background-primary-default/90 backdrop-blur-md transition-colors">
+    <header className="sticky top-0 z-40 border-b border-[var(--card-border)] bg-[var(--card-bg)]/90 backdrop-blur-md transition-colors">
       <div className="mx-auto flex max-w-(--breakpoint-2xl) items-center justify-between gap-4 px-3 py-2 sm:px-6 lg:px-8">
         
         {/* Brand Logo (Visible on mobile/tablet; on desktop the sidebar displays branding) */}
         <div className="flex md:hidden items-center gap-2.5 shrink-0">
-          <div className="flex size-8 items-center justify-center rounded-xl bg-slate-900 border border-slate-700/60 text-white shadow-xs">
+          <div className="flex size-8 items-center justify-center rounded-xl bg-[var(--brand-solid)] text-white shadow-xs">
             <QuarryLogo size={18} />
           </div>
           <div className="flex items-center gap-1.5">
-            <h1 className="text-body-small font-semibold tracking-tight text-text-primary">
+            <h1 className="text-body-small font-semibold tracking-tight text-[var(--text-primary)]">
               Quarry
             </h1>
           </div>
@@ -66,15 +66,15 @@ export default function Header({
             <button
               type="button"
               onClick={onOpenCommandPalette}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-separator-border bg-background-secondary-default hover:bg-background-secondary-hover text-text-tertiary hover:text-text-primary text-xs transition-colors cursor-pointer w-full justify-between shadow-xs focus:outline-hidden focus:ring-1 focus:ring-text-primary/40"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] hover:bg-[var(--tint-neutral-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs transition-colors cursor-pointer w-full justify-between shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2"
               title="Search leads, actions (⌘K / Ctrl+K)"
               aria-label="Search leads, actions"
             >
               <span className="flex items-center gap-2 truncate">
-                <RiSearch2Line className="size-3.5 text-text-tertiary shrink-0" aria-hidden="true" />
+                <RiSearch2Line className="size-3.5 text-[var(--text-secondary)] shrink-0" aria-hidden="true" />
                 <span className="truncate">Search leads, actions...</span>
               </span>
-              <Kbd className="text-[10px] shrink-0">⌘K</Kbd>
+              <Kbd className="text-[10px] shrink-0 border border-[var(--card-border)] bg-[var(--tint-neutral-bg)] text-[var(--text-secondary)]">⌘K</Kbd>
             </button>
           )}
         </div>
@@ -85,7 +85,7 @@ export default function Header({
           {systemError && (
             <div 
               role="status"
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-500 border border-rose-500/20 text-xs font-medium"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--tint-danger-bg)] text-[var(--tint-danger-text)] border border-[var(--tint-danger-border)] text-xs font-medium"
               title={systemError}
             >
               <RiAlertLine className="size-3.5 animate-pulse shrink-0" aria-hidden="true" />
@@ -101,7 +101,7 @@ export default function Header({
             aria-label={theme === 'dark' ? "Switch to light theme" : "Switch to dark theme"}
             title={theme === 'dark' ? "Switch to light theme" : "Switch to dark theme"}
             onClick={onToggleTheme}
-            className={theme === 'dark' ? "text-warning-primary hover:text-warning-hover" : "text-indigo-500 hover:text-indigo-600"}
+            className={theme === 'dark' ? "text-[var(--tint-warning-text)] hover:bg-[var(--tint-neutral-bg)]" : "text-[var(--brand-solid)] hover:bg-[var(--tint-neutral-bg)]"}
           />
 
           {/* Settings Button */}
@@ -112,7 +112,7 @@ export default function Header({
             aria-label="Settings"
             title="Settings"
             onClick={onOpenSettings}
-            className="text-text-tertiary hover:text-text-primary"
+            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--tint-neutral-bg)]"
           />
         </div>
       </div>

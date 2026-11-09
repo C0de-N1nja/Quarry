@@ -10,6 +10,7 @@ import {
 } from '@remixicon/react';
 import { IconButton } from '@/components/base/buttons/icon-button';
 import { QuarryLogo } from './QuarryLogo';
+import { cx } from '@/utils/cx';
 
 export default function DashboardSidebar({
   viewMode,
@@ -46,23 +47,27 @@ export default function DashboardSidebar({
   }, []);
 
   const totalLeads = stats?.totalLeads || 0;
-  const inFlightCount = stats?.pitched || 0;
 
   return (
     <aside 
-      className={`shrink-0 transition-all duration-300 ease-in-out border-r border-separator-border bg-background-secondary-default backdrop-blur-xl flex flex-col justify-between z-30 select-none ${
-        collapsed ? 'w-[72px]' : 'w-[240px]'
-      }`}
+      className={cx(
+        "shrink-0 transition-all duration-300 ease-in-out border-r border-[var(--card-border)] bg-[var(--card-bg)] flex flex-col justify-between z-30 select-none",
+        collapsed ? "w-[72px]" : "w-[240px]"
+      )}
     >
       {/* Top Branding & Workspace */}
-      <div className={`p-3.5 border-b border-separator-border flex items-center ${collapsed ? 'justify-center relative' : 'justify-between gap-2'}`}>
-        <div className={`flex items-center gap-2.5 min-w-0 ${collapsed ? 'justify-center' : ''}`}>
+      <div className={cx(
+        "p-3.5 border-b border-[var(--card-border)] flex items-center",
+        collapsed ? "justify-center relative" : "justify-between gap-2"
+      )}>
+        <div className={cx("flex items-center gap-2.5 min-w-0", collapsed && "justify-center")}>
           <button
             type="button"
             onClick={() => collapsed && setCollapsed(false)}
-            className={`h-9 w-9 rounded-xl bg-slate-900 border border-slate-700/60 shadow-xs flex items-center justify-center text-white ring-1 ring-white/10 shrink-0 ${
-              collapsed ? 'cursor-pointer hover:scale-105 transition-transform' : ''
-            }`}
+            className={cx(
+              "size-9 rounded-xl bg-[var(--brand-solid)] shadow-xs flex items-center justify-center text-white shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2",
+              collapsed && "cursor-pointer hover:scale-105 transition-transform"
+            )}
             title={collapsed ? "Quarry — Click to expand sidebar" : "Quarry"}
             aria-label="Quarry logo"
           >
@@ -70,10 +75,10 @@ export default function DashboardSidebar({
           </button>
           {!collapsed && (
             <div className="min-w-0">
-              <h1 className="text-xs font-bold text-text-primary tracking-tight truncate">
+              <h1 className="text-xs font-bold text-[var(--text-primary)] tracking-tight truncate">
                 Quarry
               </h1>
-              <p className="text-[10px] text-text-tertiary font-mono truncate">Client acquisition software</p>
+              <p className="text-[10px] text-[var(--text-secondary)] font-mono truncate">Client acquisition software</p>
             </div>
           )}
         </div>
@@ -86,7 +91,7 @@ export default function DashboardSidebar({
             aria-label="Collapse sidebar"
             onClick={() => setCollapsed(true)}
             title="Collapse sidebar"
-            className="shrink-0 text-text-tertiary hover:text-text-primary"
+            className="shrink-0 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--tint-neutral-bg)]"
           />
         )}
 
@@ -97,7 +102,7 @@ export default function DashboardSidebar({
             onClick={() => setCollapsed(false)}
             aria-label="Expand sidebar"
             title="Expand sidebar"
-            className="absolute -right-3 top-5 z-40 size-6 rounded-full border border-separator-border bg-background-primary-default text-text-secondary hover:text-text-primary shadow-xs hover:shadow-md flex items-center justify-center cursor-pointer hover:scale-110 transition-all"
+            className="absolute -right-3 top-5 z-40 size-6 rounded-full border border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] shadow-xs hover:shadow-md flex items-center justify-center cursor-pointer hover:scale-110 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
           >
             <RiArrowRightSLine className="size-3.5" aria-hidden="true" />
           </button>
@@ -109,27 +114,30 @@ export default function DashboardSidebar({
         
         {/* Core Nav: Leads, Pipeline (Kanban), Find Leads, Outreach Queue, Settings */}
         <div className="space-y-1">
-          {/* Leads */}
+          {/* Leads Navigation Item */}
           <button
             type="button"
             onClick={() => onViewModeChange('table')}
-            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={cx(
+              "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2",
               viewMode === 'table'
-                ? 'bg-background-tertiary-default text-text-primary shadow-2xs border border-separator-border/60'
-                : 'text-text-secondary hover:bg-background-tertiary-default/60 hover:text-text-primary'
-            } ${collapsed ? 'justify-center px-0' : ''}`}
+                ? "bg-[var(--brand-tint-bg)] border-l-[3px] border-l-[var(--brand-solid)] text-[var(--brand-solid)] font-semibold shadow-2xs"
+                : "border-l-[3px] border-l-transparent text-[var(--text-secondary)] hover:bg-[var(--tint-neutral-bg)] hover:text-[var(--text-primary)]",
+              collapsed && "justify-center px-0"
+            )}
             title="Leads"
+            aria-current={viewMode === 'table' ? 'page' : undefined}
           >
-            <RiDashboardLine className="size-4 shrink-0" aria-hidden="true" />
+            <RiDashboardLine className={cx("size-4 shrink-0", viewMode === 'table' ? "text-[var(--brand-solid)]" : "text-[var(--text-secondary)]")} aria-hidden="true" />
             {!collapsed && (
               <>
                 <span className="flex-1 text-left truncate">Leads</span>
                 {totalLeads > 0 && (
-                  <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
-                    viewMode === 'table'
-                      ? 'bg-background-primary-default text-text-primary border border-separator-border/80 font-bold'
-                      : 'bg-background-tertiary-default text-text-tertiary'
-                  }`}>
+                  <span className={cx(
+                    "text-[10px] font-mono px-1.5 py-0.5 rounded-full font-bold border",
+                    "bg-[var(--brand-tint-bg)] text-[var(--brand-tint-text)] border-[var(--brand-tint-border)]"
+                  )}>
                     {totalLeads.toLocaleString()}
                   </span>
                 )}
@@ -137,67 +145,64 @@ export default function DashboardSidebar({
             )}
           </button>
 
-          {/* Pipeline (Kanban) */}
+          {/* Pipeline (Kanban) Navigation Item */}
           <button
             type="button"
             onClick={() => onViewModeChange('kanban')}
-            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={cx(
+              "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2",
               viewMode === 'kanban'
-                ? 'bg-background-tertiary-default text-text-primary shadow-2xs border border-separator-border/60'
-                : 'text-text-secondary hover:bg-background-tertiary-default/60 hover:text-text-primary'
-            } ${collapsed ? 'justify-center px-0' : ''}`}
+                ? "bg-[var(--brand-tint-bg)] border-l-[3px] border-l-[var(--brand-solid)] text-[var(--brand-solid)] font-semibold shadow-2xs"
+                : "border-l-[3px] border-l-transparent text-[var(--text-secondary)] hover:bg-[var(--tint-neutral-bg)] hover:text-[var(--text-primary)]",
+              collapsed && "justify-center px-0"
+            )}
             title="Pipeline (Kanban)"
+            aria-current={viewMode === 'kanban' ? 'page' : undefined}
           >
-            <RiKanbanView2 className="size-4 shrink-0" aria-hidden="true" />
+            <RiKanbanView2 className={cx("size-4 shrink-0", viewMode === 'kanban' ? "text-[var(--brand-solid)]" : "text-[var(--text-secondary)]")} aria-hidden="true" />
             {!collapsed && (
-              <>
-                <span className="flex-1 text-left truncate">Pipeline (Kanban)</span>
-                {inFlightCount > 0 && (
-                  <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
-                    viewMode === 'kanban'
-                      ? 'bg-background-primary-default text-text-primary border border-separator-border/80 font-bold'
-                      : 'bg-background-tertiary-default text-text-tertiary'
-                  }`}>
-                    {inFlightCount}
-                  </span>
-                )}
-              </>
+              <span className="flex-1 text-left truncate">Pipeline (Kanban)</span>
             )}
           </button>
 
-          {/* Find Leads */}
+          {/* Find Leads Action */}
           <button
             type="button"
             onClick={() => onOpenSearch && onOpenSearch('search')}
-            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-text-secondary hover:bg-background-tertiary-default/60 hover:text-text-primary transition-colors cursor-pointer ${
-              collapsed ? 'justify-center px-0' : ''
-            }`}
+            className={cx(
+              "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border-l-[3px] border-l-transparent text-[var(--text-secondary)] hover:bg-[var(--tint-neutral-bg)] hover:text-[var(--text-primary)]",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2",
+              collapsed && "justify-center px-0"
+            )}
             title="Find Leads"
           >
-            <RiSearch2Line className="size-4 shrink-0" aria-hidden="true" />
+            <RiSearch2Line className="size-4 shrink-0 text-[var(--text-secondary)]" aria-hidden="true" />
             {!collapsed && <span className="flex-1 text-left truncate">Find Leads</span>}
           </button>
 
-          {/* Settings */}
+          {/* Settings Action */}
           <button
             type="button"
             onClick={onOpenSettings}
-            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-text-secondary hover:bg-background-tertiary-default/60 hover:text-text-primary transition-colors cursor-pointer ${
-              collapsed ? 'justify-center px-0' : ''
-            }`}
+            className={cx(
+              "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border-l-[3px] border-l-transparent text-[var(--text-secondary)] hover:bg-[var(--tint-neutral-bg)] hover:text-[var(--text-primary)]",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2",
+              collapsed && "justify-center px-0"
+            )}
             title="Settings"
           >
-            <RiSettings4Line className="size-4 shrink-0" aria-hidden="true" />
+            <RiSettings4Line className="size-4 shrink-0 text-[var(--text-secondary)]" aria-hidden="true" />
             {!collapsed && <span className="flex-1 text-left truncate">Settings</span>}
           </button>
         </div>
       </div>
 
-      {/* Bottom Footer: Status Indicator ONLY when something is wrong */}
-      {systemError && !collapsed && (
-        <div className="p-3 border-t border-separator-border bg-rose-500/10 text-rose-500 flex items-center gap-2 text-[11px] font-medium">
-          <RiAlertLine className="size-4 shrink-0 animate-pulse" aria-hidden="true" />
-          <span className="truncate">{systemError}</span>
+      {/* Bottom Status / Error Indicator (Visible ONLY when something is wrong) */}
+      {systemError && (
+        <div className="p-3 border-t border-[var(--card-border)] bg-[var(--tint-danger-bg)] text-[var(--tint-danger-text)] text-xs flex items-center gap-2">
+          <RiAlertLine className="size-4 shrink-0" aria-hidden="true" />
+          {!collapsed && <span className="truncate font-medium">{systemError}</span>}
         </div>
       )}
     </aside>
