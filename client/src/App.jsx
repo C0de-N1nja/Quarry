@@ -176,7 +176,7 @@ export default function App() {
         .then(res => res.json())
         .then(data => {
           if (data?.success && data?.lead) {
-            setSelectedLead({ ...data.lead, initialTab: tab || 'pitch' });
+            setSelectedLead({ ...data.lead, initialTab: tab && tab !== 'pitch' ? tab : 'osint' });
             setActiveModal('drawer');
           }
         })

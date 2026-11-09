@@ -892,7 +892,7 @@ export default function BoardLeadTable({
                           disabled={isOptedOut}
                           onClick={() => {
                             if (isOptedOut) return;
-                            onOpenLeadDrawer ? onOpenLeadDrawer({ ...lead, initialTab: 'pitch' }) : onSelectLead(lead);
+                            onOpenLeadDrawer ? onOpenLeadDrawer({ ...lead, initialTab: 'osint' }) : onSelectLead(lead);
                           }}
                           className={cx(
                             "text-xs font-semibold px-2.5",

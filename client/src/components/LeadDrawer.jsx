@@ -73,7 +73,7 @@ const PITCH_TEMPLATES = {
 
 export default function LeadDrawer({ lead, onClose, onRefreshLead, onOpenAudit }) {
   const isNoWebsiteLead = lead?.has_no_website === 1 || !lead?.website;
-  const [activeTab, setActiveTab] = useState(lead?.initialTab || 'pitch'); // 'pitch', 'osint', 'audit'
+  const [activeTab, setActiveTab] = useState(lead?.initialTab && lead.initialTab !== 'pitch' ? lead.initialTab : 'osint'); // 'osint', 'audit'
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [ownerLoading, setOwnerLoading] = useState(false);
@@ -167,7 +167,7 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onOpenAudit }
 
   useEffect(() => {
     if (lead) {
-      if (lead.initialTab) setActiveTab(lead.initialTab);
+      if (lead.initialTab && lead.initialTab !== 'pitch') setActiveTab(lead.initialTab);
       fetchLeadDetail();
       generatePreview(selectedAngle);
     }
@@ -549,7 +549,7 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onOpenAudit }
               className="font-mono text-[10px]" 
               title={`${completedStepsCount} of ${pipelineSteps.length} pipeline steps verified`}
             >
-              {readinessPercent}% Pitch Ready
+              {readinessPercent}% Enriched
             </Chip>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 text-xs text-text-secondary mt-1 flex-wrap">
@@ -636,14 +636,6 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onOpenAudit }
         <PillTabList className="w-full flex justify-between sm:justify-start gap-1 overflow-x-auto no-scrollbar">
           <PillTab
             variant="blue"
-            icon={RiMailLine}
-            isSelected={activeTab === 'pitch'}
-            onSelect={() => setActiveTab('pitch')}
-          >
-            Pitch & Outreach
-          </PillTab>
-          <PillTab
-            variant="blue"
             icon={RiShieldCheckLine}
             isSelected={activeTab === 'osint'}
             onSelect={() => setActiveTab('osint')}
@@ -718,217 +710,7 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onOpenAudit }
 
       {/* Tab Content Body */}
       <div className="flex-1 overflow-y-auto p-5 space-y-5">
-        {/* TAB 1: PITCH & OUTREACH */}
-        {activeTab === 'pitch' && (
-          <div className="space-y-4">
-            {/* Sales Framework Angles */}
-            <div>
-              <label className="block text-xs font-mono uppercase tracking-wider text-text-tertiary mb-2">
-                Select Outreach Angle
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {[
-                  { id: 'no_website_showcase', label: 'No-Website Pitch', desc: 'Capture Google Maps searchers' },
-                  { id: 'speed_mobile', label: 'Mobile Speed Flaw', desc: 'Bounce rates & mobile drop-off' },
-                  { id: 'security_form_leak', label: 'Security & Lead Leak', desc: 'Missing headers & form friction' },
-                  { id: 'social_presence', label: 'Social-to-Web Bridge', desc: 'Convert social followers into bookings' }
-                ].map((angle) => (
-                  <button
-                    key={angle.id}
-                    onClick={() => handleAngleChange(angle.id)}
-                    className={`p-2.5 text-left rounded-xl border transition-all text-xs cursor-pointer ${
-                      selectedAngle === angle.id
-                        ? 'border-accent-500 bg-accent-500/10 text-accent-500 font-medium shadow-sm'
-                        : 'border-separator-border bg-background-secondary-default text-text-secondary hover:text-text-primary hover:border-border-button-hover'
-                    }`}
-                  >
-                    <div className="font-semibold text-text-primary">{angle.label}</div>
-                    <div className="text-[10px] text-text-tertiary mt-0.5">{angle.desc}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Recipient / Outreach Channel Snapshot */}
-            <div className="p-3.5 rounded-xl bg-background-secondary-default border border-separator-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs">
-              <div>
-                <span className="text-text-tertiary font-mono text-[10px] uppercase block">Primary Outreach Channel:</span>
-                <span className="font-semibold text-text-primary flex items-center gap-1.5 mt-0.5">
-                  {contact?.email ? (
-                    <>
-                      <Mail className="h-3.5 w-3.5 text-accent-500 shrink-0" />
-                      <span>{contact.contact_name || lead.business_name} ({contact.email})</span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigator.clipboard.writeText(contact.email);
-                          toast.success('Email copied to clipboard!', { description: contact.email });
-                        }}
-                        className="p-0.5 text-text-tertiary hover:text-text-primary rounded hover:bg-background-secondary-hover cursor-pointer transition-colors"
-                        title="Copy Email Address"
-                      >
-                        <RiFileCopyLine className="size-3" />
-                      </button>
-                    </>
-                  ) : (contact?.whatsapp || currentLead?.whatsapp) ? (
-                    <>
-                      <MessageCircle className="h-3.5 w-3.5 text-success-primary shrink-0" />
-                      <span>WhatsApp Direct Outreach ({contact?.phone || currentLead?.phone || 'Available'})</span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsWhatsAppModalOpen(true);
-                        }}
-                        className="p-0.5 text-emerald-500 hover:text-emerald-400 rounded hover:bg-emerald-500/10 cursor-pointer transition-colors"
-                        title="Open WhatsApp Outreach Modal"
-                      >
-                        <RiExternalLinkLine className="size-3" />
-                      </button>
-                    </>
-                  ) : currentLead?.phone ? (
-                    <>
-                      <Phone className="h-3.5 w-3.5 text-success-primary shrink-0" />
-                      <span>Direct Voice Call ({currentLead.phone})</span>
-                    </>
-                  ) : (
-                    <span className="text-text-tertiary italic">No contact discovered yet</span>
-                  )}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {contact?.email_type === 'decision_maker' && (
-                  <Chip variant="subtle" color="emerald" size="sm">
-                    Verified Owner
-                  </Chip>
-                )}
-                {(contact?.whatsapp || currentLead?.whatsapp) && (
-                  <Button
-                    type="button"
-                    onClick={handleShareWhatsApp}
-                    variant="whatsapp"
-                    size="small"
-                    leadingIcon={MessageCircle}
-                  >
-                    WhatsApp
-                  </Button>
-                )}
-                {/* Discovered Social Channel Direct Buttons */}
-                {parsedSocialProfiles && parsedSocialProfiles.length > 0 && parsedSocialProfiles.map((sp, idx) => {
-                  const plat = sp.platform?.toLowerCase();
-                  const icon = plat === 'facebook' ? Facebook 
-                    : plat === 'instagram' ? Instagram 
-                    : plat === 'linkedin' ? Linkedin 
-                    : Twitter;
-                  const variant = plat === 'facebook' ? 'facebook' 
-                    : plat === 'instagram' ? 'instagram' 
-                    : plat === 'linkedin' ? 'linkedin' 
-                    : 'twitter';
-
-                  return (
-                    <ButtonLink
-                      key={idx}
-                      href={sp.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      size="small"
-                      variant={variant}
-                      leadingIcon={icon}
-                      trailingIcon={ExternalLink}
-                      title={`Open ${sp.platform}`}
-                    >
-                      <span className="capitalize">{sp.platform}</span>
-                    </ButtonLink>
-                  );
-                })}
-              </div>
-            </div>
-
-            {Boolean(currentLead.opted_out) && (
-              <div className="p-3 rounded-xl bg-danger-primary/10 border border-danger-primary/30 text-danger-primary text-xs flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 shrink-0" />
-                <div>
-                  <span className="font-semibold">Recipient Opted Out:</span> This contact unsubscribed. Outbound pitches are paused.
-                </div>
-              </div>
-            )}
-
-            {/* Editable Pitch Subject */}
-            <div>
-              <label className="block text-xs font-medium text-text-secondary mb-1">Subject Line</label>
-              <input
-                type="text"
-                value={renderedPitch.subject}
-                onChange={(e) => setRenderedPitch({ ...renderedPitch, subject: e.target.value })}
-                className="w-full px-3 py-2 text-xs rounded-xl bg-background-secondary-default border border-separator-border focus:border-text-primary focus:outline-none text-text-primary font-mono"
-              />
-            </div>
-
-            {/* Editable Pitch Body */}
-            <div>
-              <label className="block text-xs font-medium text-text-secondary mb-1">Outreach Message Body</label>
-              <textarea
-                rows={11}
-                value={renderedPitch.body}
-                onChange={(e) => setRenderedPitch({ ...renderedPitch, body: e.target.value })}
-                className="w-full px-3 py-2 text-xs rounded-xl bg-background-secondary-default border border-separator-border focus:border-text-primary focus:outline-none text-text-primary font-mono leading-relaxed"
-              />
-            </div>
-
-            {/* Action Bar */}
-            <div className="pt-2 border-t border-separator-border flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={handleCopyPitch}
-                  variant="secondary"
-                  size="small"
-                  leadingIcon={Copy}
-                >
-                  Copy Pitch Text
-                </Button>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {(contact?.whatsapp || currentLead?.whatsapp) && (
-                  <Button
-                    onClick={handleShareWhatsApp}
-                    variant="whatsapp"
-                    size="small"
-                    leadingIcon={MessageCircle}
-                    title="Direct 1-click WhatsApp outreach"
-                  >
-                    Open in WhatsApp
-                  </Button>
-                )}
-                {contact?.email && (
-                  <Button
-                    onClick={handleOpenMailto}
-                    variant="primary"
-                    size="small"
-                    leadingIcon={ExternalLink}
-                    title="Open draft in your email client"
-                  >
-                    Open in Mail Client
-                  </Button>
-                )}
-                {currentLead?.phone && (
-                  <ButtonLink
-                    href={`tel:${currentLead.phone}`}
-                    variant="phone"
-                    size="small"
-                    leadingIcon={Phone}
-                    title={`Dial ${currentLead.phone}`}
-                  >
-                    Call Line
-                  </ButtonLink>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 2: WEBSITE AUDIT (FOR LEADS WITH WEBSITES) */}
+        {/* TAB 1: WEBSITE AUDIT (FOR LEADS WITH WEBSITES) */}
         {activeTab === 'audit' && (
           <div className="space-y-4">
             <div className="p-4 rounded-xl bg-background-secondary-default border border-separator-border space-y-3">
@@ -2141,35 +1923,14 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onOpenAudit }
         <div className="flex items-center gap-2">
           <Button
             size="small"
-            variant="secondary"
-            leadingIcon={RiFileCopyLine}
-            onClick={handleCopyPitch}
-            title="Copy pitch message to clipboard"
+            variant="primary"
+            leadingIcon={RiShieldCheckLine}
+            onClick={handleRunOsint}
+            disabled={loading}
+            title="Run OSINT intelligence enrichment on this lead"
           >
-            Copy Pitch
+            {loading ? 'Running OSINT...' : (contact || currentLead.website_status) ? 'Re-Run OSINT' : 'Run OSINT'}
           </Button>
-
-          {(contact?.whatsapp || currentLead?.whatsapp) ? (
-            <Button
-              size="small"
-              variant="whatsapp"
-              leadingIcon={RiWhatsappLine}
-              onClick={handleShareWhatsApp}
-              title="Open in WhatsApp"
-            >
-              WhatsApp Pitch
-            </Button>
-          ) : hasEmail ? (
-            <Button
-              size="small"
-              variant="primary"
-              leadingIcon={RiMailLine}
-              onClick={handleOpenMailto}
-              title="Open draft in your email client"
-            >
-              Open in Mail
-            </Button>
-          ) : null}
         </div>
       </div>
 
