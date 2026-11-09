@@ -17,7 +17,9 @@ import {
   RiDownload2Line,
   RiArrowDownSLine,
   RiCloseLine,
-  RiAlertLine
+  RiAlertLine,
+  RiBookmarkLine,
+  RiBookmarkFill
 } from '@remixicon/react';
 
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '@/components/base/table/table';
@@ -546,6 +548,7 @@ export default function BoardLeadTable({
               onSelectionChange={(k) => onContactChannelChange && onContactChannelChange(String(k))}
             >
               <SelectItem id="all" textValue="All Channels">All Channels</SelectItem>
+              <SelectItem id="has_notes" textValue="With Notes">With Notes</SelectItem>
               <SelectItem id="has_email" textValue="Has Email">Has Email</SelectItem>
               <SelectItem id="has_whatsapp" textValue="WhatsApp Verified">WhatsApp Verified</SelectItem>
               <SelectItem id="phone_only" textValue="Phone Only">Phone Only</SelectItem>
@@ -728,6 +731,7 @@ export default function BoardLeadTable({
                 // Authentic no-website check
                 const isNoWebsite = lead.has_no_website === 1 || !lead.website || lead.website === 'None' || isSocialOrAggregator(lead.website);
                 const isOptedOut = lead.opted_out === 1 || lead.status === 'opted_out';
+                const savedNote = lead.notes || (typeof window !== 'undefined' ? localStorage.getItem(`quarry_notes_${lead.id}`) : '');
 
                 // Best contact resolution: Email > WhatsApp > Phone
                 const hasEmail = Boolean(lead.email && lead.email.trim() !== '');
@@ -824,9 +828,25 @@ export default function BoardLeadTable({
                             )}
                           </div>
                           {/* niche · city underneath with normalized niche casing */}
-                          <p className="truncate text-caption-1-medium text-text-tertiary mt-0.5">
-                            {niche}{city ? ` · ${city}` : ''}
-                          </p>
+                          <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+                            <p className="truncate text-caption-1-medium text-text-tertiary">
+                              {niche}{city ? ` · ${city}` : ''}
+                            </p>
+                            {savedNote && (
+                              <span 
+                                className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] bg-amber-500/15 text-amber-400 border border-amber-500/30 font-medium shrink-0 cursor-help" 
+                                title={`Note: ${savedNote}`}
+                              >
+                                <RiBookmarkFill className="size-2.5" />
+                                <span>Note</span>
+                              </span>
+                            )}
+                          </div>
+                          {savedNote && (
+                            <p className="truncate text-[10px] text-amber-300/80 font-sans italic mt-0.5 max-w-[210px]" title={savedNote}>
+                              "{savedNote.replace(/[\r\n]+/g, ' ')}"
+                            </p>
+                          )}
                         </div>
                       </div>
                     </TableCell>

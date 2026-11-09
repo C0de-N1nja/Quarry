@@ -61,7 +61,8 @@ const leadColumns = [
   'lat REAL',
   'lng REAL',
   'audit_status TEXT',
-  'audit_summary TEXT'
+  'audit_summary TEXT',
+  'notes TEXT'
 ];
 
 for (const col of leadColumns) {

@@ -47,6 +47,8 @@ class Lead {
       query += " AND (c.email IS NULL OR c.email = '') AND ((c.whatsapp IS NOT NULL AND c.whatsapp != '') OR (l.social_profiles IS NOT NULL AND l.social_profiles != '' AND l.social_profiles != '{}') OR (l.facebook_url IS NOT NULL AND l.facebook_url != '') OR (l.instagram_url IS NOT NULL AND l.instagram_url != '') OR (l.website LIKE '%facebook.com%' OR l.website LIKE '%instagram.com%' OR l.website LIKE '%linkedin.com%'))";
     } else if (contactChannel === 'phone_only') {
       query += " AND (c.email IS NULL OR c.email = '') AND (c.whatsapp IS NULL OR c.whatsapp = '') AND (l.phone IS NOT NULL AND l.phone != '')";
+    } else if (contactChannel === 'has_notes') {
+      query += " AND (l.notes IS NOT NULL AND TRIM(l.notes) != '')";
     }
 
     if (tier === 'gold') {
@@ -112,6 +114,8 @@ class Lead {
       query += " AND (c.email IS NULL OR c.email = '') AND ((c.whatsapp IS NOT NULL AND c.whatsapp != '') OR (l.social_profiles IS NOT NULL AND l.social_profiles != '' AND l.social_profiles != '{}') OR (l.facebook_url IS NOT NULL AND l.facebook_url != '') OR (l.instagram_url IS NOT NULL AND l.instagram_url != '') OR (l.website LIKE '%facebook.com%' OR l.website LIKE '%instagram.com%' OR l.website LIKE '%linkedin.com%'))";
     } else if (contactChannel === 'phone_only') {
       query += " AND (c.email IS NULL OR c.email = '') AND (c.whatsapp IS NULL OR c.whatsapp = '') AND (l.phone IS NOT NULL AND l.phone != '')";
+    } else if (contactChannel === 'has_notes') {
+      query += " AND (l.notes IS NOT NULL AND TRIM(l.notes) != '')";
     }
 
     if (tier === 'gold') {
@@ -414,7 +418,7 @@ class Lead {
       place_id, google_category, search_keyword, business_status,
       country, timezone, facebook_url, instagram_url,
       latitude, longitude, lat, lng,
-      social_profiles, osint_evidence
+      social_profiles, osint_evidence, notes
     } = fields;
 
     // Check if lead currently has or is receiving an authentic standalone website
@@ -480,6 +484,7 @@ class Lead {
           lng = COALESCE(?, lng),
           social_profiles = COALESCE(?, social_profiles),
           osint_evidence = COALESCE(?, osint_evidence),
+          notes = COALESCE(?, notes),
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).run(
@@ -492,6 +497,7 @@ class Lead {
       finalLat, finalLng, finalLat, finalLng,
       social_profiles ? (typeof social_profiles==='string'?social_profiles:JSON.stringify(social_profiles)):null,
       osint_evidence ? (typeof osint_evidence==='string'?osint_evidence:JSON.stringify(osint_evidence)):null,
+      notes !== undefined ? notes : null,
       id
     );
 

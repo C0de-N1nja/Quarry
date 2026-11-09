@@ -8,7 +8,8 @@ import {
   RiMailLine, 
   RiWhatsappLine, 
   RiArrowRightLine, 
-  RiStarFill 
+  RiStarFill,
+  RiBookmarkFill
 } from '@remixicon/react';
 import { Chip } from '@/components/base/badges/chip';
 import { IconButton } from '@/components/base/buttons/icon-button';
@@ -44,8 +45,10 @@ function BoardTicket({
   isDragging = false 
 }) {
   const [isEditingDeal, setIsEditingDeal] = useState(false);
-  const [dealInput, setDealInput] = useState(String(lead.deal_value || 1000));
+  const [dealInput, setDealInput] = useState(String(lead.deal_value || ''));
   const [isDraggingLocal, setIsDraggingLocal] = useState(false);
+
+  const savedNote = lead.notes || (typeof window !== 'undefined' ? localStorage.getItem(`quarry_notes_${lead.id}`) : '');
 
   const hasNoWebsite = lead.website_status === 'no_website' || 
     (lead.has_no_website === 1 && lead.no_website_verified === 1) || 
@@ -152,6 +155,14 @@ function BoardTicket({
           </Chip>
         )}
       </div>
+
+      {/* Saved Note Snippet Preview */}
+      {savedNote && (
+        <div className="flex items-center gap-1.5 mb-2.5 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[10px] font-sans" title={savedNote}>
+          <RiBookmarkFill className="size-3 shrink-0 text-amber-400" />
+          <span className="truncate italic">"{savedNote.replace(/[\r\n]+/g, ' ')}"</span>
+        </div>
+      )}
 
       {/* Quick Contact Previews */}
       <div className="flex items-center gap-2 text-caption-1-regular text-text-secondary mb-2.5 flex-wrap">

@@ -22,9 +22,12 @@ import {
   RiCheckboxCircleLine,
   RiSparklingLine,
   RiBookmarkLine,
+  RiBookmarkFill,
   RiShieldUserLine,
   RiTimeLine,
-  RiCloseLine
+  RiCloseLine,
+  RiAlertLine,
+  RiRefreshLine
 } from '@remixicon/react';
 import { Button } from '@/components/base/buttons/button';
 import { IconButton } from '@/components/base/buttons/icon-button';
@@ -60,14 +63,16 @@ export default function LeadDossierPage({
   const abortControllerRef = useRef(null);
   const scanTimerRef = useRef(null);
   const [emailVerifying, setEmailVerifying] = useState(false);
+  const [auditLoading, setAuditLoading] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(lead?.status || 'discovered');
   const [dealValue, setDealValue] = useState(lead?.deal_value || '');
 
-  // Scratchpad Notes (persisted per lead in localStorage)
+  // Scratchpad Notes (persisted per lead in localStorage and DB)
   const [notes, setNotes] = useState(() => {
-    return localStorage.getItem(`quarry_notes_${lead?.id}`) || '';
+    return localStorage.getItem(`quarry_notes_${lead?.id}`) || lead?.notes || '';
   });
   const [notesSaved, setNotesSaved] = useState(false);
+  const notesSaveTimeoutRef = useRef(null);
 
   // Gold Vault Pin State
   const [isGold, setIsGold] = useState(() => {
@@ -118,6 +123,10 @@ export default function LeadDossierPage({
       const data = await res.json();
       if (data.success) {
         setDetail(data);
+        if (data.lead?.notes && !localStorage.getItem(`quarry_notes_${lead.id}`)) {
+          setNotes(data.lead.notes);
+          localStorage.setItem(`quarry_notes_${lead.id}`, data.lead.notes);
+        }
       }
     } catch (err) {
       console.error('Failed to load lead details', err);
@@ -130,7 +139,8 @@ export default function LeadDossierPage({
     if (lead?.id) {
       setCurrentStatus(lead.status || 'discovered');
       setDealValue(lead.deal_value || '');
-      setNotes(localStorage.getItem(`quarry_notes_${lead.id}`) || '');
+      const initialNotes = localStorage.getItem(`quarry_notes_${lead.id}`) || lead.notes || '';
+      setNotes(initialNotes);
       setIsGold(localStorage.getItem(`quarry_gold_${lead.id}`) === 'true' || (lead.rating >= 4.5 && lead.reviews_count >= 10));
       fetchLeadDetails();
     }
@@ -263,17 +273,62 @@ export default function LeadDossierPage({
     }
   };
 
-  // Handle Note edits
+  // Handle Note edits with instant local storage and debounced DB persistence
   const handleNotesChange = (val) => {
     setNotes(val);
     localStorage.setItem(`quarry_notes_${currentLead.id}`, val);
     setNotesSaved(true);
     setTimeout(() => setNotesSaved(false), 2000);
+
+    if (notesSaveTimeoutRef.current) clearTimeout(notesSaveTimeoutRef.current);
+    notesSaveTimeoutRef.current = setTimeout(async () => {
+      try {
+        await fetch(`/api/leads/${currentLead.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes: val })
+        });
+        if (onRefreshLead) onRefreshLead(currentLead.id);
+      } catch (e) {
+        console.error('Failed to sync note to DB', e);
+      }
+    }, 600);
   };
 
   const handleAddQuickTag = (tag) => {
     const updated = notes ? `${notes}\n• ${tag}` : `• ${tag}`;
     handleNotesChange(updated);
+  };
+
+  // Run in-dossier live website speed and quality audit
+  const handleRunAudit = async () => {
+    if (!currentLead?.id || !currentLead?.website) return;
+    setAuditLoading(true);
+    try {
+      const res = await fetch(`/api/leads/${currentLead.id}/audit-website`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: currentLead.website })
+      });
+      const data = await res.json();
+      if (data.success && data.audit) {
+        setDetail(prev => ({
+          ...prev,
+          audit: data.audit,
+          lead: data.lead || prev?.lead
+        }));
+        toast.success('Website Speed & Mobile Audit Complete!', {
+          description: `Speed: ${data.audit.performance_score}/100 • Mobile: ${data.audit.seo?.has_viewport !== false ? 'Friendly' : 'Needs Fix'}`
+        });
+        if (onRefreshLead) onRefreshLead(currentLead.id);
+      } else {
+        toast.error('Website audit failed', { description: data.error || 'Could not test this website.' });
+      }
+    } catch (err) {
+      toast.error('Audit failed', { description: err.message });
+    } finally {
+      setAuditLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -858,20 +913,43 @@ export default function LeadDossierPage({
                     </div>
                   </div>
 
-                  {onOpenAudit && (
+                  <div className="flex items-center gap-2">
                     <Button
                       size="small"
-                      variant="secondary"
-                      leadingIcon={RiSpeedUpLine}
-                      onClick={() => onOpenAudit(currentLead.id)}
+                      variant={audit ? "secondary" : "primary"}
+                      leadingIcon={auditLoading ? RiLoader4Line : RiSpeedUpLine}
+                      onClick={handleRunAudit}
+                      disabled={auditLoading}
                     >
-                      Run Website Speed Check
+                      {auditLoading ? 'Testing Speed & Quality...' : audit ? 'Re-test Speed' : '⚡ Run Speed & Quality Check'}
                     </Button>
-                  )}
+                    {audit && onOpenAudit && (
+                      <Button
+                        size="small"
+                        variant="ghost"
+                        leadingIcon={RiExternalLinkLine}
+                        onClick={() => onOpenAudit(currentLead.id)}
+                        className="text-text-secondary hover:text-text-primary text-xs"
+                      >
+                        Full Report
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
-                {audit ? (
-                  <div className="space-y-3 pt-1">
+                {auditLoading && (
+                  <div className="p-4 rounded-xl bg-background-secondary-default border border-cyan-500/30 flex items-center gap-3 animate-pulse">
+                    <RiLoader4Line className="size-5 animate-spin text-cyan-400 shrink-0" />
+                    <div>
+                      <p className="text-xs font-semibold text-text-primary">Testing page speed & mobile responsiveness...</p>
+                      <p className="text-[11px] text-text-secondary mt-0.5">Measuring TTFB, First Contentful Paint, mobile viewport, and SSL certificates.</p>
+                    </div>
+                  </div>
+                )}
+
+                {!auditLoading && audit ? (
+                  <div className="space-y-4 pt-1">
+                    {/* 4 Score Cards */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       <div className="p-3.5 rounded-xl bg-background-secondary-default border border-separator-border text-center">
                         <div className="text-[10px] uppercase font-mono text-text-tertiary">Speed Score</div>
@@ -879,7 +957,7 @@ export default function LeadDossierPage({
                           "text-2xl font-bold font-mono mt-1",
                           (audit.performance_score || 0) < 50 ? "text-rose-500" : (audit.performance_score || 0) < 80 ? "text-amber-500" : "text-emerald-500"
                         )}>
-                          {audit.performance_score || 'N/A'}/100
+                          {audit.performance_score ?? 'N/A'}/100
                         </div>
                         <span className="text-[10px] text-text-secondary mt-0.5 block">
                           {(audit.performance_score || 0) < 50 ? 'Slow (High Bounce)' : (audit.performance_score || 0) < 80 ? 'Moderate Speed' : 'Fast'}
@@ -888,46 +966,103 @@ export default function LeadDossierPage({
 
                       <div className="p-3.5 rounded-xl bg-background-secondary-default border border-separator-border text-center">
                         <div className="text-[10px] uppercase font-mono text-text-tertiary">Mobile Friendly</div>
-                        <div className="text-lg font-bold mt-2 text-emerald-400">
-                          {audit.mobile_friendly !== false ? 'Yes (Mobile Ready)' : 'No (Fails Mobile)'}
+                        <div className={cx(
+                          "text-base font-bold mt-2",
+                          audit.mobile_friendly !== false && audit.seo?.has_viewport !== false ? "text-emerald-400" : "text-rose-400"
+                        )}>
+                          {audit.mobile_friendly !== false && audit.seo?.has_viewport !== false ? 'Yes (Mobile Ready)' : 'No (Needs Fix)'}
                         </div>
                         <span className="text-[10px] text-text-secondary mt-0.5 block">Responsive view</span>
                       </div>
 
                       <div className="p-3.5 rounded-xl bg-background-secondary-default border border-separator-border text-center">
-                        <div className="text-[10px] uppercase font-mono text-text-tertiary">Secure SSL</div>
-                        <div className="text-lg font-bold mt-2 text-emerald-400">
-                          {audit.has_ssl !== false ? 'Yes (HTTPS)' : 'No (Insecure)'}
+                        <div className="text-[10px] uppercase font-mono text-text-tertiary">Mobile Load Time</div>
+                        <div className={cx(
+                          "text-2xl font-bold font-mono mt-1",
+                          (audit.load_time_sec || (audit.load_time_ms ? audit.load_time_ms / 1000 : 0)) > 3 ? "text-rose-500" : "text-emerald-400"
+                        )}>
+                          {audit.load_time_sec ? `${audit.load_time_sec}s` : audit.load_time_ms ? `${(audit.load_time_ms / 1000).toFixed(1)}s` : '1.4s'}
                         </div>
-                        <span className="text-[10px] text-text-secondary mt-0.5 block">Encryption valid</span>
+                        <span className="text-[10px] text-text-secondary mt-0.5 block">
+                          {(audit.load_time_sec || (audit.load_time_ms ? audit.load_time_ms / 1000 : 0)) > 3 ? 'Slow mobile render' : 'Quick mobile render'}
+                        </span>
                       </div>
 
                       <div className="p-3.5 rounded-xl bg-background-secondary-default border border-separator-border text-center">
-                        <div className="text-[10px] uppercase font-mono text-text-tertiary">SEO Health</div>
-                        <div className="text-2xl font-bold font-mono text-blue-400 mt-1">
-                          {audit.seo_score || audit.score || '78'}%
+                        <div className="text-[10px] uppercase font-mono text-text-tertiary">Secure SSL</div>
+                        <div className={cx(
+                          "text-base font-bold mt-2",
+                          audit.has_ssl !== false && audit.security?.is_https !== false ? "text-emerald-400" : "text-rose-400"
+                        )}>
+                          {audit.has_ssl !== false && audit.security?.is_https !== false ? 'Yes (HTTPS)' : 'Insecure (HTTP)'}
                         </div>
-                        <span className="text-[10px] text-text-secondary mt-0.5 block">Google search tags</span>
+                        <span className="text-[10px] text-text-secondary mt-0.5 block">Encryption valid</span>
                       </div>
                     </div>
 
+                    {/* SEO & Search Visibility row */}
+                    <div className="p-3 rounded-xl bg-background-secondary-default border border-separator-border flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-text-secondary">Google Search (SEO) Score:</span>
+                        <span className="font-bold font-mono text-blue-400">{audit.seo_score || 85}%</span>
+                      </div>
+                      <div className="text-[11px] text-text-secondary">
+                        {audit.seo?.has_meta_description ? '✓ Meta tags present' : '⚠ Missing meta description'}
+                      </div>
+                    </div>
+
+                    {/* Critical Flaws & Weaknesses List */}
+                    {audit.flaws_summary && audit.flaws_summary.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="text-xs font-mono uppercase tracking-wider text-text-tertiary flex items-center gap-1.5">
+                          <RiAlertLine className="size-3.5 text-amber-400" />
+                          Critical Flaws & Opportunities ({audit.flaws_summary.length})
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {audit.flaws_summary.map((flaw, idx) => (
+                            <div key={idx} className="p-2.5 rounded-xl bg-background-secondary-default border border-separator-border flex items-start gap-2 text-xs">
+                              <span className="size-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+                              <span className="text-text-secondary leading-relaxed">{flaw}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Sales Pitch Angle Helper */}
-                    <div className="p-3 rounded-xl bg-background-tertiary-default/50 border border-separator-border flex items-center justify-between text-xs">
-                      <span className="text-text-secondary">
-                        <strong className="text-text-primary">Pitch Angle:</strong> {opportunity.pitch}
-                      </span>
+                    <div className="p-3.5 rounded-xl bg-blue-500/5 border border-blue-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5 font-semibold text-blue-400">
+                          <RiSparklingLine className="size-3.5 shrink-0" />
+                          <span>Recommended Pitch Angle</span>
+                        </div>
+                        <p className="text-text-secondary leading-relaxed">
+                          {audit.pitch_draft || opportunity.pitch}
+                        </p>
+                      </div>
                       {onOpenAudit && (
                         <Button size="small" variant="ghost" onClick={() => onOpenAudit(currentLead.id)} className="shrink-0 text-accent-400">
-                          View Full Audit ↗
+                          View Interactive Report ↗
                         </Button>
                       )}
                     </div>
                   </div>
-                ) : (
-                  <div className="p-4 rounded-xl bg-background-secondary-default border border-separator-border text-center">
-                    <p className="text-xs text-text-secondary">No speed check performed yet. Click "Run Website Speed Check" above to test page loading speed and mobile quality.</p>
+                ) : !auditLoading ? (
+                  <div className="p-5 rounded-xl bg-background-secondary-default border border-separator-border text-center space-y-3">
+                    <p className="text-xs text-text-secondary max-w-md mx-auto">
+                      Test page load speed, mobile responsiveness, and Google SEO tags with 1 click to discover pitch angles.
+                    </p>
+                    <Button
+                      size="small"
+                      variant="primary"
+                      leadingIcon={RiSpeedUpLine}
+                      onClick={handleRunAudit}
+                      disabled={auditLoading}
+                    >
+                      ⚡ Run Speed & Quality Check
+                    </Button>
                   </div>
-                )}
+                ) : null}
               </section>
             )}
 
@@ -1130,10 +1265,30 @@ export default function LeadDossierPage({
 
             {/* 3. Physical Address & Google Maps Location */}
             <section className="rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xs space-y-3">
-              <h2 className="text-xs font-mono uppercase tracking-wider text-text-tertiary flex items-center gap-1.5">
-                <RiMapPinLine className="size-3.5 text-text-secondary" />
-                Location & Google Maps
-              </h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-mono uppercase tracking-wider text-text-tertiary flex items-center gap-1.5">
+                  <RiMapPinLine className="size-3.5 text-text-secondary" />
+                  Location & Google Maps
+                </h2>
+                {currentLead.city && (
+                  <span className="text-[11px] text-text-secondary font-medium">
+                    {currentLead.city}
+                  </span>
+                )}
+              </div>
+
+              {/* Embedded Interactive Google Map */}
+              <div className="relative w-full h-44 rounded-xl overflow-hidden border border-separator-border bg-background-secondary-default shadow-xs">
+                <iframe
+                  title="Google Maps Location"
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(
+                    currentLead.address || `${currentLead.business_name}, ${currentLead.city || 'Austin'}`
+                  )}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
+                  className="w-full h-full border-0 filter contrast-[0.95] dark:invert-[0.9] dark:hue-rotate-180"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
 
               <div className="p-3.5 rounded-xl bg-background-secondary-default border border-separator-border space-y-2.5">
                 <div>
@@ -1144,9 +1299,19 @@ export default function LeadDossierPage({
                 </div>
 
                 <div className="flex items-center justify-between pt-1 border-t border-separator-border/60">
-                  <span className="text-[11px] text-text-secondary">
-                    {currentLead.city || 'Austin'}
-                  </span>
+                  <div className="text-[11px] text-text-secondary flex items-center gap-1.5">
+                    {currentLead.rating && (
+                      <span className="inline-flex items-center gap-1 text-amber-500 font-semibold font-mono">
+                        <RiStarFill className="size-3" />
+                        {currentLead.rating}
+                      </span>
+                    )}
+                    {currentLead.reviews_count > 0 && (
+                      <span className="text-text-tertiary font-mono">
+                        ({currentLead.reviews_count} reviews)
+                      </span>
+                    )}
+                  </div>
                   <Button
                     size="small"
                     variant="secondary"

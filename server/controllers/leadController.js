@@ -49,12 +49,15 @@ class LeadController {
 
       const contact = Contact.findByLeadId(id);
       const outbox = Outbox.findByLeadId(id);
+      const WebsiteAudit = require('../models/WebsiteAudit');
+      const audit = WebsiteAudit.findByLeadId(id);
 
       res.json({
         success: true,
         lead,
         contact,
-        outbox
+        outbox,
+        audit
       });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
