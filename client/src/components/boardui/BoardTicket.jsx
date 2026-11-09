@@ -13,6 +13,29 @@ import {
 import { Chip } from '@/components/base/badges/chip';
 import { IconButton } from '@/components/base/buttons/icon-button';
 
+function normalizeNiche(niche = '') {
+  if (!niche) return 'Local Business';
+  const acronyms = {
+    hvac: 'HVAC',
+    seo: 'SEO',
+    ada: 'ADA',
+    cpr: 'CPR',
+    atm: 'ATM',
+    llc: 'LLC',
+    cpa: 'CPA',
+    md: 'MD',
+    dds: 'DDS'
+  };
+  return niche
+    .split(/[\s_-]+/)
+    .map(word => {
+      const lower = word.toLowerCase();
+      if (acronyms[lower]) return acronyms[lower];
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
+}
+
 function BoardTicket({ 
   lead, 
   onSelect, 
@@ -78,7 +101,7 @@ function BoardTicket({
               {lead.business_name}
             </h4>
             <div className="flex items-center gap-1.5 text-caption-1-regular text-text-tertiary mt-0.5 truncate">
-              <span>{lead.category || 'Local Business'}</span>
+              <span>{normalizeNiche(lead.category)}</span>
               <span>•</span>
               <span>{lead.city || 'Remote'}</span>
             </div>
@@ -116,14 +139,9 @@ function BoardTicket({
           </Chip>
         )}
 
-        {hasNoWebsite ? (
-          <Chip variant="subtle" color="rose" size="sm">
+        {hasNoWebsite && (
+          <Chip variant="bold" color="rose" size="sm" className="text-[10px] font-bold py-0 px-1.5">
             No Website
-          </Chip>
-        ) : (
-          <Chip variant="subtle" color="blue" size="sm" className="gap-1 inline-flex items-center">
-            <RiGlobalLine className="size-3 shrink-0" />
-            <span>Site Found</span>
           </Chip>
         )}
 
