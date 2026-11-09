@@ -61,7 +61,7 @@ export default function LeadDossierPage({
   const scanTimerRef = useRef(null);
   const [emailVerifying, setEmailVerifying] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(lead?.status || 'discovered');
-  const [dealValue, setDealValue] = useState(lead?.deal_value || 1000);
+  const [dealValue, setDealValue] = useState(lead?.deal_value || '');
 
   // Scratchpad Notes (persisted per lead in localStorage)
   const [notes, setNotes] = useState(() => {
@@ -129,7 +129,7 @@ export default function LeadDossierPage({
   useEffect(() => {
     if (lead?.id) {
       setCurrentStatus(lead.status || 'discovered');
-      setDealValue(lead.deal_value || 1000);
+      setDealValue(lead.deal_value || '');
       setNotes(localStorage.getItem(`quarry_notes_${lead.id}`) || '');
       setIsGold(localStorage.getItem(`quarry_gold_${lead.id}`) === 'true' || (lead.rating >= 4.5 && lead.reviews_count >= 10));
       fetchLeadDetails();
@@ -174,6 +174,62 @@ export default function LeadDossierPage({
       return url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].split('?')[0];
     }
   };
+
+  // Verified Owner Filter (ignores corporate entity names & raw business names)
+  const getVerifiedOwnerName = () => {
+    const rawName = contact?.contact_name || currentLead.decision_maker_name || currentLead.owner_name;
+    if (!rawName) return null;
+    const clean = rawName.trim();
+    if (!clean) return null;
+    if (clean.toLowerCase() === (currentLead.business_name || '').trim().toLowerCase()) return null;
+    if (/\b(llc|inc|corp|services|plumbing|hvac|electric|heating|air|cooling|repair|company|group|associates)\b/i.test(clean) && !/\b(dr|mr|mrs|ms)\b/i.test(clean)) {
+      return null;
+    }
+    return clean;
+  };
+
+  const verifiedOwner = getVerifiedOwnerName();
+
+  // Opportunity Pitch Angle Badge for website & no-website leads
+  const isNoWebsite = currentLead.has_no_website === 1 || !currentLead.website;
+  const getOpportunityBadge = () => {
+    if (isNoWebsite) {
+      return {
+        label: 'Needs a Website (Prime Pitch)',
+        color: 'emerald',
+        pitch: 'High-intent business with real Google reviews, but missing an official website and booking funnel.'
+      };
+    }
+    if (audit) {
+      const score = audit.performance_score || audit.score || 0;
+      if (score < 50) {
+        return {
+          label: 'Slow Website (Redesign Angle)',
+          color: 'rose',
+          pitch: `Low performance score (${score}/100) causes high mobile visitor bounce rate. Prime opportunity for redesign.`
+        };
+      }
+      if (score < 80) {
+        return {
+          label: 'Average Speed (SEO Angle)',
+          color: 'amber',
+          pitch: `Moderate performance score (${score}/100). Technical speed optimizations needed to outrank competitors on Google.`
+        };
+      }
+      return {
+        label: 'Fast Website (Optimization Angle)',
+        color: 'blue',
+        pitch: 'Website has strong speed scores. Focus outreach on conversion rate optimization or paid acquisition.'
+      };
+    }
+    return {
+      label: 'Website Active',
+      color: 'blue',
+      pitch: 'Active commercial website detected. Run a quick speed check to discover performance flaws.'
+    };
+  };
+
+  const opportunity = getOpportunityBadge();
 
   // Update Lead Stage
   const handleUpdateStage = async (newStatus, newValue = dealValue) => {
@@ -332,7 +388,6 @@ export default function LeadDossierPage({
     }
   };
 
-  const isNoWebsite = currentLead.has_no_website === 1 || !currentLead.website;
   const cleanDomain = getCleanDomain(currentLead.website);
   const primaryPhone = currentLead.phone || contact?.phone;
   const primaryEmail = contact?.email || currentLead.email;
@@ -390,15 +445,9 @@ export default function LeadDossierPage({
                     <span>{isGold ? "Gold Vault" : "Pin"}</span>
                   </button>
 
-                  {isNoWebsite ? (
-                    <Chip variant="subtle" color="emerald" size="sm">
-                      No Website (Prime Target)
-                    </Chip>
-                  ) : (
-                    <Chip variant="subtle" color="cyan" size="sm">
-                      Site Active
-                    </Chip>
-                  )}
+                  <Chip variant="subtle" color={opportunity.color} size="sm">
+                    {opportunity.label}
+                  </Chip>
                 </div>
 
                 {/* Subtitle: Niche • City • Physical Address • Google Rating */}
@@ -613,16 +662,6 @@ export default function LeadDossierPage({
                     <p className="text-[11px] text-text-secondary">Official website status, security check, and platform</p>
                   </div>
                 </div>
-
-                {isNoWebsite ? (
-                  <Chip variant="subtle" color="emerald" size="sm">
-                    Needs a Website (High Opportunity)
-                  </Chip>
-                ) : (
-                  <Chip variant="subtle" color="blue" size="sm">
-                    Website Active
-                  </Chip>
-                )}
               </div>
 
               {/* Live Preview Box / Card */}
@@ -666,7 +705,7 @@ export default function LeadDossierPage({
                     </div>
                     <div className="flex items-center gap-2">
                       <Chip variant="subtle" color="emerald" size="sm">
-                        SSL Active
+                        Secure (HTTPS)
                       </Chip>
                       <Button
                         size="small"
@@ -687,28 +726,10 @@ export default function LeadDossierPage({
                       </div>
                       <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                         <Chip variant="subtle" color="blue" size="sm">
-                          CMS: WordPress
-                        </Chip>
-                        <Chip variant="subtle" color="gray" size="sm">
-                          Stack: PHP / Apache
-                        </Chip>
-                        <Chip variant="subtle" color="purple" size="sm">
-                          Analytics: Google Tag
+                          Built with WordPress
                         </Chip>
                       </div>
                     </div>
-
-                    {onOpenAudit && (
-                      <Button
-                        size="small"
-                        variant="secondary"
-                        leadingIcon={RiSpeedUpLine}
-                        onClick={() => onOpenAudit(currentLead.id)}
-                        className="shrink-0"
-                      >
-                        Audit Speed & SEO
-                      </Button>
-                    )}
                   </div>
                 </div>
               )}
@@ -753,18 +774,20 @@ export default function LeadDossierPage({
                 </div>
                 <div>
                   <h2 className="text-sm font-bold text-text-primary">Owner & Leadership</h2>
-                  <p className="text-[11px] text-text-secondary">Verified business owners and official public filings</p>
+                  <p className="text-[11px] text-text-secondary">
+                    {verifiedOwner ? 'Verified business owner from official public filings' : 'Owner not discovered in public records yet'}
+                  </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div className="p-3.5 rounded-xl bg-background-secondary-default border border-separator-border space-y-1">
                   <span className="text-[10px] uppercase font-mono text-text-tertiary block">Owner / Decision Maker</span>
-                  <span className="text-sm font-bold text-text-primary block">
-                    {contact?.contact_name || currentLead.decision_maker_name || currentLead.owner_name || 'Not discovered yet'}
+                  <span className={cx("text-sm font-bold block", verifiedOwner ? "text-text-primary" : "text-text-tertiary italic")}>
+                    {verifiedOwner || 'Owner not found yet'}
                   </span>
                   <span className="text-xs text-text-secondary block">
-                    {contact?.title || currentLead.decision_maker_title || 'Owner / Principal Officer'}
+                    {verifiedOwner ? (contact?.contact_title || currentLead.decision_maker_title || 'Owner / Principal Officer') : 'Executive profile pending research'}
                   </span>
                 </div>
 
@@ -815,22 +838,13 @@ export default function LeadDossierPage({
                   ))}
                 </div>
               ) : (
-                <div className="p-4 rounded-xl bg-background-secondary-default border border-separator-border flex items-center justify-between">
-                  <span className="text-xs text-text-secondary">No public social channels discovered yet for this entity.</span>
-                  <Button
-                    size="small"
-                    variant="secondary"
-                    leadingIcon={osintLoading ? RiLoader4Line : RiShieldCheckLine}
-                    onClick={handleRunOsint}
-                    disabled={osintLoading}
-                  >
-                    {osintLoading ? 'Searching...' : 'Find Social Profiles'}
-                  </Button>
+                <div className="p-3.5 rounded-xl bg-background-secondary-default border border-separator-border">
+                  <span className="text-xs text-text-tertiary italic">No social profiles found yet</span>
                 </div>
               )}
             </section>
 
-            {/* 4. Technical Website Health Audit (If website exists) */}
+            {/* 4. Website Speed & Mobile Quality (If website exists) */}
             {Boolean(currentLead.website) && (
               <section className="rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xs space-y-4">
                 <div className="flex items-center justify-between flex-wrap gap-2">
@@ -840,7 +854,7 @@ export default function LeadDossierPage({
                     </div>
                     <div>
                       <h2 className="text-sm font-bold text-text-primary">Website Speed & Mobile Quality</h2>
-                      <p className="text-[11px] text-text-secondary">Page loading speed, mobile friendliness, and performance</p>
+                      <p className="text-[11px] text-text-secondary">Page loading speed, mobile friendliness, and technical performance</p>
                     </div>
                   </div>
 
@@ -848,66 +862,76 @@ export default function LeadDossierPage({
                     <Button
                       size="small"
                       variant="secondary"
-                      leadingIcon={RiExternalLinkLine}
+                      leadingIcon={RiSpeedUpLine}
                       onClick={() => onOpenAudit(currentLead.id)}
                     >
-                      Check Speed & Mobile
+                      Run Website Speed Check
                     </Button>
                   )}
                 </div>
 
                 {audit ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
-                    <div className="p-3.5 rounded-xl bg-background-secondary-default border border-separator-border text-center">
-                      <div className="text-[10px] uppercase font-mono text-text-tertiary">Performance</div>
-                      <div className="text-2xl font-bold font-mono text-emerald-500 mt-1">
-                        {audit.performance_score || '85'}%
+                  <div className="space-y-3 pt-1">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div className="p-3.5 rounded-xl bg-background-secondary-default border border-separator-border text-center">
+                        <div className="text-[10px] uppercase font-mono text-text-tertiary">Speed Score</div>
+                        <div className={cx(
+                          "text-2xl font-bold font-mono mt-1",
+                          (audit.performance_score || 0) < 50 ? "text-rose-500" : (audit.performance_score || 0) < 80 ? "text-amber-500" : "text-emerald-500"
+                        )}>
+                          {audit.performance_score || 'N/A'}/100
+                        </div>
+                        <span className="text-[10px] text-text-secondary mt-0.5 block">
+                          {(audit.performance_score || 0) < 50 ? 'Slow (High Bounce)' : (audit.performance_score || 0) < 80 ? 'Moderate Speed' : 'Fast'}
+                        </span>
+                      </div>
+
+                      <div className="p-3.5 rounded-xl bg-background-secondary-default border border-separator-border text-center">
+                        <div className="text-[10px] uppercase font-mono text-text-tertiary">Mobile Friendly</div>
+                        <div className="text-lg font-bold mt-2 text-emerald-400">
+                          {audit.mobile_friendly !== false ? 'Yes (Mobile Ready)' : 'No (Fails Mobile)'}
+                        </div>
+                        <span className="text-[10px] text-text-secondary mt-0.5 block">Responsive view</span>
+                      </div>
+
+                      <div className="p-3.5 rounded-xl bg-background-secondary-default border border-separator-border text-center">
+                        <div className="text-[10px] uppercase font-mono text-text-tertiary">Secure SSL</div>
+                        <div className="text-lg font-bold mt-2 text-emerald-400">
+                          {audit.has_ssl !== false ? 'Yes (HTTPS)' : 'No (Insecure)'}
+                        </div>
+                        <span className="text-[10px] text-text-secondary mt-0.5 block">Encryption valid</span>
+                      </div>
+
+                      <div className="p-3.5 rounded-xl bg-background-secondary-default border border-separator-border text-center">
+                        <div className="text-[10px] uppercase font-mono text-text-tertiary">SEO Health</div>
+                        <div className="text-2xl font-bold font-mono text-blue-400 mt-1">
+                          {audit.seo_score || audit.score || '78'}%
+                        </div>
+                        <span className="text-[10px] text-text-secondary mt-0.5 block">Google search tags</span>
                       </div>
                     </div>
-                    <div className="p-3.5 rounded-xl bg-background-secondary-default border border-separator-border text-center">
-                      <div className="text-[10px] uppercase font-mono text-text-tertiary">Accessibility</div>
-                      <div className="text-2xl font-bold font-mono text-blue-400 mt-1">
-                        {audit.accessibility_score || '90'}%
-                      </div>
-                    </div>
-                    <div className="p-3.5 rounded-xl bg-background-secondary-default border border-separator-border text-center">
-                      <div className="text-[10px] uppercase font-mono text-text-tertiary">SEO Score</div>
-                      <div className="text-2xl font-bold font-mono text-amber-500 mt-1">
-                        {audit.seo_score || '78'}%
-                      </div>
-                    </div>
-                    <div className="p-3.5 rounded-xl bg-background-secondary-default border border-separator-border text-center">
-                      <div className="text-[10px] uppercase font-mono text-text-tertiary">Overall</div>
-                      <div className="text-2xl font-bold font-mono text-text-primary mt-1">
-                        {audit.score || '82'}/100
-                      </div>
+
+                    {/* Sales Pitch Angle Helper */}
+                    <div className="p-3 rounded-xl bg-background-tertiary-default/50 border border-separator-border flex items-center justify-between text-xs">
+                      <span className="text-text-secondary">
+                        <strong className="text-text-primary">Pitch Angle:</strong> {opportunity.pitch}
+                      </span>
+                      {onOpenAudit && (
+                        <Button size="small" variant="ghost" onClick={() => onOpenAudit(currentLead.id)} className="shrink-0 text-accent-400">
+                          View Full Audit ↗
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ) : (
                   <div className="p-4 rounded-xl bg-background-secondary-default border border-separator-border text-center">
-                    <p className="text-xs text-text-secondary">No website audit performed yet.</p>
-                    {onOpenAudit && (
-                      <Button
-                        size="small"
-                        variant="secondary"
-                        leadingIcon={RiSpeedUpLine}
-                        onClick={() => onOpenAudit(currentLead.id)}
-                        className="mt-3"
-                      >
-                        Run Live Website Audit
-                      </Button>
-                    )}
+                    <p className="text-xs text-text-secondary">No speed check performed yet. Click "Run Website Speed Check" above to test page loading speed and mobile quality.</p>
                   </div>
                 )}
               </section>
             )}
 
-          </div>
-
-          {/* RIGHT RAIL: Direct Contacts, Scratchpad Notes, Triage Actions (4 Cols) */}
-          <div className="lg:col-span-4 space-y-6">
-
-            {/* 1. Triage Notes & Qualification Scratchpad */}
+            {/* 5. Prospect Scratchpad & Notes (Moved to left column for layout balance) */}
             <section className="rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xs space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-xs font-mono uppercase tracking-wider text-text-tertiary flex items-center gap-1.5">
@@ -944,7 +968,12 @@ export default function LeadDossierPage({
               </div>
             </section>
 
-            {/* 2. Verified Contact Channels */}
+          </div>
+
+          {/* RIGHT RAIL: Direct Contacts, Location, Pipeline Stage (4 Cols) */}
+          <div className="lg:col-span-4 space-y-6">
+
+            {/* 1. Verified Contact Channels */}
             <section className="rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xs font-mono uppercase tracking-wider text-text-tertiary">
@@ -987,7 +1016,7 @@ export default function LeadDossierPage({
                       </Chip>
                     ) : (
                       <Chip variant="subtle" color="gray" size="sm">
-                        Business Phone
+                        Unknown Line
                       </Chip>
                     )}
                   </div>
@@ -1145,12 +1174,11 @@ export default function LeadDossierPage({
                     onChange={(e) => handleUpdateStage(e.target.value)}
                     className="w-full text-xs font-semibold px-3 py-2 rounded-xl bg-background-secondary-default text-text-primary border border-separator-border focus:outline-none cursor-pointer"
                   >
-                    <option value="discovered">Discovered</option>
-                    <option value="enriched">Enriched</option>
-                    <option value="pitched">Pitched</option>
-                    <option value="sent">Sent</option>
-                    <option value="replied">In Discussion</option>
-                    <option value="won">Deal Won</option>
+                    <option value="discovered">1. Discovered</option>
+                    <option value="enriched">2. Contacts Found</option>
+                    <option value="pitched">3. Pitched / Outreached</option>
+                    <option value="replied">4. In Discussion</option>
+                    <option value="won">5. Deal Won</option>
                     <option value="archived">Archived</option>
                   </select>
                 </div>
@@ -1160,43 +1188,32 @@ export default function LeadDossierPage({
                   <input
                     type="number"
                     value={dealValue}
-                    onChange={(e) => setDealValue(parseInt(e.target.value, 10) || 0)}
-                    onBlur={() => handleUpdateStage(currentStatus, dealValue)}
-                    className="w-full text-xs font-mono font-bold px-3 py-2 rounded-xl bg-background-secondary-default text-text-primary border border-separator-border focus:outline-none"
+                    placeholder="e.g. 500"
+                    onChange={(e) => setDealValue(e.target.value)}
+                    onBlur={() => handleUpdateStage(currentStatus, dealValue ? parseInt(dealValue, 10) : 0)}
+                    className="w-full text-xs font-mono font-bold px-3 py-2 rounded-xl bg-background-secondary-default text-text-primary border border-separator-border focus:outline-none placeholder:text-text-tertiary"
                   />
                 </div>
               </div>
             </section>
 
-            {/* 5. Quick Triage Actions */}
-            <section className="rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xs space-y-2.5">
+            {/* 4. Archive Lead Action */}
+            {onArchiveLead && (
               <Button
-                variant={osintLoading ? "secondary" : "primary"}
-                leadingIcon={osintLoading ? RiLoader4Line : RiShieldCheckLine}
-                onClick={handleRunOsint}
-                disabled={osintLoading}
-                className="w-full justify-center"
+                variant="secondary"
+                leadingIcon={RiArchiveLine}
+                onClick={() => {
+                  if (window.confirm(`Are you sure you want to archive "${currentLead.business_name}"?`)) {
+                    onArchiveLead(currentLead.id);
+                    if (hasNext) handleNext();
+                    else onBack();
+                  }
+                }}
+                className="w-full justify-center text-rose-500 border-rose-500/30 hover:bg-rose-500/10 hover:border-rose-500/60 font-semibold transition-colors"
               >
-                {osintLoading ? `Researching Lead (${Math.floor(scanElapsed)}s)...` : 'Find Owner & Contacts'}
+                Archive Lead
               </Button>
-
-              {onArchiveLead && (
-                <Button
-                  variant="ghost"
-                  leadingIcon={RiArchiveLine}
-                  onClick={() => {
-                    if (window.confirm(`Archive ${currentLead.business_name}?`)) {
-                      onArchiveLead(currentLead.id);
-                      if (hasNext) handleNext();
-                      else onBack();
-                    }
-                  }}
-                  className="w-full justify-center text-text-secondary hover:text-status-rose-text hover:bg-status-rose-background/20"
-                >
-                  Archive Lead
-                </Button>
-              )}
-            </section>
+            )}
 
           </div>
 
