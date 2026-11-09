@@ -72,6 +72,13 @@ export default function App() {
   // Intelligently detect first-time user vs. normal/returning user
   useEffect(() => {
     async function checkFirstTimeStatus() {
+      // 0. Explicit URL override: ?onboarding=true or #onboarding always triggers wizard
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('onboarding') === 'true' || window.location.hash === '#onboarding') {
+        setIsOnboardingOpen(true);
+        return;
+      }
+
       // 1. Instant check: already marked completed in browser
       if (localStorage.getItem('quarry_onboarding_completed') === 'true') {
         return;
@@ -457,6 +464,7 @@ export default function App() {
         }}
         onOpenQueue={() => setActiveModal('queue')}
         onOpenSettings={() => setActiveModal('settings')}
+        onOpenOnboarding={() => setIsOnboardingOpen(true)}
         onExportExcel={() => handleExportExcel('excel')}
         activeFilter={activeFilter}
         onFilterChange={setActiveFilter}
@@ -626,7 +634,10 @@ export default function App() {
 
       {/* Settings Modal */}
       {activeModal === 'settings' && (
-        <SettingsModal onClose={() => setActiveModal(null)} />
+        <SettingsModal 
+          onClose={() => setActiveModal(null)} 
+          onOpenOnboarding={() => setIsOnboardingOpen(true)}
+        />
       )}
 
       {/* Auto-Pilot 1-Click Batch Pipeline Modal */}
@@ -716,6 +727,7 @@ export default function App() {
         onOpenSearch={(tab) => setActiveModal(tab)}
         onOpenQueue={() => setActiveModal('queue')}
         onOpenSettings={() => setActiveModal('settings')}
+        onOpenOnboarding={() => setIsOnboardingOpen(true)}
         onExportExcel={() => handleExportExcel('excel')}
         onToggleTheme={toggleTheme}
         theme={theme}

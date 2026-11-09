@@ -14,7 +14,8 @@ import {
   RiDeleteBin6Line, 
   RiServerLine, 
   RiCheckLine,
-  RiCloseLine
+  RiCloseLine,
+  RiCompass3Line
 } from '@remixicon/react';
 import { Modal, ModalBody, ModalFooter } from '@/components/base/modal/modal';
 import { CloseButton } from '@/components/base/buttons/close-button';
@@ -25,7 +26,7 @@ import { Chip } from '@/components/base/badges/chip';
 import { StatusDot } from '@/components/base/badges/status-dot';
 import { PillTabList, PillTab } from '@/components/base/tabs/pill-tab';
 
-export default function SettingsModal({ onClose }) {
+export default function SettingsModal({ onClose, onOpenOnboarding }) {
   const [activeTab, setActiveTab] = useState('general'); // 'general' or 'pool'
   const [settings, setSettings] = useState({
     smtp_host: 'smtp.gmail.com',
@@ -526,6 +527,34 @@ export default function SettingsModal({ onClose }) {
               <p className="text-[11px] text-text-tertiary">
                 Randomizes delay between each outgoing email to mimic natural human sending behavior and safeguard domain reputation.
               </p>
+            </div>
+
+            {/* Section 5: Discovery Onboarding & First-Run */}
+            <div className="space-y-3 pt-3 border-t border-separator-border/60">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-background-secondary-default border border-separator-border">
+                <div>
+                  <h3 className="font-semibold text-text-primary text-xs uppercase font-mono tracking-wider flex items-center gap-1.5">
+                    <RiCompass3Line className="h-3.5 w-3.5 text-emerald-500" />
+                    <span>Discovery Setup & Onboarding Wizard</span>
+                  </h3>
+                  <p className="text-[11px] text-text-secondary mt-0.5">
+                    Re-run the initial 4-step wizard anytime to diagnose system services, or search for businesses in a fresh city & niche.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="small"
+                  leadingIcon={RiCompass3Line}
+                  onClick={() => {
+                    onClose();
+                    onOpenOnboarding && onOpenOnboarding();
+                  }}
+                  className="shrink-0"
+                >
+                  Launch Wizard
+                </Button>
+              </div>
             </div>
           </form>
         ) : (

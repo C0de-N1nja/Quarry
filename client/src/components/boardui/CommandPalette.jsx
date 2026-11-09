@@ -17,7 +17,8 @@ import {
   RiPhoneLine,
   RiMailLine,
   RiCheckboxCircleLine,
-  RiArrowRightLine
+  RiArrowRightLine,
+  RiCompass3Line
 } from '@remixicon/react';
 import { Modal, ModalBody } from '@/components/base/modal/modal';
 import { SearchField } from '@/components/base/search-field/search-field';
@@ -35,6 +36,7 @@ export default function CommandPalette({
   onOpenSearch,
   onOpenQueue,
   onOpenSettings,
+  onOpenOnboarding,
   onExportExcel,
   onToggleTheme,
   theme,
@@ -62,6 +64,15 @@ export default function CommandPalette({
       icon: RiFlashlightFill,
       iconColor: 'text-accent-500',
       action: () => { onClose(); onOpenAutoPilot && onOpenAutoPilot(); }
+    },
+    {
+      id: 'onboarding-wizard',
+      category: 'Actions',
+      title: 'Discovery Wizard (Onboarding)',
+      description: 'Re-run interactive city, niche and market discovery setup wizard',
+      icon: RiCompass3Line,
+      iconColor: 'text-emerald-500',
+      action: () => { onClose(); onOpenOnboarding && onOpenOnboarding(); }
     },
     {
       id: 'find-leads',

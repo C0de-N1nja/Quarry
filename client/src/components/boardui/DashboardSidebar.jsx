@@ -22,6 +22,7 @@ export default function DashboardSidebar({
   onOpenQueue,
   onOpenSettings,
   onExportExcel,
+  onOpenOnboarding,
   activeFilter,
   onFilterChange,
   tunnel
@@ -172,6 +173,22 @@ export default function DashboardSidebar({
                 <>
                   <span className="flex-1 text-left truncate">Auto-Pilot Agent</span>
                   <span className="h-2 w-2 rounded-full bg-success-primary animate-pulse shrink-0" />
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={() => onOpenOnboarding && onOpenOnboarding()}
+              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-text-secondary hover:bg-background-tertiary-default hover:text-text-primary transition-colors cursor-pointer ${
+                collapsed ? 'justify-center px-0' : ''
+              }`}
+              title="Launch Discovery Wizard (Onboarding)"
+            >
+              <RiCompass3Line className="size-4 text-emerald-500 shrink-0" />
+              {!collapsed && (
+                <>
+                  <span className="flex-1 text-left truncate">Discovery Wizard</span>
+                  <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">Setup</span>
                 </>
               )}
             </button>
