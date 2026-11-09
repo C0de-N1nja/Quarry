@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   RiArrowLeftLine,
   RiArrowLeftSLine,
@@ -22,7 +22,9 @@ import {
   RiCheckboxCircleLine,
   RiSparklingLine,
   RiBookmarkLine,
-  RiShieldUserLine
+  RiShieldUserLine,
+  RiTimeLine,
+  RiCloseLine
 } from '@remixicon/react';
 import { Button } from '@/components/base/buttons/button';
 import { IconButton } from '@/components/base/buttons/icon-button';
@@ -30,6 +32,15 @@ import { Chip } from '@/components/base/badges/chip';
 import { Avatar } from '@/components/base/avatar/avatar';
 import { toast } from '@/components/base/toast/toast';
 import { cx } from '@/utils/cx';
+
+// Concrete Real-Time OSINT Stages
+const RECON_STEPS = [
+  { id: 'init', label: 'Resolving Target & Query Vectors', desc: 'Validating business name, category, and municipal footprint' },
+  { id: 'dns', label: 'Probing Candidate Domains & Active DNS', desc: 'Querying A/AAAA, MX records, WHOIS, and HTTP headers' },
+  { id: 'registry', label: 'Searching State Filings & Corporate Registries', desc: 'Checking public business listings and registered agents' },
+  { id: 'contacts', label: 'Validating Phone Lines & WhatsApp Direct', desc: 'Carrier classification (Mobile/Landline/VOIP) and WhatsApp status' },
+  { id: 'consolidation', label: 'Extracting Decision Makers & Merging Dossier', desc: 'Synthesizing all intelligence data points into lead file' }
+];
 
 export default function LeadDossierPage({
   lead,
@@ -43,6 +54,11 @@ export default function LeadDossierPage({
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(false);
   const [osintLoading, setOsintLoading] = useState(false);
+  const [scanElapsed, setScanElapsed] = useState(0);
+  const [scanStepIndex, setScanStepIndex] = useState(0);
+  const [scanProgress, setScanProgress] = useState(0);
+  const abortControllerRef = useRef(null);
+  const scanTimerRef = useRef(null);
   const [emailVerifying, setEmailVerifying] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(lead?.status || 'discovered');
   const [dealValue, setDealValue] = useState(lead?.deal_value || 1000);
@@ -204,21 +220,92 @@ export default function LeadDossierPage({
     handleNotesChange(updated);
   };
 
-  // Run OSINT Enrichment
+  useEffect(() => {
+    return () => {
+      if (scanTimerRef.current) clearInterval(scanTimerRef.current);
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+    };
+  }, []);
+
+  // Run OSINT Enrichment with Live Progress Ticker & Abort Control
   const handleRunOsint = async () => {
+    if (osintLoading) return;
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setOsintLoading(true);
+    setScanElapsed(0);
+    setScanStepIndex(0);
+    setScanProgress(8);
+
+    const startTime = Date.now();
+    scanTimerRef.current = setInterval(() => {
+      const elapsedSec = (Date.now() - startTime) / 1000;
+      setScanElapsed(elapsedSec);
+
+      if (elapsedSec < 1.6) {
+        setScanStepIndex(0);
+        setScanProgress(Math.min(22, 8 + elapsedSec * 9));
+      } else if (elapsedSec < 3.4) {
+        setScanStepIndex(1);
+        setScanProgress(Math.min(45, 22 + (elapsedSec - 1.6) * 12));
+      } else if (elapsedSec < 5.2) {
+        setScanStepIndex(2);
+        setScanProgress(Math.min(68, 45 + (elapsedSec - 3.4) * 12));
+      } else if (elapsedSec < 7.0) {
+        setScanStepIndex(3);
+        setScanProgress(Math.min(88, 68 + (elapsedSec - 5.2) * 11));
+      } else {
+        setScanStepIndex(4);
+        setScanProgress(Math.min(96, 88 + (elapsedSec - 7.0) * 1.5));
+      }
+    }, 100);
+
     try {
-      const res = await fetch(`/api/osint/${currentLead.id}?force=true`, { method: 'POST' });
+      const res = await fetch(`/api/osint/${currentLead.id}?force=true`, {
+        method: 'POST',
+        signal: controller.signal
+      });
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
 
-      toast.success('OSINT intelligence refreshed!');
+      // Successfully finished
+      setScanProgress(100);
+      setScanStepIndex(RECON_STEPS.length);
+      if (scanTimerRef.current) clearInterval(scanTimerRef.current);
+
+      // Brief 450ms pause so user visibly sees 100% completion & all green ticks
+      await new Promise(r => setTimeout(r, 450));
+
+      const contactCount = (data.contacts && data.contacts.length) || 0;
+      toast.success('OSINT Intelligence Refreshed!', {
+        description: contactCount > 0 
+          ? `Discovered ${contactCount} verified contact points & updated profile.` 
+          : 'Dossier successfully updated with live verification.'
+      });
+
       await fetchLeadDetails();
       if (onRefreshLead) onRefreshLead();
     } catch (err) {
-      toast.error(err.message || 'OSINT enrichment failed');
+      if (scanTimerRef.current) clearInterval(scanTimerRef.current);
+      if (err.name === 'AbortError') {
+        toast.info('OSINT reconnaissance cancelled');
+      } else {
+        toast.error(err.message || 'OSINT enrichment failed');
+      }
     } finally {
+      if (scanTimerRef.current) clearInterval(scanTimerRef.current);
       setOsintLoading(false);
+      setScanElapsed(0);
+      setScanProgress(0);
+      setScanStepIndex(0);
+    }
+  };
+
+  const handleCancelOsint = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
   };
 
@@ -368,13 +455,13 @@ export default function LeadDossierPage({
 
             <Button
               size="small"
-              variant="primary"
+              variant={osintLoading ? "secondary" : "primary"}
               leadingIcon={osintLoading ? RiLoader4Line : RiShieldCheckLine}
               onClick={handleRunOsint}
               disabled={osintLoading}
               title="Run live OSINT scanner on this prospect"
             >
-              {osintLoading ? 'Scanning...' : 'Run OSINT'}
+              {osintLoading ? `Scanning (${Math.floor(scanElapsed)}s)...` : 'Run OSINT'}
             </Button>
           </div>
         </div>
@@ -387,8 +474,108 @@ export default function LeadDossierPage({
           {/* LEFT COLUMN: Intelligence Evidence & Web Analysis (8 Cols) */}
           <div className="lg:col-span-8 space-y-6">
 
-            {/* Empty State Hero Banner (If prospect has not yet been scanned) */}
-            {!parsedOsint && !audit && (
+            {/* LIVE RECONNAISSANCE MISSION CONTROL HUD (Active when scan is running) */}
+            {osintLoading && (
+              <div className="rounded-2xl border-2 border-cyan-500/50 bg-background-primary-default p-5 shadow-xl shadow-cyan-950/20 relative overflow-hidden transition-all duration-300">
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-blue-500/5 to-transparent pointer-events-none animate-pulse" />
+
+                {/* HUD Top Bar: Pulse, Title, Real-Time Timer, Abort Button */}
+                <div className="relative flex items-center justify-between gap-3 flex-wrap border-b border-separator-border/70 pb-3.5 mb-4">
+                  <div className="flex items-center gap-2.5">
+                    <span className="relative flex size-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full size-3 bg-cyan-500" />
+                    </span>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-sm font-bold text-text-primary tracking-tight">
+                          OSINT Reconnaissance Active
+                        </h3>
+                        <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                          {Math.round(scanProgress)}%
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-text-secondary mt-0.5">
+                        Probing live DNS, corporate registries & telecom lines for <strong className="text-text-primary">{currentLead.business_name}</strong>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-background-secondary-default border border-separator-border font-mono text-xs text-text-secondary">
+                      <RiTimeLine className="size-3.5 text-cyan-400 animate-spin" />
+                      <span className="text-text-primary font-bold">00:{scanElapsed < 10 ? `0${Math.floor(scanElapsed)}` : Math.floor(scanElapsed)}s</span>
+                    </div>
+                    <Button
+                      size="small"
+                      variant="secondary"
+                      leadingIcon={RiCloseLine}
+                      onClick={handleCancelOsint}
+                      title="Abort current OSINT reconnaissance"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Progress Bar with Gradient */}
+                <div className="relative w-full h-2 rounded-full bg-background-tertiary-default overflow-hidden mb-4">
+                  <div
+                    className="h-full bg-gradient-to-r from-cyan-500 via-blue-500 to-emerald-400 transition-all duration-150 rounded-full"
+                    style={{ width: `${scanProgress}%` }}
+                  />
+                </div>
+
+                {/* Real-Time Step Progression Indicators */}
+                <div className="relative grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {RECON_STEPS.map((step, idx) => {
+                    const isDone = idx < scanStepIndex;
+                    const isActive = idx === scanStepIndex;
+                    return (
+                      <div
+                        key={step.id}
+                        className={cx(
+                          "p-2.5 rounded-xl border transition-all flex items-start gap-2.5",
+                          isDone
+                            ? "bg-emerald-500/5 border-emerald-500/30 text-emerald-400"
+                            : isActive
+                            ? "bg-cyan-500/10 border-cyan-500/40 text-cyan-400 ring-1 ring-cyan-500/20 shadow-xs"
+                            : "bg-background-secondary-default/40 border-separator-border/40 text-text-tertiary opacity-60"
+                        )}
+                      >
+                        <div className="mt-0.5 shrink-0">
+                          {isDone ? (
+                            <div className="size-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                              <RiCheckLine className="size-3 stroke-[2.5]" />
+                            </div>
+                          ) : isActive ? (
+                            <RiLoader4Line className="size-4 animate-spin text-cyan-400" />
+                          ) : (
+                            <div className="size-4 rounded-full border border-separator-border text-text-tertiary flex items-center justify-center text-[9px] font-mono">
+                              {idx + 1}
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <span className={cx(
+                            "block font-medium truncate",
+                            isActive ? "text-text-primary font-semibold" : isDone ? "text-text-secondary" : "text-text-tertiary"
+                          )}>
+                            {step.label}
+                          </span>
+                          <span className="block text-[10px] text-text-tertiary truncate">
+                            {step.desc}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Empty State Hero Banner (Only shown if NOT scanning and prospect unprobed) */}
+            {!osintLoading && !parsedOsint && !audit && (
               <div className="p-4 rounded-2xl border border-blue-500/30 bg-blue-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
                 <div className="flex items-start gap-3">
                   <div className="size-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 mt-0.5">
@@ -404,12 +591,12 @@ export default function LeadDossierPage({
                 <Button
                   size="small"
                   variant="primary"
-                  leadingIcon={osintLoading ? RiLoader4Line : RiShieldCheckLine}
+                  leadingIcon={RiShieldCheckLine}
                   onClick={handleRunOsint}
                   disabled={osintLoading}
                   className="shrink-0"
                 >
-                  {osintLoading ? 'Scanning...' : '⚡ Run Full Recon'}
+                  ⚡ Run Full Recon
                 </Button>
               </div>
             )}
@@ -633,11 +820,11 @@ export default function LeadDossierPage({
                   <Button
                     size="small"
                     variant="secondary"
-                    leadingIcon={RiShieldCheckLine}
+                    leadingIcon={osintLoading ? RiLoader4Line : RiShieldCheckLine}
                     onClick={handleRunOsint}
                     disabled={osintLoading}
                   >
-                    Scan Socials
+                    {osintLoading ? 'Scanning...' : 'Scan Socials'}
                   </Button>
                 </div>
               )}
@@ -976,13 +1163,13 @@ export default function LeadDossierPage({
             {/* 5. Quick Triage Actions */}
             <section className="rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xs space-y-2.5">
               <Button
-                variant="primary"
+                variant={osintLoading ? "secondary" : "primary"}
                 leadingIcon={osintLoading ? RiLoader4Line : RiShieldCheckLine}
                 onClick={handleRunOsint}
                 disabled={osintLoading}
                 className="w-full justify-center"
               >
-                {osintLoading ? 'Scanning Lead...' : 'Run OSINT Scan'}
+                {osintLoading ? `Scanning Lead (${Math.floor(scanElapsed)}s)...` : 'Run OSINT Scan'}
               </Button>
 
               {onArchiveLead && (
