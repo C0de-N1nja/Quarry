@@ -187,6 +187,13 @@ export default function BoardLeadTable({
   onCityChange,
   contactChannel = 'all',
   onContactChannelChange,
+  ratingFilter = 'all',
+  onRatingFilterChange,
+  reviewsFilter = 'all',
+  onReviewsFilterChange,
+  noteFilter = 'all',
+  onNoteFilterChange,
+  onResetAllFilters,
   focusTier = 'vault',
   onFocusTierChange,
   onCleanWebsites,
@@ -539,6 +546,51 @@ export default function BoardLeadTable({
               ))}
             </Select>
 
+            {/* Rating (Stars) Filter */}
+            <Select
+              aria-label="Filter by Google Star Rating"
+              className="shrink-0"
+              popoverClassName="min-w-40"
+              selectedKey={ratingFilter}
+              onSelectionChange={(k) => onRatingFilterChange && onRatingFilterChange(String(k))}
+            >
+              <SelectItem id="all" textValue="All Ratings">★ All Ratings</SelectItem>
+              <SelectItem id="4.5" textValue="4.5+ Stars">★ 4.5+ Stars (High Value)</SelectItem>
+              <SelectItem id="4.0" textValue="4.0+ Stars">★ 4.0+ Stars (Solid)</SelectItem>
+              <SelectItem id="under_4" textValue="Under 4.0 Stars">★ Under 4.0 (Needs Help)</SelectItem>
+            </Select>
+
+            {/* Review Count Filter */}
+            <Select
+              aria-label="Filter by review count"
+              className="shrink-0"
+              popoverClassName="min-w-40"
+              selectedKey={reviewsFilter}
+              onSelectionChange={(k) => onReviewsFilterChange && onReviewsFilterChange(String(k))}
+            >
+              <SelectItem id="all" textValue="All Reviews">All Reviews</SelectItem>
+              <SelectItem id="50_plus" textValue="50+ Reviews">50+ Reviews (Leaders)</SelectItem>
+              <SelectItem id="10_to_50" textValue="10–50 Reviews">10–50 Reviews</SelectItem>
+              <SelectItem id="under_10" textValue="< 10 Reviews">&lt; 10 Reviews (Low)</SelectItem>
+            </Select>
+
+            {/* Notes & Tags Filter */}
+            <Select
+              aria-label="Filter by notes and tags"
+              className="shrink-0"
+              popoverClassName="min-w-44"
+              selectedKey={noteFilter}
+              onSelectionChange={(k) => onNoteFilterChange && onNoteFilterChange(String(k))}
+            >
+              <SelectItem id="all" textValue="All Notes">All Notes</SelectItem>
+              <SelectItem id="has_notes" textValue="With Notes">With Notes</SelectItem>
+              <SelectItem id="no_notes" textValue="Untouched (No Notes)">Untouched (No Notes)</SelectItem>
+              <SelectItem id="high_intent" textValue="🔥 High Intent">🔥 High Intent</SelectItem>
+              <SelectItem id="called_owner" textValue="📞 Called Owner">📞 Called Owner</SelectItem>
+              <SelectItem id="needs_redesign" textValue="🎨 Needs Redesign">🎨 Needs Redesign</SelectItem>
+              <SelectItem id="follow_up" textValue="⏰ Follow Up">⏰ Follow Up</SelectItem>
+            </Select>
+
             {/* Channel Filter */}
             <Select
               aria-label="Filter by channel"
@@ -548,7 +600,6 @@ export default function BoardLeadTable({
               onSelectionChange={(k) => onContactChannelChange && onContactChannelChange(String(k))}
             >
               <SelectItem id="all" textValue="All Channels">All Channels</SelectItem>
-              <SelectItem id="has_notes" textValue="With Notes">With Notes</SelectItem>
               <SelectItem id="has_email" textValue="Has Email">Has Email</SelectItem>
               <SelectItem id="has_whatsapp" textValue="WhatsApp Verified">WhatsApp Verified</SelectItem>
               <SelectItem id="phone_only" textValue="Phone Only">Phone Only</SelectItem>
@@ -569,6 +620,152 @@ export default function BoardLeadTable({
             </Select>
           </div>
         </div>
+
+        {/* Active Filter Chips Bar (Shown when any filter is non-default) */}
+        {Boolean(
+          (activeNiche && activeNiche !== 'all') ||
+          (activeCity && activeCity !== 'all') ||
+          (contactChannel && contactChannel !== 'all') ||
+          (ratingFilter && ratingFilter !== 'all') ||
+          (reviewsFilter && reviewsFilter !== 'all') ||
+          (noteFilter && noteFilter !== 'all') ||
+          searchTerm
+        ) && (
+          <div className="flex items-center gap-1.5 flex-wrap pt-2.5 pb-1 text-xs">
+            <span className="text-[11px] font-mono uppercase tracking-wider text-text-tertiary mr-1">
+              Active Filters:
+            </span>
+
+            {/* Rating Chip */}
+            {ratingFilter !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                <RiStarLine className="size-3" />
+                <span>
+                  {ratingFilter === '4.5' ? '4.5+ Stars ★' : ratingFilter === '4.0' ? '4.0+ Stars ★' : 'Under 4.0 Stars'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onRatingFilterChange && onRatingFilterChange('all')}
+                  className="hover:text-amber-200 ml-0.5 cursor-pointer"
+                  title="Remove star rating filter"
+                >
+                  <RiCloseLine className="size-3" />
+                </button>
+              </span>
+            )}
+
+            {/* Reviews Count Chip */}
+            {reviewsFilter !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-background-secondary-default text-text-primary border border-separator-border">
+                <span>
+                  {reviewsFilter === '50_plus' ? '50+ Reviews' : reviewsFilter === '10_to_50' ? '10–50 Reviews' : '< 10 Reviews'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onReviewsFilterChange && onReviewsFilterChange('all')}
+                  className="text-text-tertiary hover:text-text-primary ml-0.5 cursor-pointer"
+                  title="Remove review count filter"
+                >
+                  <RiCloseLine className="size-3" />
+                </button>
+              </span>
+            )}
+
+            {/* Notes & Tags Chip */}
+            {noteFilter !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                <RiBookmarkLine className="size-3" />
+                <span>
+                  {noteFilter === 'has_notes' ? 'With Notes' : 
+                   noteFilter === 'no_notes' ? 'Untouched (No Notes)' : 
+                   noteFilter === 'high_intent' ? '🔥 High Intent' : 
+                   noteFilter === 'called_owner' ? '📞 Called Owner' : 
+                   noteFilter === 'needs_redesign' ? '🎨 Needs Redesign' : 
+                   noteFilter === 'follow_up' ? '⏰ Follow Up' : noteFilter}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onNoteFilterChange && onNoteFilterChange('all')}
+                  className="hover:text-amber-200 ml-0.5 cursor-pointer"
+                  title="Remove note filter"
+                >
+                  <RiCloseLine className="size-3" />
+                </button>
+              </span>
+            )}
+
+            {/* Niche Chip */}
+            {activeNiche !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-background-secondary-default text-text-primary border border-separator-border">
+                <span>Niche: {normalizeNiche(activeNiche)}</span>
+                <button
+                  type="button"
+                  onClick={() => onNicheChange && onNicheChange('all')}
+                  className="text-text-tertiary hover:text-text-primary ml-0.5 cursor-pointer"
+                  title="Remove niche filter"
+                >
+                  <RiCloseLine className="size-3" />
+                </button>
+              </span>
+            )}
+
+            {/* Channel Chip */}
+            {contactChannel !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-background-secondary-default text-text-primary border border-separator-border">
+                <span>Channel: {contactChannel === 'has_notes' ? 'With Notes' : contactChannel === 'has_email' ? 'Email' : contactChannel === 'has_whatsapp' ? 'WhatsApp' : 'Phone'}</span>
+                <button
+                  type="button"
+                  onClick={() => onContactChannelChange && onContactChannelChange('all')}
+                  className="text-text-tertiary hover:text-text-primary ml-0.5 cursor-pointer"
+                  title="Remove channel filter"
+                >
+                  <RiCloseLine className="size-3" />
+                </button>
+              </span>
+            )}
+
+            {/* City Chip */}
+            {activeCity !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-background-secondary-default text-text-primary border border-separator-border">
+                <span>City: {activeCity}</span>
+                <button
+                  type="button"
+                  onClick={() => onCityChange && onCityChange('all')}
+                  className="text-text-tertiary hover:text-text-primary ml-0.5 cursor-pointer"
+                  title="Remove city filter"
+                >
+                  <RiCloseLine className="size-3" />
+                </button>
+              </span>
+            )}
+
+            {/* Search Term Chip */}
+            {searchTerm && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-background-secondary-default text-text-primary border border-separator-border">
+                <span>Search: "{searchTerm}"</span>
+                <button
+                  type="button"
+                  onClick={() => onSearchChange && onSearchChange('')}
+                  className="text-text-tertiary hover:text-text-primary ml-0.5 cursor-pointer"
+                  title="Clear search term"
+                >
+                  <RiCloseLine className="size-3" />
+                </button>
+              </span>
+            )}
+
+            {/* Clear All Link */}
+            {onResetAllFilters && (
+              <button
+                type="button"
+                onClick={onResetAllFilters}
+                className="text-[11px] text-accent-400 hover:text-accent-300 hover:underline ml-1 cursor-pointer font-medium"
+              >
+                Reset All Filters
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Bulk Action Header Bar (when 1+ rows selected) */}
         {(selectedLeadIds.size > 0 || isAllMatchingSelected) && (

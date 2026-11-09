@@ -6,7 +6,7 @@ const phoneService = require('../services/phone-service');
  * Lead Model: Encapsulates database queries and persistence for prospective clients.
  */
 class Lead {
-  static findAll({ status, search, category, tier, batchMode, contactChannel, city, includeTest = false, limit = 100, offset = 0 } = {}) {
+  static findAll({ status, search, category, tier, batchMode, contactChannel, city, ratingFilter, reviewsFilter, noteFilter, auditFilter, includeTest = false, limit = 100, offset = 0 } = {}) {
     let query = `
       SELECT 
         l.*,
@@ -55,6 +55,53 @@ class Lead {
       query += " AND ((l.has_no_website = 1 OR l.website IS NULL OR l.website = '') AND (l.website IS NULL OR l.website = '' OR lower(l.website) LIKE '%facebook.com%' OR lower(l.website) LIKE '%instagram.com%' OR lower(l.website) LIKE '%linkedin.com%' OR lower(l.website) LIKE '%linktr.ee%')) AND (l.rating >= 4.5 AND l.reviews_count >= 10 AND l.phone IS NOT NULL)";
     }
 
+    // Google Star Rating Filter
+    if (ratingFilter === '4.5') {
+      query += ' AND l.rating >= 4.5';
+    } else if (ratingFilter === '4.0') {
+      query += ' AND l.rating >= 4.0';
+    } else if (ratingFilter === 'under_4') {
+      query += ' AND (l.rating > 0 AND l.rating < 4.0)';
+    } else if (ratingFilter === 'unrated') {
+      query += ' AND (l.rating IS NULL OR l.rating = 0)';
+    }
+
+    // Review Count Filter
+    if (reviewsFilter === '50_plus') {
+      query += ' AND l.reviews_count >= 50';
+    } else if (reviewsFilter === '10_to_50') {
+      query += ' AND (l.reviews_count >= 10 AND l.reviews_count < 50)';
+    } else if (reviewsFilter === 'under_10') {
+      query += ' AND (l.reviews_count < 10 OR l.reviews_count IS NULL)';
+    }
+
+    // Notes & Tag Filters
+    if (noteFilter === 'has_notes') {
+      query += " AND (l.notes IS NOT NULL AND TRIM(l.notes) != '')";
+    } else if (noteFilter === 'no_notes') {
+      query += " AND (l.notes IS NULL OR TRIM(l.notes) = '')";
+    } else if (noteFilter === 'high_intent') {
+      query += " AND l.notes LIKE '%High Intent%'";
+    } else if (noteFilter === 'called_owner') {
+      query += " AND l.notes LIKE '%Called Owner%'";
+    } else if (noteFilter === 'needs_redesign') {
+      query += " AND l.notes LIKE '%Needs Redesign%'";
+    } else if (noteFilter === 'follow_up') {
+      query += " AND l.notes LIKE '%Follow Up%'";
+    } else if (noteFilter && noteFilter.startsWith('tag:')) {
+      query += " AND l.notes LIKE ?";
+      params.push(`%${noteFilter.slice(4)}%`);
+    }
+
+    // Website & Technical Audit Filters
+    if (auditFilter === 'slow') {
+      query += " AND l.id IN (SELECT lead_id FROM website_audits WHERE performance_score < 50)";
+    } else if (auditFilter === 'fast') {
+      query += " AND l.id IN (SELECT lead_id FROM website_audits WHERE performance_score >= 80)";
+    } else if (auditFilter === 'insecure') {
+      query += " AND (l.website LIKE 'http://%' OR l.id IN (SELECT lead_id FROM website_audits WHERE (security_score < 50 OR audit_data LIKE '%\"is_https\":false%')))";
+    }
+
     if (category && category !== 'all') {
       query += ' AND lower(TRIM(l.category)) = lower(TRIM(?))';
       params.push(category);
@@ -83,7 +130,7 @@ class Lead {
     return db.prepare(query).all(...params);
   }
 
-  static count({ status, search, category, tier, batchMode, contactChannel, city, includeTest = false } = {}) {
+  static count({ status, search, category, tier, batchMode, contactChannel, city, ratingFilter, reviewsFilter, noteFilter, auditFilter, includeTest = false } = {}) {
     let query = `
       SELECT COUNT(*) as total 
       FROM leads l 
@@ -120,6 +167,53 @@ class Lead {
 
     if (tier === 'gold') {
       query += " AND ((l.has_no_website = 1 OR l.website IS NULL OR l.website = '') AND (l.website IS NULL OR l.website = '' OR lower(l.website) LIKE '%facebook.com%' OR lower(l.website) LIKE '%instagram.com%' OR lower(l.website) LIKE '%linkedin.com%' OR lower(l.website) LIKE '%linktr.ee%')) AND (l.rating >= 4.5 AND l.reviews_count >= 10 AND l.phone IS NOT NULL)";
+    }
+
+    // Google Star Rating Filter
+    if (ratingFilter === '4.5') {
+      query += ' AND l.rating >= 4.5';
+    } else if (ratingFilter === '4.0') {
+      query += ' AND l.rating >= 4.0';
+    } else if (ratingFilter === 'under_4') {
+      query += ' AND (l.rating > 0 AND l.rating < 4.0)';
+    } else if (ratingFilter === 'unrated') {
+      query += ' AND (l.rating IS NULL OR l.rating = 0)';
+    }
+
+    // Review Count Filter
+    if (reviewsFilter === '50_plus') {
+      query += ' AND l.reviews_count >= 50';
+    } else if (reviewsFilter === '10_to_50') {
+      query += ' AND (l.reviews_count >= 10 AND l.reviews_count < 50)';
+    } else if (reviewsFilter === 'under_10') {
+      query += ' AND (l.reviews_count < 10 OR l.reviews_count IS NULL)';
+    }
+
+    // Notes & Tag Filters
+    if (noteFilter === 'has_notes') {
+      query += " AND (l.notes IS NOT NULL AND TRIM(l.notes) != '')";
+    } else if (noteFilter === 'no_notes') {
+      query += " AND (l.notes IS NULL OR TRIM(l.notes) = '')";
+    } else if (noteFilter === 'high_intent') {
+      query += " AND l.notes LIKE '%High Intent%'";
+    } else if (noteFilter === 'called_owner') {
+      query += " AND l.notes LIKE '%Called Owner%'";
+    } else if (noteFilter === 'needs_redesign') {
+      query += " AND l.notes LIKE '%Needs Redesign%'";
+    } else if (noteFilter === 'follow_up') {
+      query += " AND l.notes LIKE '%Follow Up%'";
+    } else if (noteFilter && noteFilter.startsWith('tag:')) {
+      query += " AND l.notes LIKE ?";
+      params.push(`%${noteFilter.slice(4)}%`);
+    }
+
+    // Website & Technical Audit Filters
+    if (auditFilter === 'slow') {
+      query += " AND l.id IN (SELECT lead_id FROM website_audits WHERE performance_score < 50)";
+    } else if (auditFilter === 'fast') {
+      query += " AND l.id IN (SELECT lead_id FROM website_audits WHERE performance_score >= 80)";
+    } else if (auditFilter === 'insecure') {
+      query += " AND (l.website LIKE 'http://%' OR l.id IN (SELECT lead_id FROM website_audits WHERE (security_score < 50 OR audit_data LIKE '%\"is_https\":false%')))";
     }
 
     if (category && category !== 'all') {

@@ -33,6 +33,13 @@ export default function LeadTable({
   onCityChange,
   contactChannel = 'all',
   onContactChannelChange,
+  ratingFilter = 'all',
+  onRatingFilterChange,
+  reviewsFilter = 'all',
+  onReviewsFilterChange,
+  noteFilter = 'all',
+  onNoteFilterChange,
+  onResetAllFilters,
   focusTier = 'vault',
   onFocusTierChange,
   onCleanWebsites,
@@ -97,6 +104,13 @@ export default function LeadTable({
         onCityChange={onCityChange}
         contactChannel={contactChannel}
         onContactChannelChange={onContactChannelChange}
+        ratingFilter={ratingFilter}
+        onRatingFilterChange={onRatingFilterChange}
+        reviewsFilter={reviewsFilter}
+        onReviewsFilterChange={onReviewsFilterChange}
+        noteFilter={noteFilter}
+        onNoteFilterChange={onNoteFilterChange}
+        onResetAllFilters={onResetAllFilters}
         focusTier={focusTier}
         onFocusTierChange={onFocusTierChange}
         onCleanWebsites={onCleanWebsites}

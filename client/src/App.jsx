@@ -33,6 +33,9 @@ export default function App() {
   const [activeNiche, setActiveNiche] = useState('all'); // 'all' or collection name (e.g. 'Dental Clinic')
   const [activeCity, setActiveCity] = useState('all'); // 'all' or specific city
   const [contactChannel, setContactChannel] = useState('all'); // 'all', 'has_email', 'has_whatsapp', 'has_social', 'phone_only', 'social_all'
+  const [ratingFilter, setRatingFilter] = useState('all'); // 'all', '4.5', '4.0', 'under_4', 'unrated'
+  const [reviewsFilter, setReviewsFilter] = useState('all'); // 'all', '50_plus', '10_to_50', 'under_10'
+  const [noteFilter, setNoteFilter] = useState('all'); // 'all', 'has_notes', 'no_notes', 'high_intent', 'called_owner', 'needs_redesign', 'follow_up'
   const [focusTier, setFocusTier] = useState('vault'); // 'vault' (all leads), 'today', 'gold'
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -210,6 +213,15 @@ export default function App() {
       if (contactChannel && contactChannel !== 'all') {
         url += `&contactChannel=${encodeURIComponent(contactChannel)}`;
       }
+      if (ratingFilter && ratingFilter !== 'all') {
+        url += `&ratingFilter=${encodeURIComponent(ratingFilter)}`;
+      }
+      if (reviewsFilter && reviewsFilter !== 'all') {
+        url += `&reviewsFilter=${encodeURIComponent(reviewsFilter)}`;
+      }
+      if (noteFilter && noteFilter !== 'all') {
+        url += `&noteFilter=${encodeURIComponent(noteFilter)}`;
+      }
       if (focusTier === 'today') {
         url += '&batchMode=today';
       } else if (focusTier === 'gold') {
@@ -255,18 +267,30 @@ export default function App() {
     }
   };
 
-  // Reset to page 1 when filter/niche/city/search/focus/contactChannel changes
+  // Reset to page 1 when filter/niche/city/search/focus/contactChannel/rating/reviews/notes changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeFilter, debouncedSearch, activeNiche, activeCity, focusTier, contactChannel, pageSize]);
+  }, [activeFilter, debouncedSearch, activeNiche, activeCity, focusTier, contactChannel, ratingFilter, reviewsFilter, noteFilter, pageSize]);
 
   useEffect(() => {
     fetchLeads();
-  }, [activeFilter, debouncedSearch, activeNiche, activeCity, focusTier, contactChannel, pageSize, currentPage]);
+  }, [activeFilter, debouncedSearch, activeNiche, activeCity, focusTier, contactChannel, ratingFilter, reviewsFilter, noteFilter, pageSize, currentPage]);
 
   useEffect(() => {
     fetchStats();
-  }, [activeFilter, activeNiche, activeCity, focusTier, contactChannel]);
+  }, [activeFilter, activeNiche, activeCity, focusTier, contactChannel, ratingFilter, reviewsFilter, noteFilter]);
+
+  const handleResetAllFilters = () => {
+    setActiveFilter('all');
+    setActiveNiche('all');
+    setActiveCity('all');
+    setContactChannel('all');
+    setFocusTier('vault');
+    setRatingFilter('all');
+    setReviewsFilter('all');
+    setNoteFilter('all');
+    setSearchTerm('');
+  };
 
   // Check for active background OSINT job on mount / page refresh
   useEffect(() => {
@@ -568,6 +592,13 @@ export default function App() {
           onCityChange={setActiveCity}
           contactChannel={contactChannel}
           onContactChannelChange={setContactChannel}
+          ratingFilter={ratingFilter}
+          onRatingFilterChange={setRatingFilter}
+          reviewsFilter={reviewsFilter}
+          onReviewsFilterChange={setReviewsFilter}
+          noteFilter={noteFilter}
+          onNoteFilterChange={setNoteFilter}
+          onResetAllFilters={handleResetAllFilters}
           focusTier={focusTier}
           onFocusTierChange={setFocusTier}
           onCleanWebsites={handleCleanWebsites}
