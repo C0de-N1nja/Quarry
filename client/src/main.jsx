@@ -24,7 +24,7 @@ class ErrorBoundary extends React.Component {
           <div className="max-w-xl w-full bg-[#131622] border border-rose-500/30 rounded-2xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-3 text-rose-400">
               <RiAlertLine className="size-6 shrink-0" />
-              <h2 className="text-lg font-bold">Client Hunter OS Exception Caught</h2>
+              <h2 className="text-lg font-bold">Quarry Client Exception Caught</h2>
             </div>
             <p className="text-xs text-text-tertiary">
               An unhandled render exception occurred. Details below:

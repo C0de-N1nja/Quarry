@@ -192,7 +192,7 @@ export default function LiveJobsDrawer({
                   </button>
                 </div>
                 <div className="h-96 rounded-2xl bg-black border border-slate-800 p-3 font-mono text-[11px] text-emerald-400 overflow-y-auto space-y-1.5 leading-relaxed">
-                  <div className="text-slate-500">[System] Quarry OS Daemon initialized. Listening for IPC events...</div>
+                  <div className="text-slate-500">[System] Quarry Daemon initialized. Listening for IPC events...</div>
                   {activeJob ? (
                     <div className="text-cyan-400">[Worker] Job #{activeJob.id} running with PID allocation...</div>
                   ) : (

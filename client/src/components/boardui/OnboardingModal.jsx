@@ -187,7 +187,7 @@ export default function OnboardingModal({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold tracking-tight text-text-primary">Quarry</span>
-                <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-accent-500/15 text-accent-500 font-bold">OS Enterprise</span>
+                <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-accent-500/15 text-accent-500 font-bold">Enterprise</span>
               </div>
               <p className="text-[11px] text-text-tertiary font-mono">Autonomous Client Acquisition & OSINT Engine</p>
             </div>
@@ -211,10 +211,10 @@ export default function OnboardingModal({
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-bold tracking-tight text-text-primary">
-                  Welcome to Quarry OS
+                  Welcome to Quarry
                 </h2>
                 <p className="text-sm text-text-secondary mt-1">
-                  Your deterministic client-hunting operating system. Before we harvest your first batch of no-website prospects, let's verify system services.
+                  Your deterministic client-hunting software. Before we harvest your first batch of no-website prospects, let's verify system services.
                 </p>
               </div>
 
@@ -493,7 +493,7 @@ export default function OnboardingModal({
                   Market Intelligence Harvested!
                 </h2>
                 <p className="text-sm text-text-secondary max-w-md mx-auto mt-1.5">
-                  Quarry OS has mined and enriched <span className="font-bold text-text-primary">{keyword}</span> prospects in <span className="font-bold text-text-primary">{city}</span>. Your dashboard is now loaded with fresh targets.
+                  Quarry has mined and enriched <span className="font-bold text-text-primary">{keyword}</span> prospects in <span className="font-bold text-text-primary">{city}</span>. Your dashboard is now loaded with fresh targets.
                 </p>
               </div>
 
@@ -525,7 +525,7 @@ export default function OnboardingModal({
                   onClick={handleFinishAndEnter}
                   className="w-full sm:w-auto px-8"
                 >
-                  Enter Quarry OS Dashboard
+                  Enter Quarry Dashboard
                 </Button>
               </div>
             </div>

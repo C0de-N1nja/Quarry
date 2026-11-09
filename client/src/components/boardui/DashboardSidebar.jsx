@@ -67,15 +67,14 @@ export default function DashboardSidebar({
             className={`h-9 w-9 rounded-xl bg-slate-900 border border-slate-700/60 shadow-xs flex items-center justify-center text-white ring-1 ring-white/10 shrink-0 ${
               collapsed ? 'cursor-pointer hover:scale-105 transition-transform' : ''
             }`}
-            title={collapsed ? "Quarry OS — Click to expand sidebar" : "Quarry OS"}
+            title={collapsed ? "Quarry — Click to expand sidebar" : "Quarry"}
           >
             <QuarryLogo size={20} />
           </button>
           {!collapsed && (
             <div className="min-w-0">
-              <h1 className="text-xs font-bold text-text-primary tracking-tight flex items-center gap-1.5 truncate">
-                <span>Quarry</span>
-                <span className="px-1 py-0.2 text-[9px] font-mono font-bold rounded bg-accent-500/20 text-accent-500">OS</span>
+              <h1 className="text-xs font-bold text-text-primary tracking-tight truncate">
+                Quarry
               </h1>
               <p className="text-[10px] text-text-tertiary font-mono truncate">Lead Mining & OSINT</p>
             </div>

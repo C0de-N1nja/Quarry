@@ -62,7 +62,7 @@ export default function Header({
           </div>
           <div className="flex items-center gap-1.5">
             <h1 className="text-body-small font-semibold tracking-tight text-text-primary">
-              Quarry <span className="font-mono text-[10px] text-accent-500">OS</span>
+              Quarry
             </h1>
             {stats && stats.noWebsite > 0 && (
               <Chip variant="bold" color="rose" size="sm">
