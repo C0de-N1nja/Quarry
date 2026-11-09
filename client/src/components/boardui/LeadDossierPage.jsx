@@ -45,6 +45,15 @@ const RECON_STEPS = [
   { id: 'consolidation', label: 'Finalizing Lead Details', desc: 'Organizing contact info so you can reach out' }
 ];
 
+// Friendly Step-by-Step Website Audit Stages
+const AUDIT_STEPS = [
+  { id: 'server', label: 'Connecting to Website Server', desc: 'Testing HTTP handshake, server response time, and TTFB' },
+  { id: 'mobile', label: 'Testing Mobile Responsive Viewport', desc: 'Verifying touch targets and mobile viewport rendering' },
+  { id: 'speed', label: 'Measuring Page Load Speed', desc: 'Calculating First Contentful Paint and asset transfer size' },
+  { id: 'security', label: 'Auditing SSL & Security Encryption', desc: 'Verifying valid HTTPS certificates and security headers' },
+  { id: 'seo', label: 'Analyzing Google Search & SEO Tags', desc: 'Checking meta descriptions, titles, and search readiness' }
+];
+
 export default function LeadDossierPage({
   lead,
   leads = [],
@@ -64,6 +73,11 @@ export default function LeadDossierPage({
   const scanTimerRef = useRef(null);
   const [emailVerifying, setEmailVerifying] = useState(false);
   const [auditLoading, setAuditLoading] = useState(false);
+  const [auditElapsed, setAuditElapsed] = useState(0);
+  const [auditStepIndex, setAuditStepIndex] = useState(0);
+  const [auditProgress, setAuditProgress] = useState(0);
+  const auditAbortControllerRef = useRef(null);
+  const auditTimerRef = useRef(null);
   const [currentStatus, setCurrentStatus] = useState(lead?.status || 'discovered');
   const [dealValue, setDealValue] = useState(lead?.deal_value || '');
 
@@ -300,41 +314,98 @@ export default function LeadDossierPage({
     handleNotesChange(updated);
   };
 
-  // Run in-dossier live website speed and quality audit
+  const handleCancelAudit = () => {
+    if (auditAbortControllerRef.current) {
+      auditAbortControllerRef.current.abort();
+    }
+  };
+
+  // Run in-dossier live website speed and quality audit with animated Mission Control HUD
   const handleRunAudit = async () => {
-    if (!currentLead?.id || !currentLead?.website) return;
+    if (auditLoading || !currentLead?.id || !currentLead?.website) return;
+
+    const controller = new AbortController();
+    auditAbortControllerRef.current = controller;
+
     setAuditLoading(true);
+    setAuditElapsed(0);
+    setAuditStepIndex(0);
+    setAuditProgress(8);
+
+    const startTime = Date.now();
+    auditTimerRef.current = setInterval(() => {
+      const elapsedSec = (Date.now() - startTime) / 1000;
+      setAuditElapsed(elapsedSec);
+
+      if (elapsedSec < 1.4) {
+        setAuditStepIndex(0);
+        setAuditProgress(Math.min(22, 8 + elapsedSec * 10));
+      } else if (elapsedSec < 3.0) {
+        setAuditStepIndex(1);
+        setAuditProgress(Math.min(45, 22 + (elapsedSec - 1.4) * 14));
+      } else if (elapsedSec < 4.8) {
+        setAuditStepIndex(2);
+        setAuditProgress(Math.min(68, 45 + (elapsedSec - 3.0) * 12));
+      } else if (elapsedSec < 6.5) {
+        setAuditStepIndex(3);
+        setAuditProgress(Math.min(88, 68 + (elapsedSec - 4.8) * 11));
+      } else {
+        setAuditStepIndex(4);
+        setAuditProgress(Math.min(96, 88 + (elapsedSec - 6.5) * 3));
+      }
+    }, 100);
+
     try {
       const res = await fetch(`/api/leads/${currentLead.id}/audit-website`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: currentLead.website })
+        body: JSON.stringify({ url: currentLead.website }),
+        signal: controller.signal
       });
       const data = await res.json();
-      if (data.success && data.audit) {
-        setDetail(prev => ({
-          ...prev,
-          audit: data.audit,
-          lead: data.lead || prev?.lead
-        }));
-        toast.success('Website Speed & Mobile Audit Complete!', {
-          description: `Speed: ${data.audit.performance_score}/100 • Mobile: ${data.audit.seo?.has_viewport !== false ? 'Friendly' : 'Needs Fix'}`
-        });
-        if (onRefreshLead) onRefreshLead(currentLead.id);
-      } else {
-        toast.error('Website audit failed', { description: data.error || 'Could not test this website.' });
+      if (!data.success || !data.audit) {
+        throw new Error(data.error || 'Could not test this website.');
       }
+
+      setAuditProgress(100);
+      setAuditStepIndex(AUDIT_STEPS.length);
+      if (auditTimerRef.current) clearInterval(auditTimerRef.current);
+
+      // Brief 450ms pause so user visibly sees 100% completion & all green ticks
+      await new Promise(r => setTimeout(r, 450));
+
+      setDetail(prev => ({
+        ...prev,
+        audit: data.audit,
+        lead: data.lead || prev?.lead
+      }));
+
+      toast.success('Website Speed & Mobile Audit Complete!', {
+        description: `Speed: ${data.audit.performance_score}/100 • Mobile: ${data.audit.mobile_friendly !== false && data.audit.seo?.has_viewport !== false ? 'Friendly' : 'Needs Fix'}`
+      });
+      if (onRefreshLead) onRefreshLead(currentLead.id);
     } catch (err) {
-      toast.error('Audit failed', { description: err.message });
+      if (auditTimerRef.current) clearInterval(auditTimerRef.current);
+      if (err.name === 'AbortError') {
+        toast.info('Website audit cancelled');
+      } else {
+        toast.error(err.message || 'Website audit failed');
+      }
     } finally {
+      if (auditTimerRef.current) clearInterval(auditTimerRef.current);
       setAuditLoading(false);
+      setAuditElapsed(0);
+      setAuditProgress(0);
+      setAuditStepIndex(0);
     }
   };
 
   useEffect(() => {
     return () => {
       if (scanTimerRef.current) clearInterval(scanTimerRef.current);
+      if (auditTimerRef.current) clearInterval(auditTimerRef.current);
       if (abortControllerRef.current) abortControllerRef.current.abort();
+      if (auditAbortControllerRef.current) auditAbortControllerRef.current.abort();
     };
   }, []);
 
@@ -937,12 +1008,102 @@ export default function LeadDossierPage({
                   </div>
                 </div>
 
+                {/* LIVE WEBSITE AUDIT MISSION CONTROL HUD (Active when audit is testing) */}
                 {auditLoading && (
-                  <div className="p-4 rounded-xl bg-background-secondary-default border border-cyan-500/30 flex items-center gap-3 animate-pulse">
-                    <RiLoader4Line className="size-5 animate-spin text-cyan-400 shrink-0" />
-                    <div>
-                      <p className="text-xs font-semibold text-text-primary">Testing page speed & mobile responsiveness...</p>
-                      <p className="text-[11px] text-text-secondary mt-0.5">Measuring TTFB, First Contentful Paint, mobile viewport, and SSL certificates.</p>
+                  <div className="rounded-2xl border-2 border-cyan-500/50 bg-background-primary-default p-5 shadow-xl shadow-cyan-950/20 relative overflow-hidden transition-all duration-300">
+                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-blue-500/5 to-transparent pointer-events-none animate-pulse" />
+
+                    {/* HUD Top Bar: Pulse, Title, Real-Time Timer, Abort Button */}
+                    <div className="relative flex items-center justify-between gap-3 flex-wrap border-b border-separator-border/70 pb-3.5 mb-4">
+                      <div className="flex items-center gap-2.5">
+                        <span className="relative flex size-3">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full size-3 bg-cyan-500" />
+                        </span>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-sm font-bold text-text-primary tracking-tight">
+                              Auditing Website Speed & Mobile Quality
+                            </h3>
+                            <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                              {Math.round(auditProgress)}%
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-text-secondary mt-0.5">
+                            Testing live server response, mobile viewport, page load time, and Google SEO tags
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-background-secondary-default border border-separator-border font-mono text-xs text-text-secondary">
+                          <RiTimeLine className="size-3.5 text-cyan-400 animate-spin" />
+                          <span className="text-text-primary font-bold">00:{auditElapsed < 10 ? `0${Math.floor(auditElapsed)}` : Math.floor(auditElapsed)}s</span>
+                        </div>
+                        <Button
+                          size="small"
+                          variant="secondary"
+                          leadingIcon={RiCloseLine}
+                          onClick={handleCancelAudit}
+                          title="Cancel website audit"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar with Gradient */}
+                    <div className="relative w-full h-2 rounded-full bg-background-tertiary-default overflow-hidden mb-4">
+                      <div
+                        className="h-full bg-gradient-to-r from-cyan-500 via-blue-500 to-emerald-400 transition-all duration-150 rounded-full"
+                        style={{ width: `${auditProgress}%` }}
+                      />
+                    </div>
+
+                    {/* Step-by-Step Progression Indicators */}
+                    <div className="relative grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      {AUDIT_STEPS.map((step, idx) => {
+                        const isDone = idx < auditStepIndex;
+                        const isActive = idx === auditStepIndex;
+                        return (
+                          <div
+                            key={step.id}
+                            className={cx(
+                              "p-2.5 rounded-xl border transition-all flex items-start gap-2.5",
+                              isDone
+                                ? "bg-emerald-500/5 border-emerald-500/30 text-emerald-400"
+                                : isActive
+                                ? "bg-cyan-500/10 border-cyan-500/40 text-cyan-400 ring-1 ring-cyan-500/20 shadow-xs"
+                                : "bg-background-secondary-default/40 border-separator-border/40 text-text-tertiary opacity-60"
+                            )}
+                          >
+                            <div className="mt-0.5 shrink-0">
+                              {isDone ? (
+                                <div className="size-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                                  <RiCheckLine className="size-3 stroke-[2.5]" />
+                                </div>
+                              ) : isActive ? (
+                                <RiLoader4Line className="size-4 animate-spin text-cyan-400" />
+                              ) : (
+                                <div className="size-4 rounded-full border border-separator-border text-text-tertiary flex items-center justify-center text-[9px] font-mono">
+                                  {idx + 1}
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <span className={cx(
+                                "block font-medium truncate",
+                                isActive ? "text-text-primary font-semibold" : isDone ? "text-text-secondary" : "text-text-tertiary"
+                              )}>
+                                {step.label}
+                              </span>
+                              <span className="block text-[10px] text-text-tertiary truncate">
+                                {step.desc}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -1022,7 +1183,9 @@ export default function LeadDossierPage({
                           {audit.flaws_summary.map((flaw, idx) => (
                             <div key={idx} className="p-2.5 rounded-xl bg-background-secondary-default border border-separator-border flex items-start gap-2 text-xs">
                               <span className="size-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
-                              <span className="text-text-secondary leading-relaxed">{flaw}</span>
+                              <span className="text-text-secondary leading-relaxed">
+                                {typeof flaw === 'string' ? flaw : (flaw?.message || flaw?.title || JSON.stringify(flaw))}
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -1031,14 +1194,27 @@ export default function LeadDossierPage({
 
                     {/* Sales Pitch Angle Helper */}
                     <div className="p-3.5 rounded-xl bg-blue-500/5 border border-blue-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                      <div className="space-y-1">
+                      <div className="space-y-1 flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 font-semibold text-blue-400">
                           <RiSparklingLine className="size-3.5 shrink-0" />
                           <span>Recommended Pitch Angle</span>
                         </div>
-                        <p className="text-text-secondary leading-relaxed">
-                          {audit.pitch_draft || opportunity.pitch}
-                        </p>
+                        {audit.pitch_draft && typeof audit.pitch_draft === 'object' ? (
+                          <div className="space-y-1 mt-1">
+                            {audit.pitch_draft.subject && (
+                              <span className="font-semibold text-text-primary block truncate">
+                                Subject: {audit.pitch_draft.subject}
+                              </span>
+                            )}
+                            <p className="text-text-secondary leading-relaxed whitespace-pre-line">
+                              {audit.pitch_draft.body || audit.pitch_draft.subject}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-text-secondary leading-relaxed mt-1">
+                            {typeof audit.pitch_draft === 'string' ? audit.pitch_draft : opportunity.pitch}
+                          </p>
+                        )}
                       </div>
                       {onOpenAudit && (
                         <Button size="small" variant="ghost" onClick={() => onOpenAudit(currentLead.id)} className="shrink-0 text-accent-400">
