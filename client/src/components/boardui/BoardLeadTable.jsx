@@ -551,28 +551,34 @@ export default function BoardLeadTable({
             <Select
               aria-label="Filter by Google Star Rating"
               className="shrink-0"
-              popoverClassName="min-w-40"
+              popoverClassName="min-w-44"
               selectedKey={ratingFilter}
               onSelectionChange={(k) => onRatingFilterChange && onRatingFilterChange(String(k))}
             >
               <SelectItem id="all" textValue="All Ratings">★ All Ratings</SelectItem>
-              <SelectItem id="4.5" textValue="4.5+ Stars">★ 4.5+ Stars (High Value)</SelectItem>
-              <SelectItem id="4.0" textValue="4.0+ Stars">★ 4.0+ Stars (Solid)</SelectItem>
+              <SelectItem id="5_star" textValue="5 Stars">★ 5 Stars (4.5–5.0)</SelectItem>
+              <SelectItem id="4_star" textValue="4 Stars">★ 4 Stars (3.5–4.4)</SelectItem>
+              <SelectItem id="3_star" textValue="3 Stars">★ 3 Stars (2.5–3.4)</SelectItem>
+              <SelectItem id="2_star" textValue="2 Stars">★ 2 Stars (1.5–2.4)</SelectItem>
+              <SelectItem id="1_star" textValue="1 Star">★ 1 Star (1.0–1.4)</SelectItem>
               <SelectItem id="under_4" textValue="Under 4.0 Stars">★ Under 4.0 (Needs Help)</SelectItem>
+              <SelectItem id="unrated" textValue="Unrated (No Stars)">★ Unrated (No Stars)</SelectItem>
             </Select>
 
             {/* Review Count Filter */}
             <Select
               aria-label="Filter by review count"
               className="shrink-0"
-              popoverClassName="min-w-40"
+              popoverClassName="min-w-44"
               selectedKey={reviewsFilter}
               onSelectionChange={(k) => onReviewsFilterChange && onReviewsFilterChange(String(k))}
             >
               <SelectItem id="all" textValue="All Reviews">All Reviews</SelectItem>
+              <SelectItem id="has_reviews" textValue="With Reviews Only">★ With Reviews (&gt; 0)</SelectItem>
               <SelectItem id="50_plus" textValue="50+ Reviews">50+ Reviews (Leaders)</SelectItem>
               <SelectItem id="10_to_50" textValue="10–50 Reviews">10–50 Reviews</SelectItem>
               <SelectItem id="under_10" textValue="< 10 Reviews">&lt; 10 Reviews (Low)</SelectItem>
+              <SelectItem id="no_reviews" textValue="0 Reviews / No Reviews">0 Reviews / Unreviewed</SelectItem>
             </Select>
 
             {/* Notes & Tags Filter */}
@@ -642,7 +648,14 @@ export default function BoardLeadTable({
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30">
                 <RiStarLine className="size-3" />
                 <span>
-                  {ratingFilter === '4.5' ? '4.5+ Stars ★' : ratingFilter === '4.0' ? '4.0+ Stars ★' : 'Under 4.0 Stars'}
+                  {ratingFilter === '5_star' || ratingFilter === '5' ? '★ 5 Stars' :
+                   ratingFilter === '4_star' || ratingFilter === '4' ? '★ 4 Stars' :
+                   ratingFilter === '3_star' || ratingFilter === '3' ? '★ 3 Stars' :
+                   ratingFilter === '2_star' || ratingFilter === '2' ? '★ 2 Stars' :
+                   ratingFilter === '1_star' || ratingFilter === '1' ? '★ 1 Star' :
+                   ratingFilter === '4.5' ? '4.5+ Stars ★' :
+                   ratingFilter === '4.0' ? '4.0+ Stars ★' :
+                   ratingFilter === 'unrated' ? 'Unrated ★' : 'Under 4.0 Stars ★'}
                 </span>
                 <button
                   type="button"
@@ -659,7 +672,10 @@ export default function BoardLeadTable({
             {reviewsFilter !== 'all' && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-background-secondary-default text-text-primary border border-separator-border">
                 <span>
-                  {reviewsFilter === '50_plus' ? '50+ Reviews' : reviewsFilter === '10_to_50' ? '10–50 Reviews' : '< 10 Reviews'}
+                  {reviewsFilter === 'has_reviews' ? 'With Reviews (> 0)' :
+                   reviewsFilter === '50_plus' ? '50+ Reviews' :
+                   reviewsFilter === '10_to_50' ? '10–50 Reviews' :
+                   reviewsFilter === 'no_reviews' ? '0 Reviews' : '< 10 Reviews'}
                 </span>
                 <button
                   type="button"

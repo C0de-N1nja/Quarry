@@ -56,7 +56,17 @@ class Lead {
     }
 
     // Google Star Rating Filter
-    if (ratingFilter === '4.5') {
+    if (ratingFilter === '5' || ratingFilter === '5_star') {
+      query += ' AND ROUND(l.rating) = 5';
+    } else if (ratingFilter === '4' || ratingFilter === '4_star') {
+      query += ' AND ROUND(l.rating) = 4';
+    } else if (ratingFilter === '3' || ratingFilter === '3_star') {
+      query += ' AND ROUND(l.rating) = 3';
+    } else if (ratingFilter === '2' || ratingFilter === '2_star') {
+      query += ' AND ROUND(l.rating) = 2';
+    } else if (ratingFilter === '1' || ratingFilter === '1_star') {
+      query += ' AND ROUND(l.rating) = 1';
+    } else if (ratingFilter === '4.5') {
       query += ' AND l.rating >= 4.5';
     } else if (ratingFilter === '4.0') {
       query += ' AND l.rating >= 4.0';
@@ -67,12 +77,16 @@ class Lead {
     }
 
     // Review Count Filter
-    if (reviewsFilter === '50_plus') {
+    if (reviewsFilter === 'has_reviews') {
+      query += ' AND l.reviews_count > 0';
+    } else if (reviewsFilter === '50_plus') {
       query += ' AND l.reviews_count >= 50';
     } else if (reviewsFilter === '10_to_50') {
       query += ' AND (l.reviews_count >= 10 AND l.reviews_count < 50)';
     } else if (reviewsFilter === 'under_10') {
-      query += ' AND (l.reviews_count < 10 OR l.reviews_count IS NULL)';
+      query += ' AND (l.reviews_count > 0 AND l.reviews_count < 10)';
+    } else if (reviewsFilter === 'no_reviews') {
+      query += ' AND (l.reviews_count IS NULL OR l.reviews_count = 0)';
     }
 
     // Notes & Tag Filters
@@ -170,7 +184,17 @@ class Lead {
     }
 
     // Google Star Rating Filter
-    if (ratingFilter === '4.5') {
+    if (ratingFilter === '5' || ratingFilter === '5_star') {
+      query += ' AND ROUND(l.rating) = 5';
+    } else if (ratingFilter === '4' || ratingFilter === '4_star') {
+      query += ' AND ROUND(l.rating) = 4';
+    } else if (ratingFilter === '3' || ratingFilter === '3_star') {
+      query += ' AND ROUND(l.rating) = 3';
+    } else if (ratingFilter === '2' || ratingFilter === '2_star') {
+      query += ' AND ROUND(l.rating) = 2';
+    } else if (ratingFilter === '1' || ratingFilter === '1_star') {
+      query += ' AND ROUND(l.rating) = 1';
+    } else if (ratingFilter === '4.5') {
       query += ' AND l.rating >= 4.5';
     } else if (ratingFilter === '4.0') {
       query += ' AND l.rating >= 4.0';
@@ -181,12 +205,16 @@ class Lead {
     }
 
     // Review Count Filter
-    if (reviewsFilter === '50_plus') {
+    if (reviewsFilter === 'has_reviews') {
+      query += ' AND l.reviews_count > 0';
+    } else if (reviewsFilter === '50_plus') {
       query += ' AND l.reviews_count >= 50';
     } else if (reviewsFilter === '10_to_50') {
       query += ' AND (l.reviews_count >= 10 AND l.reviews_count < 50)';
     } else if (reviewsFilter === 'under_10') {
-      query += ' AND (l.reviews_count < 10 OR l.reviews_count IS NULL)';
+      query += ' AND (l.reviews_count > 0 AND l.reviews_count < 10)';
+    } else if (reviewsFilter === 'no_reviews') {
+      query += ' AND (l.reviews_count IS NULL OR l.reviews_count = 0)';
     }
 
     // Notes & Tag Filters
