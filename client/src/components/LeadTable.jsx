@@ -1,10 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import KanbanBoard from './KanbanBoard';
 import SplitView from './SplitView';
-import BoardStatCards from './boardui/BoardStatCards';
 import BoardLeadTable from './boardui/BoardLeadTable';
-import { StatCards } from '@/components/application/dashboard/stat-cards';
-import { RiGlobalLine } from '@remixicon/react';
 
 export default function LeadTable({ 
   leads = [], 
@@ -18,6 +15,7 @@ export default function LeadTable({
   onRunOsint, 
   onOpenOsintRun,
   onDeleteLead,
+  onArchiveLead,
   onResolveWebsite,
   onOpenSearch,
   onOpenAutoPilot,
@@ -32,6 +30,8 @@ export default function LeadTable({
   onPageChange,
   activeNiche = 'all',
   onNicheChange,
+  activeCity = 'all',
+  onCityChange,
   contactChannel = 'all',
   onContactChannelChange,
   focusTier = 'vault',
@@ -44,8 +44,7 @@ export default function LeadTable({
 }) {
   if (viewMode === 'kanban') {
     return (
-      <div className="flex w-full flex-col gap-6">
-        <BoardStatCards stats={stats} />
+      <div className="flex w-full flex-col">
         <KanbanBoard
           leads={leads}
           stats={stats}
@@ -58,8 +57,7 @@ export default function LeadTable({
 
   if (viewMode === 'split') {
     return (
-      <div className="flex w-full flex-col gap-6">
-        <BoardStatCards stats={stats} />
+      <div className="flex w-full flex-col">
         <SplitView
           leads={leads}
           selectedLead={selectedLead}
@@ -77,8 +75,7 @@ export default function LeadTable({
   }
 
   return (
-    <div className="flex w-full flex-col gap-6">
-      <BoardStatCards stats={stats} />
+    <div className="flex w-full flex-col">
       <BoardLeadTable
         leads={leads}
         totalCount={totalCount}
@@ -89,6 +86,7 @@ export default function LeadTable({
         onRunOsint={onRunOsint}
         onOpenOsintRun={onOpenOsintRun}
         onDeleteLead={onDeleteLead}
+        onArchiveLead={onArchiveLead}
         onOpenAutoPilot={onOpenAutoPilot}
         onOpenSearch={onOpenSearch}
         onExportExcel={onExportExcel}
@@ -98,6 +96,8 @@ export default function LeadTable({
         onFilterChange={onFilterChange}
         activeNiche={activeNiche}
         onNicheChange={onNicheChange}
+        activeCity={activeCity}
+        onCityChange={onCityChange}
         contactChannel={contactChannel}
         onContactChannelChange={onContactChannelChange}
         focusTier={focusTier}

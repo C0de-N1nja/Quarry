@@ -6,7 +6,7 @@ const phoneService = require('../services/phone-service');
  * Lead Model: Encapsulates database queries and persistence for prospective clients.
  */
 class Lead {
-  static findAll({ status, search, category, tier, batchMode, contactChannel, includeTest = false, limit = 100, offset = 0 } = {}) {
+  static findAll({ status, search, category, tier, batchMode, contactChannel, city, includeTest = false, limit = 100, offset = 0 } = {}) {
     let query = `
       SELECT 
         l.*,
@@ -58,6 +58,11 @@ class Lead {
       params.push(category);
     }
 
+    if (city && city !== 'all') {
+      query += ' AND lower(TRIM(l.city)) = lower(TRIM(?))';
+      params.push(city);
+    }
+
     if (search) {
       query += ' AND (l.business_name LIKE ? OR l.website LIKE ? OR l.city LIKE ? OR l.phone LIKE ?)';
       const term = `%${search}%`;
@@ -76,7 +81,7 @@ class Lead {
     return db.prepare(query).all(...params);
   }
 
-  static count({ status, search, category, tier, batchMode, contactChannel, includeTest = false } = {}) {
+  static count({ status, search, category, tier, batchMode, contactChannel, city, includeTest = false } = {}) {
     let query = `
       SELECT COUNT(*) as total 
       FROM leads l 
@@ -116,6 +121,11 @@ class Lead {
     if (category && category !== 'all') {
       query += ' AND lower(TRIM(l.category)) = lower(TRIM(?))';
       params.push(category);
+    }
+
+    if (city && city !== 'all') {
+      query += ' AND lower(TRIM(l.city)) = lower(TRIM(?))';
+      params.push(city);
     }
 
     if (search) {
@@ -650,6 +660,19 @@ class Lead {
       count: c.count
     }));
 
+    const dynamicCities = db.prepare(`
+      SELECT city, COUNT(*) as count 
+      FROM leads 
+      WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND city IS NOT NULL AND TRIM(city) != '' 
+      GROUP BY city 
+      ORDER BY count DESC, city ASC
+    `).all();
+
+    const cities = dynamicCities.map(c => ({
+      name: c.city,
+      count: c.count
+    }));
+
     const roofingCount = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND lower(category) LIKE '%roof%'").get().count;
     const plumbingCount = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND (lower(category) LIKE '%plumb%' OR lower(category) LIKE '%hvac%' OR lower(category) LIKE '%air%')").get().count;
     const restaurantCount = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND (lower(category) LIKE '%rest%' OR lower(category) LIKE '%cafe%')").get().count;
@@ -676,6 +699,7 @@ class Lead {
       decisionMakers,
       goldLeads: goldCount,
       collections,
+      cities,
       niches: {
         roofing: roofingCount,
         plumbing: plumbingCount,

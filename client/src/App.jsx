@@ -14,7 +14,7 @@ import OsintRunModal from './components/OsintRunModal';
 import AuditPage from './components/audit/AuditPage';
 import CommandPalette from './components/boardui/CommandPalette';
 import KeyboardShortcutsModal from './components/boardui/KeyboardShortcutsModal';
-import DailyFocusHero from './components/boardui/DailyFocusHero';
+import SummaryStrip from './components/boardui/SummaryStrip';
 import OnboardingModal from './components/boardui/OnboardingModal';
 import LiveJobsDrawer from './components/boardui/LiveJobsDrawer';
 import { Toaster, toast } from '@/components/base/toast/toast';
@@ -33,6 +33,7 @@ export default function App() {
   const [stats, setStats] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'no_website', 'discovered', etc.
   const [activeNiche, setActiveNiche] = useState('all'); // 'all' or collection name (e.g. 'Dental Clinic')
+  const [activeCity, setActiveCity] = useState('all'); // 'all' or specific city
   const [contactChannel, setContactChannel] = useState('all'); // 'all', 'has_email', 'has_whatsapp', 'has_social', 'phone_only', 'social_all'
   const [focusTier, setFocusTier] = useState('vault'); // 'vault' (all leads), 'today', 'gold'
   const [searchTerm, setSearchTerm] = useState('');
@@ -224,6 +225,9 @@ export default function App() {
       if (activeNiche && activeNiche !== 'all') {
         url += `&category=${encodeURIComponent(activeNiche)}`;
       }
+      if (activeCity && activeCity !== 'all') {
+        url += `&city=${encodeURIComponent(activeCity)}`;
+      }
       if (contactChannel && contactChannel !== 'all') {
         url += `&contactChannel=${encodeURIComponent(contactChannel)}`;
       }
@@ -272,18 +276,18 @@ export default function App() {
     }
   };
 
-  // Reset to page 1 when filter/niche/search/focus/contactChannel changes
+  // Reset to page 1 when filter/niche/city/search/focus/contactChannel changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeFilter, debouncedSearch, activeNiche, focusTier, contactChannel, pageSize]);
+  }, [activeFilter, debouncedSearch, activeNiche, activeCity, focusTier, contactChannel, pageSize]);
 
   useEffect(() => {
     fetchLeads();
-  }, [activeFilter, debouncedSearch, activeNiche, focusTier, contactChannel, pageSize, currentPage]);
+  }, [activeFilter, debouncedSearch, activeNiche, activeCity, focusTier, contactChannel, pageSize, currentPage]);
 
   useEffect(() => {
     fetchStats();
-  }, [activeFilter, activeNiche, focusTier, contactChannel]);
+  }, [activeFilter, activeNiche, activeCity, focusTier, contactChannel]);
 
   // Check for active background OSINT job on mount / page refresh
   useEffect(() => {
@@ -322,6 +326,25 @@ export default function App() {
   const handleDeleteLead = async (leadId) => {
     try {
       const res = await fetch(`/api/leads/${leadId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        if (selectedLead?.id === leadId) setSelectedLead(null);
+        await fetchLeads();
+        await fetchStats();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Archive lead
+  const handleArchiveLead = async (leadId) => {
+    try {
+      const res = await fetch(`/api/leads/${leadId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'archived' })
+      });
       const data = await res.json();
       if (data.success) {
         if (selectedLead?.id === leadId) setSelectedLead(null);
@@ -492,16 +515,21 @@ export default function App() {
         />
 
         {/* Main Content Area */}
-        <main className="flex-1 w-full max-w-(--breakpoint-2xl) mx-auto px-3 sm:px-6 lg:px-8 py-4">
-        {/* Daily Outreach Focus Cockpit */}
-        <DailyFocusHero
+        <main className="flex-1 w-full max-w-(--breakpoint-2xl) mx-auto px-3 sm:px-6 lg:px-8 py-3">
+        {/* Compact Triage Summary Strip (Replaces hero banner + 4 cards, ~72px tall) */}
+        <SummaryStrip
           stats={stats}
-          leads={leads}
+          totalCount={totalLeadsCount}
+          activeFilter={activeFilter}
+          contactChannel={contactChannel}
+          focusTier={focusTier}
+          onFilterChange={setActiveFilter}
+          onContactChannelChange={setContactChannel}
+          onFocusTierChange={setFocusTier}
           onStartOutreachBatch={() => {
             setAutoPilotSelectedLeads(null);
             setActiveModal('autopilot');
           }}
-          onOpenQueue={() => setActiveModal('queue')}
         />
 
         <LeadTable
@@ -532,6 +560,7 @@ export default function App() {
             setActiveModal('osint');
           }}
           onDeleteLead={handleDeleteLead}
+          onArchiveLead={handleArchiveLead}
           onResolveWebsite={handleResolveWebsite}
           onOpenSearch={(tab) => setActiveModal(tab)}
           onOpenAutoPilot={(selectedLeads) => {
@@ -554,6 +583,8 @@ export default function App() {
           onPageChange={setCurrentPage}
           activeNiche={activeNiche}
           onNicheChange={setActiveNiche}
+          activeCity={activeCity}
+          onCityChange={setActiveCity}
           contactChannel={contactChannel}
           onContactChannelChange={setContactChannel}
           focusTier={focusTier}
@@ -767,19 +798,6 @@ export default function App() {
           fetchStats();
         }}
       />
-
-      {/* Persistent Mission Control Bottom Pill */}
-      <div className="fixed bottom-4 left-6 z-30 hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-background-primary-default/90 border border-separator-border shadow-lg backdrop-blur-md font-mono text-[11px] text-text-tertiary hover:text-text-primary transition-all">
-        <button
-          onClick={() => setIsLiveJobsOpen(true)}
-          className="flex items-center gap-2 cursor-pointer hover:text-accent-500"
-          title="Open Mission Control Background Jobs Drawer"
-        >
-          <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="font-semibold text-text-secondary">Mission Control</span>
-          <span className="text-text-tertiary">| Fleet Ready</span>
-        </button>
-      </div>
 
       {/* Official BoardUI Toaster Stack */}
       <Toaster position="bottom-end" limit={4} />

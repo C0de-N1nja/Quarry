@@ -10,7 +10,7 @@ const db = require('../db/database');
 class LeadController {
   async getLeads(req, res) {
     try {
-      let { status, search, category, tier, batchMode, contactChannel, limit, offset = 0 } = req.query;
+      let { status, search, category, tier, batchMode, contactChannel, city, limit, offset = 0 } = req.query;
       let parsedLimit;
       if (limit === 'all' || limit === '0' || limit === 0 || !limit) {
         parsedLimit = 10000;
@@ -19,8 +19,8 @@ class LeadController {
       }
       const parsedOffset = parseInt(offset, 10) || 0;
 
-      const leads = Lead.findAll({ status, search, category, tier, batchMode, contactChannel, limit: parsedLimit, offset: parsedOffset });
-      const total = Lead.count({ status, search, category, tier, batchMode, contactChannel });
+      const leads = Lead.findAll({ status, search, category, tier, batchMode, contactChannel, city, limit: parsedLimit, offset: parsedOffset });
+      const total = Lead.count({ status, search, category, tier, batchMode, contactChannel, city });
 
       res.json({
         success: true,

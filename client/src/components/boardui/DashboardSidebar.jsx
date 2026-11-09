@@ -1,62 +1,65 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  RiFlashlightFill, RiDashboardLine, RiKanbanView2, 
-  RiLayoutGridLine, RiRadarLine, RiMailSendLine, 
-  RiSettings4Line, RiSunLine, RiMoonClearLine, RiSearch2Line,
-  RiDatabase2Line, RiShieldCheckLine, RiArrowLeftSLine,
-  RiArrowRightSLine, RiUserLine, RiUploadCloud2Line, RiDownload2Line,
-  RiCompass3Line
+  RiDashboardLine, 
+  RiKanbanView2, 
+  RiSearch2Line,
+  RiMailSendLine, 
+  RiSettings4Line, 
+  RiFlashlightFill,
+  RiCompass3Line,
+  RiArrowLeftSLine,
+  RiArrowRightSLine,
+  RiArrowDownSLine,
+  RiArrowUpSLine,
+  RiAlertLine
 } from '@remixicon/react';
 import { IconButton } from '@/components/base/buttons/icon-button';
-import { Chip } from '@/components/base/badges/chip';
 import { QuarryLogo } from './QuarryLogo';
 
 export default function DashboardSidebar({
   viewMode,
   onViewModeChange,
   stats,
-  theme,
-  onToggleTheme,
   onOpenSearch,
   onOpenAutoPilot,
   onOpenQueue,
   onOpenSettings,
-  onExportExcel,
-  onOpenOnboarding,
-  activeFilter,
-  onFilterChange,
-  tunnel
+  onOpenOnboarding
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [isAutomationOpen, setIsAutomationOpen] = useState(false);
+  const [systemError, setSystemError] = useState(null);
 
-  const navItems = [
-    {
-      id: 'split',
-      label: 'Fast Triage (Split)',
-      icon: RiLayoutGridLine,
-      mode: 'split',
-      badge: null
-    },
-    {
-      id: 'table',
-      label: 'Leads Table',
-      icon: RiDashboardLine,
-      mode: 'table',
-      badge: stats?.totalLeads || 0
-    },
-    {
-      id: 'kanban',
-      label: 'Deal Pipeline (Kanban)',
-      icon: RiKanbanView2,
-      mode: 'kanban',
-      badge: stats?.pitched ? `${stats.pitched} In Flight` : null
-    }
-  ];
+  // Monitor health silently — show status indicator ONLY when something is wrong
+  useEffect(() => {
+    let isMounted = true;
+    const checkSystemHealth = async () => {
+      try {
+        const res = await fetch('/api/health');
+        if (!res.ok) {
+          if (isMounted) setSystemError('System warning: service degraded');
+        } else {
+          if (isMounted) setSystemError(null);
+        }
+      } catch (err) {
+        if (isMounted) setSystemError('System offline');
+      }
+    };
+    checkSystemHealth();
+    const interval = setInterval(checkSystemHealth, 45000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  const totalLeads = stats?.totalLeads || 0;
+  const inFlightCount = stats?.pitched || 0;
 
   return (
     <aside 
       className={`shrink-0 transition-all duration-300 ease-in-out border-r border-separator-border bg-background-secondary-default backdrop-blur-xl flex flex-col justify-between z-30 select-none ${
-        collapsed ? 'w-[72px]' : 'w-[260px]'
+        collapsed ? 'w-[72px]' : 'w-[240px]'
       }`}
     >
       {/* Top Branding & Workspace */}
@@ -69,6 +72,7 @@ export default function DashboardSidebar({
               collapsed ? 'cursor-pointer hover:scale-105 transition-transform' : ''
             }`}
             title={collapsed ? "Quarry — Click to expand sidebar" : "Quarry"}
+            aria-label="Quarry logo"
           >
             <QuarryLogo size={20} />
           </button>
@@ -77,7 +81,7 @@ export default function DashboardSidebar({
               <h1 className="text-xs font-bold text-text-primary tracking-tight truncate">
                 Quarry
               </h1>
-              <p className="text-[10px] text-text-tertiary font-mono truncate">Lead Mining & OSINT</p>
+              <p className="text-[10px] text-text-tertiary font-mono truncate">Client acquisition software</p>
             </div>
           )}
         </div>
@@ -85,241 +89,213 @@ export default function DashboardSidebar({
         {!collapsed && (
           <IconButton
             size="small"
+            variant="ghost"
             icon={RiArrowLeftSLine}
-            aria-label="Collapse Sidebar"
+            aria-label="Collapse sidebar"
             onClick={() => setCollapsed(true)}
-            title="Collapse Sidebar"
+            title="Collapse sidebar"
             className="shrink-0 text-text-tertiary hover:text-text-primary"
           />
         )}
 
-        {/* Floating Border Expand Toggle when Collapsed */}
+        {/* Expand Toggle when Collapsed */}
         {collapsed && (
           <button
             type="button"
             onClick={() => setCollapsed(false)}
-            aria-label="Expand Sidebar"
-            title="Expand Sidebar"
+            aria-label="Expand sidebar"
+            title="Expand sidebar"
             className="absolute -right-3 top-5 z-40 size-6 rounded-full border border-separator-border bg-background-primary-default text-text-secondary hover:text-text-primary shadow-xs hover:shadow-md flex items-center justify-center cursor-pointer hover:scale-110 transition-all"
           >
-            <RiArrowRightSLine className="size-3.5" />
+            <RiArrowRightSLine className="size-3.5" aria-hidden="true" />
           </button>
         )}
       </div>
 
       {/* Main Navigation */}
-      <div className="flex-1 p-2.5 space-y-4 overflow-y-auto">
-        {/* Core Views */}
-        <div>
-          {!collapsed && (
-            <p className="px-2.5 text-[10px] font-mono uppercase tracking-wider text-text-tertiary mb-1.5 font-semibold">
-              Views & Pipeline
-            </p>
-          )}
-          <div className="space-y-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = viewMode === item.mode;
+      <div className="flex-1 p-2.5 space-y-3 overflow-y-auto">
+        
+        {/* Core Nav: Leads, Pipeline (Kanban), Find Leads, Outreach Queue, Settings */}
+        <div className="space-y-1">
+          {/* Leads */}
+          <button
+            type="button"
+            onClick={() => onViewModeChange('table')}
+            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              viewMode === 'table'
+                ? 'bg-background-tertiary-default text-text-primary shadow-2xs border border-separator-border/60'
+                : 'text-text-secondary hover:bg-background-tertiary-default/60 hover:text-text-primary'
+            } ${collapsed ? 'justify-center px-0' : ''}`}
+            title="Leads"
+          >
+            <RiDashboardLine className="size-4 shrink-0" aria-hidden="true" />
+            {!collapsed && (
+              <>
+                <span className="flex-1 text-left truncate">Leads</span>
+                {totalLeads > 0 && (
+                  <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
+                    viewMode === 'table'
+                      ? 'bg-background-primary-default text-text-primary border border-separator-border/80 font-bold'
+                      : 'bg-background-tertiary-default text-text-tertiary'
+                  }`}>
+                    {totalLeads.toLocaleString()}
+                  </span>
+                )}
+              </>
+            )}
+          </button>
 
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => onViewModeChange(item.mode)}
-                  className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-background-tertiary-default text-text-primary shadow-2xs border border-separator-border/60'
-                      : 'text-text-secondary hover:bg-background-tertiary-default/60 hover:text-text-primary'
-                  } ${collapsed ? 'justify-center px-0' : ''}`}
-                  title={item.label}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  {!collapsed && (
-                    <>
-                      <span className="flex-1 text-left truncate">{item.label}</span>
-                      {item.badge && (
-                        <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                          isActive 
-                            ? 'bg-background-primary-default text-text-primary border border-separator-border/80 font-bold' 
-                            : 'bg-background-tertiary-default text-text-tertiary'
-                        }`}>
-                          {item.badge}
-                        </span>
-                      )}
-                    </>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+          {/* Pipeline (Kanban) */}
+          <button
+            type="button"
+            onClick={() => onViewModeChange('kanban')}
+            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              viewMode === 'kanban'
+                ? 'bg-background-tertiary-default text-text-primary shadow-2xs border border-separator-border/60'
+                : 'text-text-secondary hover:bg-background-tertiary-default/60 hover:text-text-primary'
+            } ${collapsed ? 'justify-center px-0' : ''}`}
+            title="Pipeline (Kanban)"
+          >
+            <RiKanbanView2 className="size-4 shrink-0" aria-hidden="true" />
+            {!collapsed && (
+              <>
+                <span className="flex-1 text-left truncate">Pipeline (Kanban)</span>
+                {inFlightCount > 0 && (
+                  <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
+                    viewMode === 'kanban'
+                      ? 'bg-background-primary-default text-text-primary border border-separator-border/80 font-bold'
+                      : 'bg-background-tertiary-default text-text-tertiary'
+                  }`}>
+                    {inFlightCount}
+                  </span>
+                )}
+              </>
+            )}
+          </button>
+
+          {/* Find Leads */}
+          <button
+            type="button"
+            onClick={() => onOpenSearch && onOpenSearch('search')}
+            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-text-secondary hover:bg-background-tertiary-default/60 hover:text-text-primary transition-colors cursor-pointer ${
+              collapsed ? 'justify-center px-0' : ''
+            }`}
+            title="Find Leads"
+          >
+            <RiSearch2Line className="size-4 shrink-0" aria-hidden="true" />
+            {!collapsed && <span className="flex-1 text-left truncate">Find Leads</span>}
+          </button>
+
+          {/* Outreach Queue */}
+          <button
+            type="button"
+            onClick={onOpenQueue}
+            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-text-secondary hover:bg-background-tertiary-default/60 hover:text-text-primary transition-colors cursor-pointer ${
+              collapsed ? 'justify-center px-0' : ''
+            }`}
+            title="Outreach Queue"
+          >
+            <RiMailSendLine className="size-4 shrink-0" aria-hidden="true" />
+            {!collapsed && (
+              <>
+                <span className="flex-1 text-left truncate">Outreach Queue</span>
+                {inFlightCount > 0 && (
+                  <span className="px-1.5 py-0.5 text-[10px] bg-background-tertiary-default text-text-primary border border-separator-border rounded-full font-mono font-bold">
+                    {inFlightCount}
+                  </span>
+                )}
+              </>
+            )}
+          </button>
+
+          {/* Settings */}
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-text-secondary hover:bg-background-tertiary-default/60 hover:text-text-primary transition-colors cursor-pointer ${
+              collapsed ? 'justify-center px-0' : ''
+            }`}
+            title="Settings"
+          >
+            <RiSettings4Line className="size-4 shrink-0" aria-hidden="true" />
+            {!collapsed && <span className="flex-1 text-left truncate">Settings</span>}
+          </button>
         </div>
 
-        {/* Autonomous Agents & Automation */}
-        <div>
-          {!collapsed && (
-            <p className="px-2.5 text-[10px] font-mono uppercase tracking-wider text-text-tertiary mb-1.5 font-semibold">
-              Agents & Automation
-            </p>
-          )}
-          <div className="space-y-1">
-            <button
-              onClick={() => onOpenAutoPilot && onOpenAutoPilot()}
-              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-text-secondary hover:bg-background-tertiary-default hover:text-text-primary transition-colors cursor-pointer ${
-                collapsed ? 'justify-center px-0' : ''
-              }`}
-              title="Launch Auto-Pilot Batch Pipeline"
-            >
-              <RiFlashlightFill className="size-4 text-accent-500 shrink-0" />
-              {!collapsed && (
-                <>
-                  <span className="flex-1 text-left truncate">Auto-Pilot Agent</span>
-                  <span className="h-2 w-2 rounded-full bg-success-primary animate-pulse shrink-0" />
-                </>
+        {/* Collapsed "Automation" Group (Auto-Pilot Agent and Discovery Wizard) */}
+        <div className="pt-2 border-t border-separator-border/60">
+          {!collapsed ? (
+            <div>
+              <button
+                type="button"
+                onClick={() => setIsAutomationOpen(prev => !prev)}
+                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-text-tertiary hover:text-text-primary transition-colors cursor-pointer"
+                aria-expanded={isAutomationOpen}
+              >
+                <span>Automation</span>
+                {isAutomationOpen ? (
+                  <RiArrowUpSLine className="size-3.5" aria-hidden="true" />
+                ) : (
+                  <RiArrowDownSLine className="size-3.5" aria-hidden="true" />
+                )}
+              </button>
+
+              {isAutomationOpen && (
+                <div className="space-y-1 mt-1 pl-1">
+                  <button
+                    type="button"
+                    onClick={() => onOpenAutoPilot && onOpenAutoPilot()}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:bg-background-tertiary-default/60 hover:text-text-primary transition-colors cursor-pointer"
+                    title="Launch Auto-Pilot Agent"
+                  >
+                    <RiFlashlightFill className="size-3.5 text-text-tertiary shrink-0" aria-hidden="true" />
+                    <span className="truncate">Auto-Pilot Agent</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => onOpenOnboarding && onOpenOnboarding()}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:bg-background-tertiary-default/60 hover:text-text-primary transition-colors cursor-pointer"
+                    title="Launch Discovery Wizard"
+                  >
+                    <RiCompass3Line className="size-3.5 text-text-tertiary shrink-0" aria-hidden="true" />
+                    <span className="truncate">Discovery Wizard</span>
+                  </button>
+                </div>
               )}
-            </button>
-
-            <button
-              onClick={() => onOpenOnboarding && onOpenOnboarding()}
-              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-text-secondary hover:bg-background-tertiary-default hover:text-text-primary transition-colors cursor-pointer ${
-                collapsed ? 'justify-center px-0' : ''
-              }`}
-              title="Launch Discovery Wizard (Onboarding)"
-            >
-              <RiCompass3Line className="size-4 text-emerald-500 shrink-0" />
-              {!collapsed && (
-                <>
-                  <span className="flex-1 text-left truncate">Discovery Wizard</span>
-                  <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">Setup</span>
-                </>
-              )}
-            </button>
-
-            <button
-              onClick={() => onOpenSearch && onOpenSearch('search')}
-              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-text-secondary hover:bg-background-tertiary-default hover:text-text-primary transition-colors cursor-pointer ${
-                collapsed ? 'justify-center px-0' : ''
-              }`}
-              title="Find Leads via Google Maps & Web Crawler"
-            >
-              <RiSearch2Line className="h-4 w-4 text-blue-500 shrink-0" />
-              {!collapsed && <span className="flex-1 text-left truncate">Find Leads</span>}
-            </button>
-
-            <button
-              onClick={() => onOpenSearch && onOpenSearch('csv')}
-              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-text-secondary hover:bg-background-tertiary-default hover:text-text-primary transition-colors cursor-pointer ${
-                collapsed ? 'justify-center px-0' : ''
-              }`}
-              title="Import Prospects from CSV"
-            >
-              <RiUploadCloud2Line className="h-4 w-4 text-purple-500 shrink-0" />
-              {!collapsed && <span className="flex-1 text-left truncate">CSV Ingestion</span>}
-            </button>
-
-            <button
-              onClick={onExportExcel}
-              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-text-secondary hover:bg-background-tertiary-default hover:text-text-primary transition-colors cursor-pointer ${
-                collapsed ? 'justify-center px-0' : ''
-              }`}
-              title="Export Leads to Excel (.xlsx)"
-            >
-              <RiDownload2Line className="h-4 w-4 text-success-primary shrink-0" />
-              {!collapsed && <span className="flex-1 text-left truncate">Export Excel</span>}
-            </button>
-
-            <button
-              onClick={onOpenQueue}
-              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-text-secondary hover:bg-background-tertiary-default hover:text-text-primary transition-colors cursor-pointer ${
-                collapsed ? 'justify-center px-0' : ''
-              }`}
-              title="Outbox Staging Queue"
-            >
-              <RiMailSendLine className="h-4 w-4 text-warning-primary shrink-0" />
-              {!collapsed && (
-                <>
-                  <span className="flex-1 text-left truncate">Outreach Queue</span>
-                  {stats && stats.pitched > 0 && (
-                    <span className="px-1.5 py-0.2 text-[10px] bg-background-tertiary-default text-text-primary border border-separator-border rounded-full font-mono font-bold">
-                      {stats.pitched}
-                    </span>
-                  )}
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Fast Priority Filters */}
-        {!collapsed && (
-          <div>
-            <p className="px-2.5 text-[10px] font-mono uppercase tracking-wider text-text-tertiary mb-1.5 font-semibold">
-              Fast Filters
-            </p>
+            </div>
+          ) : (
             <div className="space-y-1">
               <button
-                onClick={() => onFilterChange && onFilterChange(activeFilter === 'no_website' ? 'all' : 'no_website')}
-                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                  activeFilter === 'no_website'
-                    ? 'bg-danger-primary/15 text-danger-primary border border-danger-primary/30'
-                    : 'text-text-secondary hover:bg-background-tertiary-default'
-                }`}
+                type="button"
+                onClick={() => onOpenAutoPilot && onOpenAutoPilot()}
+                className="w-full flex items-center justify-center py-2 rounded-xl text-text-secondary hover:bg-background-tertiary-default/60 hover:text-text-primary transition-colors cursor-pointer"
+                title="Auto-Pilot Agent"
+                aria-label="Auto-Pilot Agent"
               >
-                <span>No-Website</span>
-                <Chip variant="subtle" color={activeFilter === 'no_website' ? 'rose' : 'gray'} size="sm" className="font-mono">
-                  {stats?.noWebsite || 0}
-                </Chip>
+                <RiFlashlightFill className="size-4 shrink-0" aria-hidden="true" />
               </button>
-
               <button
-                onClick={() => onFilterChange && onFilterChange(activeFilter === 'gold' ? 'all' : 'gold')}
-                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                  activeFilter === 'gold'
-                    ? 'bg-warning-primary/15 text-warning-primary border border-warning-primary/30'
-                    : 'text-text-secondary hover:bg-background-tertiary-default'
-                }`}
+                type="button"
+                onClick={() => onOpenOnboarding && onOpenOnboarding()}
+                className="w-full flex items-center justify-center py-2 rounded-xl text-text-secondary hover:bg-background-tertiary-default/60 hover:text-text-primary transition-colors cursor-pointer"
+                title="Discovery Wizard"
+                aria-label="Discovery Wizard"
               >
-                <span>Gold Targets</span>
-                <Chip variant="subtle" color={activeFilter === 'gold' ? 'amber' : 'gray'} size="sm" className="font-mono">
-                  {stats?.goldLeads || 0}
-                </Chip>
+                <RiCompass3Line className="size-4 shrink-0" aria-hidden="true" />
               </button>
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* Bottom Footer: Theme, Settings & Status */}
-      <div className="p-3 border-t border-separator-border bg-background-secondary-default space-y-2">
-        <div className={`flex items-center gap-1 ${collapsed ? 'justify-center' : 'justify-between'}`}>
-          {/* Theme Toggle Button (BoardUI Moon-Star / Sun Icon Button) */}
-          <IconButton
-            size="small"
-            icon={theme === 'dark' ? RiSunLine : RiMoonClearLine}
-            aria-label={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            onClick={onToggleTheme}
-            className={theme === 'dark' ? "text-warning-primary hover:text-warning-hover" : "text-indigo-500 hover:text-indigo-600"}
-          />
-
-          {!collapsed && (
-            <IconButton
-              size="small"
-              icon={RiSettings4Line}
-              aria-label="Settings & SMTP"
-              onClick={onOpenSettings}
-              title="Settings & SMTP"
-              className="text-text-tertiary hover:text-text-primary"
-            />
           )}
         </div>
-
-        {/* Public Tunnel Live Badge */}
-        {!collapsed && tunnel && tunnel.isRunning && (
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-success-primary/10 text-success-primary border border-success-primary/20 text-[10px] font-mono">
-            <span className="h-1.5 w-1.5 rounded-full bg-success-primary animate-pulse shrink-0" />
-            <span className="truncate">Public HTTPS Live</span>
-          </div>
-        )}
       </div>
+
+      {/* Bottom Footer: Status Indicator ONLY when something is wrong */}
+      {systemError && !collapsed && (
+        <div className="p-3 border-t border-separator-border bg-rose-500/10 text-rose-500 flex items-center gap-2 text-[11px] font-medium">
+          <RiAlertLine className="size-4 shrink-0 animate-pulse" aria-hidden="true" />
+          <span className="truncate">{systemError}</span>
+        </div>
+      )}
     </aside>
   );
 }
