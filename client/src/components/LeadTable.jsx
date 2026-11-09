@@ -92,6 +92,7 @@ export default function LeadTable({
         onOpenOsintRun={onOpenOsintRun}
         onDeleteLead={onDeleteLead}
         onArchiveLead={onArchiveLead}
+        onRefresh={onRefresh}
         onOpenSearch={onOpenSearch}
         onExportExcel={onExportExcel}
         viewMode={viewMode}

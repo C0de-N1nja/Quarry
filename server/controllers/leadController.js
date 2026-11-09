@@ -123,6 +123,42 @@ class LeadController {
     }
   }
 
+  async markContacted(req, res) {
+    try {
+      const id = req.params.id;
+      const { days, followUpDate, note } = req.body || {};
+      const updated = Lead.markContacted(id, { days, followUpDate, note });
+      if (!updated) return res.status(404).json({ success: false, error: 'Lead not found' });
+      res.json({ success: true, lead: updated });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
+  async scheduleFollowUp(req, res) {
+    try {
+      const id = req.params.id;
+      const { followUpDate, note } = req.body || {};
+      if (!followUpDate) return res.status(400).json({ success: false, error: 'followUpDate is required' });
+      const updated = Lead.scheduleFollowUp(id, { followUpDate, note });
+      if (!updated) return res.status(404).json({ success: false, error: 'Lead not found' });
+      res.json({ success: true, lead: updated });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
+  async clearFollowUp(req, res) {
+    try {
+      const id = req.params.id;
+      const updated = Lead.clearFollowUp(id);
+      if (!updated) return res.status(404).json({ success: false, error: 'Lead not found' });
+      res.json({ success: true, lead: updated });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
   async resolveWebsite(req, res) {
     try {
       const id = req.params.id;

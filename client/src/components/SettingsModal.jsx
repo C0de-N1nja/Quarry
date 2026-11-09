@@ -147,12 +147,23 @@ export default function SettingsModal({ onClose, onOpenOnboarding }) {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block text-text-secondary mb-1 font-medium text-[11px]">Your Name / Brand</label>
+                  <label className="block text-text-secondary mb-1 font-medium text-[11px]">Your Name</label>
                   <input
                     type="text"
                     value={settings.sender_name || ''}
                     onChange={(e) => setSettings({ ...settings, sender_name: e.target.value })}
-                    placeholder="e.g. Rehan"
+                    placeholder="e.g. Muhammad Rehan"
+                    className="w-full px-3 py-2 rounded-xl bg-background-secondary-default border border-separator-border text-text-primary focus:border-text-primary focus:outline-none transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-text-secondary mb-1 font-medium text-[11px]">Agency / Studio Name</label>
+                  <input
+                    type="text"
+                    value={settings.agency_name || ''}
+                    onChange={(e) => setSettings({ ...settings, agency_name: e.target.value })}
+                    placeholder="e.g. Apex Digital Studio"
                     className="w-full px-3 py-2 rounded-xl bg-background-secondary-default border border-separator-border text-text-primary focus:border-text-primary focus:outline-none transition-colors"
                   />
                 </div>
@@ -168,14 +179,49 @@ export default function SettingsModal({ onClose, onOpenOnboarding }) {
                   />
                 </div>
 
+                <div>
+                  <label className="block text-text-secondary mb-1 font-medium text-[11px]">Default Follow-up Days</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={settings.default_followup_days || '3'}
+                    onChange={(e) => setSettings({ ...settings, default_followup_days: e.target.value })}
+                    placeholder="3"
+                    className="w-full px-3 py-2 rounded-xl bg-background-secondary-default border border-separator-border text-text-primary focus:border-text-primary focus:outline-none transition-colors"
+                  />
+                </div>
+
                 <div className="sm:col-span-2">
-                  <label className="block text-text-secondary mb-1 font-medium text-[11px]">Portfolio / Agency Website URL</label>
+                  <label className="block text-text-secondary mb-1 font-medium text-[11px]">Portfolio / Booking / Cal.com URL</label>
                   <input
                     type="url"
                     value={settings.my_portfolio || ''}
                     onChange={(e) => setSettings({ ...settings, my_portfolio: e.target.value })}
-                    placeholder="https://youragency.com"
+                    placeholder="https://cal.com/your-agency or https://yourportfolio.com"
                     className="w-full px-3 py-2 rounded-xl bg-background-secondary-default border border-separator-border text-text-primary font-mono text-[11px] focus:border-text-primary focus:outline-none transition-colors"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-text-secondary mb-1 font-medium text-[11px]">Your Core Offer / Value Proposition</label>
+                  <input
+                    type="text"
+                    value={settings.outreach_offer || ''}
+                    onChange={(e) => setSettings({ ...settings, outreach_offer: e.target.value })}
+                    placeholder="e.g. Modern, ultra-fast websites for local businesses that convert Google searchers into booked calls."
+                    className="w-full px-3 py-2 rounded-xl bg-background-secondary-default border border-separator-border text-text-primary text-[11px] focus:border-text-primary focus:outline-none transition-colors"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-text-secondary mb-1 font-medium text-[11px]">Default Email Signature</label>
+                  <textarea
+                    rows={3}
+                    value={settings.outreach_signature || ''}
+                    onChange={(e) => setSettings({ ...settings, outreach_signature: e.target.value })}
+                    placeholder="Best regards,&#10;Muhammad Rehan | Founder, Apex Digital&#10;cal.com/rehan"
+                    className="w-full px-3 py-2 rounded-xl bg-background-secondary-default border border-separator-border text-text-primary font-mono text-[11px] focus:border-text-primary focus:outline-none resize-none transition-colors leading-relaxed"
                   />
                 </div>
               </div>

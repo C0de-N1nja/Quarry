@@ -32,6 +32,8 @@ class Lead {
 
     if (status === 'no_website') {
       query += " AND ((l.has_no_website = 1 OR l.website IS NULL OR l.website = '') AND (l.website IS NULL OR l.website = '' OR lower(l.website) LIKE '%facebook.com%' OR lower(l.website) LIKE '%instagram.com%' OR lower(l.website) LIKE '%linkedin.com%' OR lower(l.website) LIKE '%linktr.ee%'))";
+    } else if (status === 'follow_up' || status === 'followup_due') {
+      query += " AND l.follow_up_at IS NOT NULL AND date(l.follow_up_at) <= date('now', 'localtime') AND (l.status IS NULL OR l.status NOT IN ('replied', 'won', 'archived'))";
     } else if (status && status !== 'all') {
       query += ' AND l.status = ?';
       params.push(status);
@@ -160,6 +162,8 @@ class Lead {
 
     if (status === 'no_website') {
       query += " AND ((l.has_no_website = 1 OR l.website IS NULL OR l.website = '') AND (l.website IS NULL OR l.website = '' OR lower(l.website) LIKE '%facebook.com%' OR lower(l.website) LIKE '%instagram.com%' OR lower(l.website) LIKE '%linkedin.com%' OR lower(l.website) LIKE '%linktr.ee%'))";
+    } else if (status === 'follow_up' || status === 'followup_due') {
+      query += " AND l.follow_up_at IS NOT NULL AND date(l.follow_up_at) <= date('now', 'localtime') AND (l.status IS NULL OR l.status NOT IN ('replied', 'won', 'archived'))";
     } else if (status && status !== 'all') {
       query += ' AND l.status = ?';
       params.push(status);
@@ -626,6 +630,50 @@ class Lead {
     return this.findById(id);
   }
 
+  static markContacted(id, { days = 3, followUpDate = null, note = null } = {}) {
+    let targetDate = followUpDate;
+    if (!targetDate) {
+      const d = new Date();
+      d.setDate(d.getDate() + (parseInt(days, 10) || 3));
+      targetDate = d.toISOString().split('T')[0];
+    }
+
+    db.prepare(`
+      UPDATE leads 
+      SET status = CASE WHEN status IN ('discovered', 'audited', 'enriched') THEN 'contacted' ELSE status END,
+          contacted_at = CURRENT_TIMESTAMP,
+          follow_up_at = ?,
+          follow_up_note = COALESCE(?, follow_up_note),
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(targetDate, note, id);
+
+    return this.findById(id);
+  }
+
+  static scheduleFollowUp(id, { followUpDate, note = null } = {}) {
+    db.prepare(`
+      UPDATE leads 
+      SET follow_up_at = ?,
+          follow_up_note = COALESCE(?, follow_up_note),
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(followUpDate, note, id);
+
+    return this.findById(id);
+  }
+
+  static clearFollowUp(id) {
+    db.prepare(`
+      UPDATE leads 
+      SET follow_up_at = NULL,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(id);
+
+    return this.findById(id);
+  }
+
   static updateStatus(id, status) {
     db.prepare('UPDATE leads SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(status, id);
     return this.findById(id);
@@ -767,6 +815,22 @@ class Lead {
     const wonVal = db.prepare("SELECT COALESCE(SUM(deal_value), 0) as total FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND status = 'won'").get().total;
     const activeVal = db.prepare("SELECT COALESCE(SUM(deal_value), 0) as total FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND status IN ('pitched', 'sent', 'replied')").get().total;
 
+    const followUpsDue = db.prepare(`
+      SELECT COUNT(*) as count FROM leads 
+      WHERE (is_test = 0 OR is_test IS NULL) 
+        AND (status IS NULL OR status NOT IN ('replied', 'won', 'archived'))
+        AND follow_up_at IS NOT NULL 
+        AND date(follow_up_at) <= date('now', 'localtime')
+    `).get().count;
+
+    const followUpsOverdue = db.prepare(`
+      SELECT COUNT(*) as count FROM leads 
+      WHERE (is_test = 0 OR is_test IS NULL) 
+        AND (status IS NULL OR status NOT IN ('replied', 'won', 'archived'))
+        AND follow_up_at IS NOT NULL 
+        AND date(follow_up_at) < date('now', 'localtime')
+    `).get().count;
+
     const goldCount = db.prepare(`
       SELECT COUNT(*) as count FROM leads 
       WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived')
@@ -825,6 +889,8 @@ class Lead {
       withPhoneOnly,
       socialInsteadOfEmail,
       decisionMakers,
+      followUpsDue,
+      followUpsOverdue,
       goldLeads: goldCount,
       collections,
       cities,

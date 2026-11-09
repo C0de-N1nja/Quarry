@@ -62,7 +62,10 @@ const leadColumns = [
   'lng REAL',
   'audit_status TEXT',
   'audit_summary TEXT',
-  'notes TEXT'
+  'notes TEXT',
+  'contacted_at DATETIME',
+  'follow_up_at DATE',
+  'follow_up_note TEXT'
 ];
 
 for (const col of leadColumns) {

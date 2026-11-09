@@ -3,7 +3,8 @@ import {
   RiFolderUserLine, 
   RiGlobalLine, 
   RiCheckDoubleLine, 
-  RiChat1Line
+  RiChat1Line,
+  RiCalendarCheckLine
 } from '@remixicon/react';
 import { Chip } from '@/components/base/badges/chip';
 import { cx } from '@/utils/cx';
@@ -134,6 +135,40 @@ export default function SummaryStrip({
           );
         })}
       </div>
+
+      {/* Actionable Follow-ups Alert Bar */}
+      {Boolean(stats?.followUpsDue > 0) && (
+        <div className="mt-2.5 pt-2 border-t border-separator-border/60 flex items-center justify-between text-xs px-1">
+          <div className="flex items-center gap-2">
+            <span className={cx(
+              "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-semibold text-[11px] border",
+              stats.followUpsOverdue > 0 
+                ? "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30" 
+                : "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
+            )}>
+              <RiCalendarCheckLine className="size-3.5" />
+              {stats.followUpsDue} follow-up{stats.followUpsDue > 1 ? 's' : ''} due {stats.followUpsOverdue > 0 ? `(${stats.followUpsOverdue} overdue)` : 'today'}
+            </span>
+            <span className="text-text-secondary text-[11px] hidden sm:inline">Reach out today to close conversations into deals</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (onFocusTierChange) onFocusTierChange('vault');
+              if (onContactChannelChange) onContactChannelChange('all');
+              if (onFilterChange) onFilterChange('follow_up');
+            }}
+            className={cx(
+              "px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer",
+              activeFilter === 'follow_up'
+                ? "bg-text-primary text-background-primary-default border-transparent shadow-xs"
+                : "bg-background-primary-default border-separator-border text-text-primary hover:border-text-primary"
+            )}
+          >
+            {activeFilter === 'follow_up' ? 'Showing Due Leads' : "View Today's Follow-ups →"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   RiDashboardLine, 
   RiKanbanView2, 
+  RiCalendarCheckLine,
   RiSearch2Line,
   RiSettings4Line, 
   RiArrowLeftSLine,
@@ -18,7 +19,9 @@ export default function DashboardSidebar({
   stats,
   onOpenSearch,
   onOpenSettings,
-  onOpenOnboarding
+  onOpenOnboarding,
+  activeFilter,
+  onFilterChange
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [systemError, setSystemError] = useState(null);
@@ -117,19 +120,22 @@ export default function DashboardSidebar({
           {/* Leads Navigation Item */}
           <button
             type="button"
-            onClick={() => onViewModeChange('table')}
+            onClick={() => {
+              onViewModeChange('table');
+              if (onFilterChange && activeFilter === 'follow_up') onFilterChange('all');
+            }}
             className={cx(
               "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2",
-              viewMode === 'table'
+              viewMode === 'table' && activeFilter !== 'follow_up'
                 ? "bg-[var(--tint-neutral-bg)] text-[var(--text-primary)] font-semibold shadow-2xs border border-[var(--card-border)]/60"
                 : "border border-transparent text-[var(--text-secondary)] hover:bg-[var(--tint-neutral-bg)] hover:text-[var(--text-primary)]",
               collapsed && "justify-center px-0"
             )}
             title="Leads"
-            aria-current={viewMode === 'table' ? 'page' : undefined}
+            aria-current={viewMode === 'table' && activeFilter !== 'follow_up' ? 'page' : undefined}
           >
-            <RiDashboardLine className={cx("size-4 shrink-0", viewMode === 'table' ? "text-[var(--text-primary)]" : "text-[var(--text-secondary)]")} aria-hidden="true" />
+            <RiDashboardLine className={cx("size-4 shrink-0", viewMode === 'table' && activeFilter !== 'follow_up' ? "text-[var(--text-primary)]" : "text-[var(--text-secondary)]")} aria-hidden="true" />
             {!collapsed && (
               <>
                 <span className="flex-1 text-left truncate">Leads</span>
@@ -142,6 +148,55 @@ export default function DashboardSidebar({
                   </span>
                 )}
               </>
+            )}
+          </button>
+
+          {/* Follow-ups Navigation Item */}
+          <button
+            type="button"
+            onClick={() => {
+              onViewModeChange('table');
+              if (onFilterChange) onFilterChange('follow_up');
+            }}
+            className={cx(
+              "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer relative",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2",
+              viewMode === 'table' && activeFilter === 'follow_up'
+                ? "bg-[var(--tint-neutral-bg)] text-[var(--text-primary)] font-semibold shadow-2xs border border-[var(--card-border)]/60"
+                : "border border-transparent text-[var(--text-secondary)] hover:bg-[var(--tint-neutral-bg)] hover:text-[var(--text-primary)]",
+              collapsed && "justify-center px-0"
+            )}
+            title={`Follow-ups (${stats?.followUpsDue || 0} due${stats?.followUpsOverdue ? `, ${stats.followUpsOverdue} overdue!` : ''})`}
+            aria-current={viewMode === 'table' && activeFilter === 'follow_up' ? 'page' : undefined}
+          >
+            <RiCalendarCheckLine className={cx(
+              "size-4 shrink-0", 
+              viewMode === 'table' && activeFilter === 'follow_up' 
+                ? "text-[var(--text-primary)]" 
+                : (stats?.followUpsOverdue > 0 ? "text-rose-500 animate-pulse" : "text-[var(--text-secondary)]")
+            )} aria-hidden="true" />
+            
+            {!collapsed ? (
+              <>
+                <span className="flex-1 text-left truncate">Follow-ups</span>
+                {(stats?.followUpsDue || 0) > 0 && (
+                  <span className={cx(
+                    "text-[10px] font-mono px-1.5 py-0.5 rounded-full font-bold border transition-colors",
+                    stats?.followUpsOverdue > 0
+                      ? "bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/40"
+                      : "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/40"
+                  )}>
+                    {stats.followUpsDue}
+                  </span>
+                )}
+              </>
+            ) : (
+              (stats?.followUpsDue || 0) > 0 && (
+                <span className={cx(
+                  "absolute top-1.5 right-1.5 size-2 rounded-full",
+                  stats?.followUpsOverdue > 0 ? "bg-rose-500 ring-2 ring-[var(--card-bg)]" : "bg-amber-500"
+                )} />
+              )
             )}
           </button>
 

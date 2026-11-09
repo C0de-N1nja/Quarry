@@ -27,7 +27,12 @@ import {
   RiTimeLine,
   RiCloseLine,
   RiAlertLine,
-  RiRefreshLine
+  RiRefreshLine,
+  RiCalendarCheckLine,
+  RiMailSendLine,
+  RiSendPlane2Line,
+  RiPrinterLine,
+  RiGoogleFill
 } from '@remixicon/react';
 import { Button } from '@/components/base/buttons/button';
 import { IconButton } from '@/components/base/buttons/icon-button';
@@ -35,6 +40,8 @@ import { Chip } from '@/components/base/badges/chip';
 import { Avatar } from '@/components/base/avatar/avatar';
 import { toast } from '@/components/base/toast/toast';
 import { cx } from '@/utils/cx';
+import { PITCH_ANGLES, generatePitchDraft, determineOptimalAngle } from '@/utils/pitchGenerator';
+import ClientAuditReportModal from '../audit/ClientAuditReportModal';
 
 // Friendly Step-by-Step Research Stages
 const RECON_STEPS = [
@@ -80,6 +87,37 @@ export default function LeadDossierPage({
   const auditTimerRef = useRef(null);
   const [currentStatus, setCurrentStatus] = useState(lead?.status || 'discovered');
   const [dealValue, setDealValue] = useState(lead?.deal_value || '');
+
+  // App Settings (Sender Profile & Defaults)
+  const [settings, setSettings] = useState({});
+  const [showClientAuditModal, setShowClientAuditModal] = useState(false);
+
+  // Email Suggestion & Compose State (Tareeqa A)
+  const [pitchAngle, setPitchAngle] = useState('auto');
+  const [pitchSubject, setPitchSubject] = useState('');
+  const [pitchBody, setPitchBody] = useState('');
+  const [isDraftGenerated, setIsDraftGenerated] = useState(false);
+
+  // Follow-up Reminders State
+  const [followUpDays, setFollowUpDays] = useState(3);
+  const [customFollowUpDate, setCustomFollowUpDate] = useState('');
+  const [followUpNote, setFollowUpNote] = useState('');
+  const [showFollowUpCustom, setShowFollowUpCustom] = useState(false);
+
+  // Fetch settings on mount
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.settings) {
+          setSettings(data.settings);
+          if (data.settings.default_followup_days) {
+            setFollowUpDays(parseInt(data.settings.default_followup_days, 10) || 3);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Scratchpad Notes (persisted per lead in localStorage and DB)
   const [notes, setNotes] = useState(() => {
@@ -267,11 +305,104 @@ export default function LeadDossierPage({
       if (data.success) {
         setCurrentStatus(newStatus);
         setDealValue(newValue);
+        if (data.lead) setDetail(prev => ({ ...prev, lead: data.lead }));
         toast.success(`Pipeline stage updated to "${newStatus}"!`);
         if (onRefreshLead) onRefreshLead();
       }
     } catch (err) {
       toast.error('Failed to update stage');
+    }
+  };
+
+  // Generate Cold Email Pitch Draft (Tareeqa A - 100% Real Lead Fields)
+  const handleGeneratePitch = (selectedAngle = pitchAngle) => {
+    const draft = generatePitchDraft({
+      lead: currentLead,
+      audit,
+      settings,
+      angle: selectedAngle
+    });
+    setPitchAngle(draft.angle);
+    setPitchSubject(draft.subject);
+    setPitchBody(draft.body);
+    setIsDraftGenerated(true);
+    toast.success('Generated suggested cold email pitch!', {
+      description: `Angle: ${draft.angle.replace('_', ' ')} · 100% real lead data`
+    });
+  };
+
+  // Open Gmail Web Compose with subject, recipient, body
+  const handleOpenGmail = () => {
+    const to = contact?.email || currentLead.email || '';
+    const su = encodeURIComponent(pitchSubject || `Quick question for ${currentLead.business_name}`);
+    const body = encodeURIComponent(pitchBody || '');
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${body}`;
+    window.open(gmailUrl, '_blank');
+  };
+
+  // Mark as Contacted & Schedule Next Follow-up
+  const handleMarkContacted = async (days = followUpDays, targetDate = null) => {
+    try {
+      const res = await fetch(`/api/leads/${currentLead.id}/contacted`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          days,
+          followUpDate: targetDate,
+          note: followUpNote || 'Initial cold email dispatched'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCurrentStatus('contacted');
+        setDetail(prev => ({ ...prev, lead: data.lead }));
+        toast.success('Marked as Contacted! Follow-up reminder active.', {
+          description: `Follow-up scheduled for ${data.lead.follow_up_at}`
+        });
+        if (onRefreshLead) onRefreshLead(currentLead.id);
+      }
+    } catch (err) {
+      toast.error('Failed to mark as contacted');
+    }
+  };
+
+  // Schedule Custom Follow-up
+  const handleScheduleFollowUp = async (date) => {
+    if (!date) return;
+    try {
+      const res = await fetch(`/api/leads/${currentLead.id}/schedule-followup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ followUpDate: date, note: followUpNote })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDetail(prev => ({ ...prev, lead: data.lead }));
+        setShowFollowUpCustom(false);
+        toast.success('Follow-up date updated!', {
+          description: `Reminder set for ${date}`
+        });
+        if (onRefreshLead) onRefreshLead(currentLead.id);
+      }
+    } catch (err) {
+      toast.error('Failed to schedule follow-up');
+    }
+  };
+
+  // Clear Follow-up
+  const handleClearFollowUp = async () => {
+    try {
+      const res = await fetch(`/api/leads/${currentLead.id}/clear-followup`, {
+        method: 'POST'
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDetail(prev => ({ ...prev, lead: data.lead }));
+        toast.success('Follow-up reminder cleared');
+        if (onRefreshLead) onRefreshLead(currentLead.id);
+      }
+    } catch (err) {
+      toast.error('Failed to clear follow-up');
     }
   };
 
@@ -780,6 +911,311 @@ export default function LeadDossierPage({
                 </Button>
               </div>
             )}
+
+            {/* STAGE PROGRESSION & FOLLOW-UP REMINDER BAR */}
+            <section className="rounded-2xl border border-separator-border bg-background-primary-default p-4 sm:p-5 shadow-xs space-y-3.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-xs font-mono uppercase tracking-wider text-text-tertiary flex items-center gap-1.5">
+                    <RiCalendarCheckLine className="size-3.5 text-text-secondary" />
+                    Pipeline Stage & Follow-Up Tracker
+                  </h2>
+                  <p className="text-[11px] text-text-secondary mt-0.5">
+                    Move lead through active closing stages. Marking contacted sets an automatic follow-up reminder.
+                  </p>
+                </div>
+
+                {/* Follow-up reminder badge */}
+                {currentLead.follow_up_at && !['replied', 'won', 'archived'].includes(currentStatus) && (() => {
+                  const today = new Date().toISOString().split('T')[0];
+                  const isOverdue = currentLead.follow_up_at < today;
+                  const isToday = currentLead.follow_up_at === today;
+                  return (
+                    <div className={cx(
+                      "px-3 py-1.5 rounded-xl border flex items-center gap-2 text-xs font-medium shrink-0",
+                      isOverdue 
+                        ? "bg-rose-500/15 border-rose-500/30 text-rose-500 animate-pulse" 
+                        : isToday 
+                          ? "bg-amber-500/15 border-amber-500/30 text-amber-500" 
+                          : "bg-background-secondary-default border-separator-border text-text-secondary"
+                    )}>
+                      <RiCalendarCheckLine className="size-4 shrink-0" />
+                      <div>
+                        <span className="font-bold">
+                          {isOverdue ? `Overdue (${currentLead.follow_up_at})` : isToday ? 'Follow-up Due Today!' : `Follow-up: ${currentLead.follow_up_at}`}
+                        </span>
+                        {currentLead.follow_up_note && (
+                          <span className="text-[10px] block opacity-80 truncate max-w-[200px]">
+                            {currentLead.follow_up_note}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Stage Progression Pills */}
+              <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-separator-border/60">
+                {[
+                  { id: 'discovered', label: '1. Discovered' },
+                  { id: 'contacted', label: '2. Contacted' },
+                  { id: 'replied', label: '3. Replied' },
+                  { id: 'won', label: '4. Deal Won 🎉' },
+                  { id: 'archived', label: 'Archived' }
+                ].map((stg) => {
+                  const isActive = currentStatus === stg.id;
+                  return (
+                    <button
+                      key={stg.id}
+                      type="button"
+                      onClick={() => handleUpdateStage(stg.id)}
+                      className={cx(
+                        "px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5",
+                        isActive
+                          ? (stg.id === 'won' 
+                              ? "bg-emerald-500 text-white border-emerald-400 shadow-sm"
+                              : stg.id === 'replied'
+                                ? "bg-purple-600 text-white border-purple-500 shadow-sm"
+                                : stg.id === 'contacted'
+                                  ? "bg-blue-600 text-white border-blue-500 shadow-sm"
+                                  : "bg-text-primary text-background-primary-default border-text-primary shadow-sm")
+                          : "bg-background-secondary-default border-separator-border text-text-secondary hover:text-text-primary hover:border-text-secondary"
+                      )}
+                    >
+                      {isActive && <RiCheckLine className="size-3.5 stroke-[3]" />}
+                      <span>{stg.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Follow-up Quick Action Strip */}
+              <div className="p-3 rounded-xl bg-background-secondary-default border border-separator-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-text-secondary font-medium">Quick Follow-up:</span>
+                  <button
+                    type="button"
+                    onClick={() => handleMarkContacted(3)}
+                    className="px-2.5 py-1 rounded-lg bg-background-primary-default border border-separator-border hover:border-text-primary text-text-primary font-semibold text-[11px] transition-colors cursor-pointer"
+                  >
+                    Mark Contacted (+3 Days)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleMarkContacted(7)}
+                    className="px-2.5 py-1 rounded-lg bg-background-primary-default border border-separator-border hover:border-text-primary text-text-primary font-semibold text-[11px] transition-colors cursor-pointer"
+                  >
+                    +1 Week
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowFollowUpCustom(!showFollowUpCustom)}
+                    className="px-2.5 py-1 rounded-lg bg-background-primary-default border border-separator-border hover:border-text-primary text-text-secondary hover:text-text-primary text-[11px] transition-colors cursor-pointer"
+                  >
+                    {showFollowUpCustom ? 'Close Date Picker' : 'Custom Date...'}
+                  </button>
+                  {currentLead.follow_up_at && (
+                    <button
+                      type="button"
+                      onClick={handleClearFollowUp}
+                      className="text-[11px] text-text-tertiary hover:text-rose-400 underline cursor-pointer ml-1"
+                    >
+                      Clear Reminder
+                    </button>
+                  )}
+                </div>
+
+                {currentLead.contacted_at && (
+                  <span className="text-[10px] font-mono text-text-tertiary">
+                    Last Contact: {new Date(currentLead.contacted_at).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+
+              {/* Custom Date & Note Input Drawer */}
+              {showFollowUpCustom && (
+                <div className="p-3 rounded-xl bg-background-secondary-default/70 border border-separator-border flex flex-col sm:flex-row items-center gap-3 text-xs">
+                  <div className="flex-1 w-full space-y-1">
+                    <label className="text-[10px] uppercase font-mono text-text-tertiary">Target Follow-Up Date</label>
+                    <input
+                      type="date"
+                      value={customFollowUpDate}
+                      onChange={(e) => setCustomFollowUpDate(e.target.value)}
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-background-primary-default border border-separator-border text-text-primary font-mono text-xs focus:outline-none focus:border-text-primary"
+                    />
+                  </div>
+                  <div className="flex-1 w-full space-y-1">
+                    <label className="text-[10px] uppercase font-mono text-text-tertiary">Reminder Note (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Call owner after estimate review"
+                      value={followUpNote}
+                      onChange={(e) => setFollowUpNote(e.target.value)}
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-background-primary-default border border-separator-border text-text-primary text-xs focus:outline-none focus:border-text-primary"
+                    />
+                  </div>
+                  <Button
+                    size="small"
+                    variant="primary"
+                    onClick={() => handleScheduleFollowUp(customFollowUpDate)}
+                    disabled={!customFollowUpDate}
+                    className="sm:self-end mt-2 sm:mt-0 text-xs font-semibold"
+                  >
+                    Set Reminder
+                  </Button>
+                </div>
+              )}
+            </section>
+
+            {/* COLD EMAIL OUTREACH COMPOSE BOX (Tareeqa A - 100% Real Fields) */}
+            <section className="rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="size-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
+                    <RiMailSendLine className="size-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-text-primary flex items-center gap-1.5">
+                      Cold Email Pitch Composer
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        Zero Hallucination
+                      </span>
+                    </h2>
+                    <p className="text-[11px] text-text-secondary">
+                      Suggested draft based strictly on real Google reviews, rating, and speed audit.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="small"
+                    variant="secondary"
+                    leadingIcon={RiPrinterLine}
+                    onClick={() => setShowClientAuditModal(true)}
+                    className="text-xs font-semibold"
+                    title="Generate and print 1-page client audit report"
+                  >
+                    1-Page PDF Audit
+                  </Button>
+
+                  <Button
+                    size="small"
+                    variant="primary"
+                    leadingIcon={RiSparklingLine}
+                    onClick={() => handleGeneratePitch()}
+                    className="text-xs font-semibold"
+                    title="Generate high-converting pitch using real lead data"
+                  >
+                    {isDraftGenerated ? 'Regenerate Draft' : 'Suggest Pitch'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Pitch Angle Selector Chips */}
+              <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                <span className="text-[11px] text-text-tertiary font-mono mr-1">Angle:</span>
+                {PITCH_ANGLES.map((a) => {
+                  const isSelected = pitchAngle === a.id;
+                  return (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => {
+                        setPitchAngle(a.id);
+                        handleGeneratePitch(a.id);
+                      }}
+                      className={cx(
+                        "px-2.5 py-1 rounded-lg text-xs font-medium border transition-all cursor-pointer",
+                        isSelected
+                          ? "bg-text-primary text-background-primary-default border-text-primary font-semibold shadow-2xs"
+                          : "bg-background-secondary-default border-separator-border text-text-secondary hover:text-text-primary hover:border-text-secondary"
+                      )}
+                      title={a.desc}
+                    >
+                      {a.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Subject Line Field */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[11px] text-text-secondary">
+                  <label className="font-mono uppercase text-text-tertiary text-[10px]">Subject Line</label>
+                  <span>{pitchSubject.length} chars</span>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Subject line will be suggested, or write your own..."
+                  value={pitchSubject}
+                  onChange={(e) => setPitchSubject(e.target.value)}
+                  className="w-full text-xs font-sans font-medium px-3 py-2 rounded-xl bg-background-secondary-default text-text-primary border border-separator-border focus:border-text-primary focus:outline-none transition-colors"
+                />
+              </div>
+
+              {/* Email Body Field */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[11px] text-text-secondary">
+                  <label className="font-mono uppercase text-text-tertiary text-[10px]">Email Body (Plain English, 80-100 Words)</label>
+                  <span className="font-mono text-[10px]">
+                    {pitchBody ? `${pitchBody.trim().split(/\s+/).filter(Boolean).length} words` : '0 words'}
+                  </span>
+                </div>
+                <textarea
+                  rows={8}
+                  placeholder="Click 'Suggest Pitch' to auto-fill a tailored email using this lead's Google rating, review count, and speed findings — or type your custom message..."
+                  value={pitchBody}
+                  onChange={(e) => setPitchBody(e.target.value)}
+                  className="w-full text-xs font-sans p-3.5 rounded-xl bg-background-secondary-default text-text-primary border border-separator-border focus:border-text-primary focus:outline-none resize-none leading-relaxed placeholder:text-text-tertiary transition-colors"
+                />
+              </div>
+
+              {/* Action Buttons: Open in Gmail, Copy, Mark Contacted */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1 border-t border-separator-border/60">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <Button
+                    size="small"
+                    variant="primary"
+                    leadingIcon={RiGoogleFill}
+                    onClick={handleOpenGmail}
+                    className="flex-1 sm:flex-none text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white border-transparent"
+                    title="Open Gmail compose tab with recipient, subject, and body prefilled"
+                  >
+                    Open in Gmail ↗
+                  </Button>
+
+                  <Button
+                    size="small"
+                    variant="secondary"
+                    leadingIcon={RiFileCopyLine}
+                    onClick={() => {
+                      const fullEmail = `Subject: ${pitchSubject}\n\n${pitchBody}`;
+                      navigator.clipboard.writeText(fullEmail);
+                      toast.success('Subject & email body copied to clipboard!');
+                    }}
+                    className="text-xs"
+                    title="Copy full email to clipboard"
+                  >
+                    Copy
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <Button
+                    size="small"
+                    variant="secondary"
+                    leadingIcon={RiCalendarCheckLine}
+                    onClick={() => handleMarkContacted(3)}
+                    className="flex-1 sm:flex-none text-xs font-semibold text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/10"
+                    title="Mark lead as contacted and schedule a 3-day follow-up reminder"
+                  >
+                    ✓ Mark Contacted (+3d)
+                  </Button>
+                </div>
+              </div>
+            </section>
 
             {/* 1. Website & Online Presence */}
             <section className="rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xs space-y-4">
@@ -1528,6 +1964,16 @@ export default function LeadDossierPage({
 
         </div>
       </main>
+
+      {/* 1-Page Printable Client PDF Audit Report Modal */}
+      {showClientAuditModal && (
+        <ClientAuditReportModal
+          lead={currentLead}
+          audit={audit}
+          settings={settings}
+          onClose={() => setShowClientAuditModal(false)}
+        />
+      )}
     </div>
   );
 }

@@ -20,8 +20,11 @@ import {
   RiCloseLine,
   RiAlertLine,
   RiBookmarkLine,
-  RiBookmarkFill
+  RiBookmarkFill,
+  RiCalendarCheckLine,
+  RiPrinterLine
 } from '@remixicon/react';
+import ClientAuditReportModal from '../audit/ClientAuditReportModal';
 
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '@/components/base/table/table';
 import { Avatar } from '@/components/base/avatar/avatar';
@@ -206,6 +209,7 @@ export default function BoardLeadTable({
   onPageChange,
   pageSize = '50',
   onPageSizeChange,
+  onRefresh
 }) {
   const [selectedLeadIds, setSelectedLeadIds] = useState(new Set());
   const [isAllMatchingSelected, setIsAllMatchingSelected] = useState(false);
@@ -216,6 +220,31 @@ export default function BoardLeadTable({
   const [leadToDelete, setLeadToDelete] = useState(null); // single lead to delete
   const [isCleanSitesConfirmOpen, setIsCleanSitesConfirmOpen] = useState(false);
   const [isResetOsintConfirmOpen, setIsResetOsintConfirmOpen] = useState(false);
+  const [clientAuditLead, setClientAuditLead] = useState(null);
+  const [settings, setSettings] = useState({});
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(r => r.json())
+      .then(d => { if (d.success && d.settings) setSettings(d.settings); })
+      .catch(() => {});
+  }, []);
+
+  const handleQuickContacted = async (lead) => {
+    try {
+      const res = await fetch(`/api/leads/${lead.id}/contacted`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ days: 3 })
+      });
+      const data = await res.json();
+      if (data.success && onRefresh) {
+        onRefresh();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   // Pagination calculations
   const numericPageSize = parseInt(pageSize, 10) || 50;
@@ -1125,12 +1154,36 @@ export default function BoardLeadTable({
                       </div>
                     </TableCell>
 
-                    {/* Stage Column (BoardUI Chip with StatusDot) */}
-                    <TableCell className="w-[140px] px-4 py-2" onClick={() => onSelectLead && onSelectLead(lead)}>
-                      <Chip variant={stage.variant} color={stage.chipColor} className="gap-1.5 font-medium">
-                        {stage.dotColor && <StatusDot color={stage.dotColor} />}
-                        <span>{stage.label}</span>
-                      </Chip>
+                    {/* Stage Column (BoardUI Chip with StatusDot & Follow-up status) */}
+                    <TableCell className="w-[150px] px-4 py-2" onClick={() => onSelectLead && onSelectLead(lead)}>
+                      <div className="flex flex-col gap-1 items-start">
+                        <Chip variant={stage.variant} color={stage.chipColor} className="gap-1.5 font-medium">
+                          {stage.dotColor && <StatusDot color={stage.dotColor} />}
+                          <span>{stage.label}</span>
+                        </Chip>
+
+                        {lead.follow_up_at && !['replied', 'won', 'archived'].includes(lead.status) && (() => {
+                          const today = new Date().toISOString().split('T')[0];
+                          const isOverdue = lead.follow_up_at < today;
+                          const isToday = lead.follow_up_at === today;
+                          return (
+                            <span 
+                              className={cx(
+                                "inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.2 rounded font-semibold border",
+                                isOverdue 
+                                  ? "bg-rose-500/20 text-rose-500 dark:text-rose-400 border-rose-500/40 animate-pulse" 
+                                  : isToday 
+                                    ? "bg-amber-500/20 text-amber-500 dark:text-amber-400 border-amber-500/40" 
+                                    : "bg-background-tertiary-default text-text-tertiary border-separator-border"
+                              )}
+                              title={`Follow-up scheduled: ${lead.follow_up_at}${lead.follow_up_note ? ` (${lead.follow_up_note})` : ''}`}
+                            >
+                              <RiCalendarCheckLine className="size-2.5" />
+                              {isOverdue ? `Overdue (${lead.follow_up_at})` : isToday ? 'Follow-up Today' : lead.follow_up_at}
+                            </span>
+                          );
+                        })()}
+                      </div>
                     </TableCell>
 
                     {/* Actions Column (Sticky Right, solid background, 1 Pitch + ⋯ Menu) */}
@@ -1172,6 +1225,22 @@ export default function BoardLeadTable({
                               <DropdownItem onSelect={() => onOpenLeadDrawer ? onOpenLeadDrawer(lead) : onSelectLead(lead)} className="px-2.5 py-2 rounded-lg text-body-medium">
                                 <RiEditLine className="size-4 text-text-secondary" />
                                 <span>Edit</span>
+                              </DropdownItem>
+
+                              <DropdownItem 
+                                onSelect={() => handleQuickContacted(lead)} 
+                                className="px-2.5 py-2 rounded-lg text-body-medium text-blue-500 hover:bg-blue-500/10"
+                              >
+                                <RiCalendarCheckLine className="size-4 text-blue-500" />
+                                <span>Mark Contacted (+3d)</span>
+                              </DropdownItem>
+
+                              <DropdownItem 
+                                onSelect={() => setClientAuditLead(lead)} 
+                                className="px-2.5 py-2 rounded-lg text-body-medium text-emerald-500 hover:bg-emerald-500/10"
+                              >
+                                <RiPrinterLine className="size-4 text-emerald-500" />
+                                <span>1-Page PDF Client Audit</span>
                               </DropdownItem>
 
                               <DropdownItem onSelect={() => onRunOsint && onRunOsint(lead.id)} className="px-2.5 py-2 rounded-lg text-body-medium">
@@ -1468,6 +1537,15 @@ export default function BoardLeadTable({
             </div>
           </div>
         </div>
+      )}
+      {/* 1-Page Printable Client PDF Audit Report Modal */}
+      {clientAuditLead && (
+        <ClientAuditReportModal
+          lead={clientAuditLead}
+          audit={null}
+          settings={settings}
+          onClose={() => setClientAuditLead(null)}
+        />
       )}
     </div>
   );
