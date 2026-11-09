@@ -180,7 +180,7 @@ export default function BoardLeadTable({
         <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-separator-border/60">
           <PillTabList className="flex-wrap">
             <PillTab
-              variant="blue"
+              variant="gray"
               isSelected={activeFilter === 'all' && contactChannel === 'all' && focusTier === 'vault'}
               onSelect={() => {
                 if (onNicheChange) onNicheChange('all');
@@ -193,7 +193,7 @@ export default function BoardLeadTable({
             </PillTab>
 
             <PillTab
-              variant="blue"
+              variant="gray"
               icon={RiMailCheckLine}
               isSelected={contactChannel === 'has_email'}
               onSelect={() => {
@@ -206,7 +206,7 @@ export default function BoardLeadTable({
             </PillTab>
 
             <PillTab
-              variant="blue"
+              variant="gray"
               icon={RiFireLine}
               isSelected={activeFilter === 'no_website'}
               onSelect={() => {
@@ -219,7 +219,7 @@ export default function BoardLeadTable({
             </PillTab>
 
             <PillTab
-              variant="blue"
+              variant="gray"
               icon={RiStarLine}
               isSelected={focusTier === 'gold'}
               onSelect={() => {
@@ -232,7 +232,7 @@ export default function BoardLeadTable({
 
             {(stats?.pitched > 0 || activeFilter === 'pitched') && (
               <PillTab
-                variant="blue"
+                variant="gray"
                 icon={RiTimeLine}
                 isSelected={activeFilter === 'pitched'}
                 onSelect={() => {
@@ -444,9 +444,9 @@ export default function BoardLeadTable({
                     }}
                     className={cx(
                       "cursor-pointer transition-colors duration-150 hover:bg-background-secondary-hover",
-                      isSelected && "bg-accent-50/40 dark:bg-accent-950/30",
-                      isCurrentlyActive && "ring-1 ring-inset ring-accent-500/50",
-                      isFocused && "ring-2 ring-inset ring-accent-500/80 bg-accent-50/20 dark:bg-accent-950/20"
+                      isSelected && "bg-background-tertiary-default/80 dark:bg-background-tertiary-default/50",
+                      isCurrentlyActive && "ring-1 ring-inset ring-separator-border bg-background-tertiary-default/40",
+                      isFocused && "ring-1 ring-inset ring-text-primary/20 bg-background-tertiary-default/30"
                     )}
                   >
                     {/* Checkbox Cell */}
@@ -467,10 +467,10 @@ export default function BoardLeadTable({
                         <Avatar
                           initials={getInitials(businessName)}
                           size="sm"
-                          className={hasWebsite ? "bg-background-tertiary-default text-text-secondary" : "bg-accent-500/15 text-accent-500 font-semibold"}
+                          className={hasWebsite ? "bg-background-tertiary-default text-text-secondary" : "bg-background-tertiary-default text-text-primary font-bold border border-separator-border"}
                         />
                         <div className="flex min-w-0 flex-col">
-                          <p className="truncate text-body-small font-medium text-text-primary group-hover:text-accent-600">
+                          <p className="truncate text-body-small font-medium text-text-primary">
                             {businessName}
                           </p>
                           <div className="flex items-center gap-1 mt-0.5">

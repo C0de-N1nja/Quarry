@@ -40,20 +40,20 @@ const styles = sortCx({
     gray: "rounded-2lg",
   },
   thumb: {
-    blue: "bg-pill-tab-blue-selected-background",
-    gray: "bg-background-tertiary-default",
+    blue: "bg-background-primary-default border border-separator-border shadow-xs",
+    gray: "bg-background-primary-default border border-separator-border shadow-xs",
   },
   hover: {
-    blue: "bg-pill-tab-blue-hover-background",
-    gray: "bg-background-primary-hover",
+    blue: "bg-background-tertiary-default/60",
+    gray: "bg-background-tertiary-default/60",
   },
   selectedIcon: {
-    blue: "text-accent-500",
-    gray: "text-foreground-icon-primary",
+    blue: "text-text-primary",
+    gray: "text-text-primary",
   },
   selectedLabel: {
-    blue: "text-accent-500",
-    gray: "text-text-primary",
+    blue: "text-text-primary font-semibold",
+    gray: "text-text-primary font-semibold",
   },
 });
 

@@ -30,7 +30,7 @@ export default function FloatingBatchDock({
     >
       {/* Selected Counter Chip */}
       <div className="flex items-center gap-2 shrink-0 pr-1 border-r border-separator-border">
-        <Chip variant="bold" color="indigo" className="font-mono font-semibold">
+        <Chip variant="bold" color="gray" className="font-mono font-semibold">
           {selectedCount}
         </Chip>
         <span className="text-body-small font-medium text-text-primary hidden sm:inline">

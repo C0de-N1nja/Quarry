@@ -457,7 +457,7 @@ export default function OnboardingModal({
                       onClick={() => setKeyword(n)}
                       className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-colors cursor-pointer ${
                         keyword.toLowerCase() === n.toLowerCase()
-                          ? 'bg-accent-500 text-white font-semibold'
+                          ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 font-semibold shadow-xs'
                           : 'bg-background-secondary-default text-text-tertiary hover:text-text-primary border border-separator-border'
                       }`}
                     >
@@ -511,7 +511,7 @@ export default function OnboardingModal({
                       onClick={() => setTargetCount(num)}
                       className={`py-2 px-3 rounded-xl border text-xs font-mono font-medium transition-all cursor-pointer ${
                         targetCount === num
-                          ? 'border-accent-500 bg-accent-500/15 text-accent-500 font-bold shadow-xs'
+                          ? 'border-text-primary bg-background-tertiary-default text-text-primary font-bold shadow-xs'
                           : 'border-separator-border bg-background-secondary-default text-text-secondary hover:text-text-primary'
                       }`}
                     >

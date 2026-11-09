@@ -127,8 +127,8 @@ export default function DashboardSidebar({
                   onClick={() => onViewModeChange(item.mode)}
                   className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-accent-500 text-white shadow-2xs'
-                      : 'text-text-secondary hover:bg-background-tertiary-default hover:text-text-primary'
+                      ? 'bg-background-tertiary-default text-text-primary shadow-2xs border border-separator-border/60'
+                      : 'text-text-secondary hover:bg-background-tertiary-default/60 hover:text-text-primary'
                   } ${collapsed ? 'justify-center px-0' : ''}`}
                   title={item.label}
                 >
@@ -139,7 +139,7 @@ export default function DashboardSidebar({
                       {item.badge && (
                         <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
                           isActive 
-                            ? 'bg-white/20 text-white' 
+                            ? 'bg-background-primary-default text-text-primary border border-separator-border/80 font-bold' 
                             : 'bg-background-tertiary-default text-text-tertiary'
                         }`}>
                           {item.badge}
@@ -238,7 +238,7 @@ export default function DashboardSidebar({
                 <>
                   <span className="flex-1 text-left truncate">Outreach Queue</span>
                   {stats && stats.pitched > 0 && (
-                    <span className="px-1.5 py-0.2 text-[10px] bg-accent-500 text-white rounded-full font-mono font-bold">
+                    <span className="px-1.5 py-0.2 text-[10px] bg-background-tertiary-default text-text-primary border border-separator-border rounded-full font-mono font-bold">
                       {stats.pitched}
                     </span>
                   )}

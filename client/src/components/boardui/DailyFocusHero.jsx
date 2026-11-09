@@ -24,23 +24,23 @@ export default function DailyFocusHero({
   const activeFollowUps = stats?.pitched || 0;
 
   return (
-    <div className="mb-4 rounded-2xl border border-separator-border bg-gradient-to-r from-accent-500/10 via-background-secondary-default/80 to-background-secondary-default p-4 sm:p-5 shadow-xs">
+    <div className="mb-4 rounded-2xl border border-separator-border bg-background-secondary-default p-4 sm:p-5 shadow-xs">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         {/* Left Side: Avatar + Greeting & Stat Punchlines */}
         <div className="flex items-start sm:items-center gap-3.5">
-          <div className="flex size-11 items-center justify-center rounded-xl bg-accent-600 text-white shadow-xs ring-2 ring-accent-500/20 shrink-0">
-            <RiFlashlightFill className="size-6" />
+          <div className="flex size-11 items-center justify-center rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-950 shadow-xs ring-1 ring-slate-800 dark:ring-white/20 shrink-0">
+            <RiFlashlightFill className="size-5" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-body-large font-bold tracking-tight text-text-primary">
                 Daily Outreach Cockpit
               </h2>
-              <Chip variant="bold" color="emerald" className="font-mono text-[10px]">
+              <Chip variant="subtle" color="emerald" className="font-mono text-[10px]">
                 {readyToPitchCount} Ready to Pitch
               </Chip>
               {activeFollowUps > 0 && (
-                <Chip variant="subtle" color="indigo" size="sm" className="font-mono text-[10px]">
+                <Chip variant="subtle" color="gray" size="sm" className="font-mono text-[10px]">
                   {activeFollowUps} In Follow-Up
                 </Chip>
               )}
@@ -74,7 +74,7 @@ export default function DailyFocusHero({
           >
             <span>Outbox Queue</span>
             {activeFollowUps > 0 && (
-              <span className="ml-1 rounded-full bg-accent-600 px-1.5 py-0.2 font-mono text-[10px] font-bold text-white">
+              <span className="ml-1.5 rounded-md bg-background-tertiary-default text-text-primary border border-separator-border px-1.5 py-0.5 font-mono text-[10px] font-bold">
                 {activeFollowUps}
               </span>
             )}

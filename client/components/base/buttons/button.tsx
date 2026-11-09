@@ -134,9 +134,9 @@ const styles = sortCx({
 
   variant: {
     primary: [
-      "bg-button-primary text-text-white shadow-xs",
-      "disabled:text-button-primary-disabled-foreground disabled:shadow-none",
-      "aria-disabled:text-button-primary-disabled-foreground aria-disabled:shadow-none",
+      "bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 dark:active:bg-slate-200",
+      "border border-slate-800/80 dark:border-white/20 shadow-xs font-semibold",
+      "disabled:opacity-50 disabled:shadow-none aria-disabled:opacity-50 aria-disabled:shadow-none",
     ].join(" "),
     danger: [
       "bg-button-danger text-text-white shadow-xs",
