@@ -65,7 +65,7 @@ export default function DashboardSidebar({
             type="button"
             onClick={() => collapsed && setCollapsed(false)}
             className={cx(
-              "size-9 rounded-xl bg-[var(--brand-solid)] shadow-xs flex items-center justify-center text-white shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2",
+              "size-9 rounded-xl bg-slate-900 dark:bg-slate-800 border border-slate-800 dark:border-slate-700 shadow-xs flex items-center justify-center text-white shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2",
               collapsed && "cursor-pointer hover:scale-105 transition-transform"
             )}
             title={collapsed ? "Quarry — Click to expand sidebar" : "Quarry"}
@@ -122,21 +122,21 @@ export default function DashboardSidebar({
               "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2",
               viewMode === 'table'
-                ? "bg-[var(--brand-tint-bg)] border-l-[3px] border-l-[var(--brand-solid)] text-[var(--brand-solid)] font-semibold shadow-2xs"
-                : "border-l-[3px] border-l-transparent text-[var(--text-secondary)] hover:bg-[var(--tint-neutral-bg)] hover:text-[var(--text-primary)]",
+                ? "bg-[var(--tint-neutral-bg)] text-[var(--text-primary)] font-semibold shadow-2xs border border-[var(--card-border)]/60"
+                : "border border-transparent text-[var(--text-secondary)] hover:bg-[var(--tint-neutral-bg)] hover:text-[var(--text-primary)]",
               collapsed && "justify-center px-0"
             )}
             title="Leads"
             aria-current={viewMode === 'table' ? 'page' : undefined}
           >
-            <RiDashboardLine className={cx("size-4 shrink-0", viewMode === 'table' ? "text-[var(--brand-solid)]" : "text-[var(--text-secondary)]")} aria-hidden="true" />
+            <RiDashboardLine className={cx("size-4 shrink-0", viewMode === 'table' ? "text-[var(--text-primary)]" : "text-[var(--text-secondary)]")} aria-hidden="true" />
             {!collapsed && (
               <>
                 <span className="flex-1 text-left truncate">Leads</span>
                 {totalLeads > 0 && (
                   <span className={cx(
                     "text-[10px] font-mono px-1.5 py-0.5 rounded-full font-bold border",
-                    "bg-[var(--brand-tint-bg)] text-[var(--brand-tint-text)] border-[var(--brand-tint-border)]"
+                    "bg-[var(--card-bg)] text-[var(--text-primary)] border-[var(--card-border)]"
                   )}>
                     {totalLeads.toLocaleString()}
                   </span>
@@ -153,14 +153,14 @@ export default function DashboardSidebar({
               "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2",
               viewMode === 'kanban'
-                ? "bg-[var(--brand-tint-bg)] border-l-[3px] border-l-[var(--brand-solid)] text-[var(--brand-solid)] font-semibold shadow-2xs"
-                : "border-l-[3px] border-l-transparent text-[var(--text-secondary)] hover:bg-[var(--tint-neutral-bg)] hover:text-[var(--text-primary)]",
+                ? "bg-[var(--tint-neutral-bg)] text-[var(--text-primary)] font-semibold shadow-2xs border border-[var(--card-border)]/60"
+                : "border border-transparent text-[var(--text-secondary)] hover:bg-[var(--tint-neutral-bg)] hover:text-[var(--text-primary)]",
               collapsed && "justify-center px-0"
             )}
             title="Pipeline (Kanban)"
             aria-current={viewMode === 'kanban' ? 'page' : undefined}
           >
-            <RiKanbanView2 className={cx("size-4 shrink-0", viewMode === 'kanban' ? "text-[var(--brand-solid)]" : "text-[var(--text-secondary)]")} aria-hidden="true" />
+            <RiKanbanView2 className={cx("size-4 shrink-0", viewMode === 'kanban' ? "text-[var(--text-primary)]" : "text-[var(--text-secondary)]")} aria-hidden="true" />
             {!collapsed && (
               <span className="flex-1 text-left truncate">Pipeline (Kanban)</span>
             )}
