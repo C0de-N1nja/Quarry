@@ -4,10 +4,12 @@ import {
   RiLayoutGridLine, RiRadarLine, RiMailSendLine, 
   RiSettings4Line, RiSunLine, RiMoonClearLine, RiSearch2Line,
   RiDatabase2Line, RiShieldCheckLine, RiArrowLeftSLine,
-  RiArrowRightSLine, RiUserLine, RiUploadCloud2Line, RiDownload2Line
+  RiArrowRightSLine, RiUserLine, RiUploadCloud2Line, RiDownload2Line,
+  RiCompass3Line
 } from '@remixicon/react';
 import { IconButton } from '@/components/base/buttons/icon-button';
 import { Chip } from '@/components/base/badges/chip';
+import { QuarryLogo } from './QuarryLogo';
 
 export default function DashboardSidebar({
   viewMode,
@@ -62,12 +64,12 @@ export default function DashboardSidebar({
           <button
             type="button"
             onClick={() => collapsed && setCollapsed(false)}
-            className={`h-9 w-9 rounded-xl bg-linear-to-tr from-accent-500 to-indigo-500 flex items-center justify-center text-white shadow-2xs ring-1 ring-white/20 shrink-0 ${
+            className={`h-9 w-9 rounded-xl bg-slate-900 border border-slate-700/60 shadow-xs flex items-center justify-center text-white ring-1 ring-white/10 shrink-0 ${
               collapsed ? 'cursor-pointer hover:scale-105 transition-transform' : ''
             }`}
             title={collapsed ? "Quarry OS — Click to expand sidebar" : "Quarry OS"}
           >
-            <RiFlashlightFill className="h-5 w-5" />
+            <QuarryLogo size={20} />
           </button>
           {!collapsed && (
             <div className="min-w-0">

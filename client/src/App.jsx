@@ -15,6 +15,8 @@ import AuditPage from './components/audit/AuditPage';
 import CommandPalette from './components/boardui/CommandPalette';
 import KeyboardShortcutsModal from './components/boardui/KeyboardShortcutsModal';
 import DailyFocusHero from './components/boardui/DailyFocusHero';
+import OnboardingModal from './components/boardui/OnboardingModal';
+import LiveJobsDrawer from './components/boardui/LiveJobsDrawer';
 import { Toaster, toast } from '@/components/base/toast/toast';
 
 export default function App() {
@@ -64,6 +66,10 @@ export default function App() {
   const [toast, setToast] = useState(null); // { message, time, type }
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(() => {
+    return localStorage.getItem('quarry_onboarding_completed') !== 'true';
+  });
+  const [isLiveJobsOpen, setIsLiveJobsOpen] = useState(false);
 
   // Global Keyboard Shortcuts (Cmd+K / Ctrl+K for Command Palette, ? for Cheatsheet)
   useEffect(() => {
@@ -444,6 +450,8 @@ export default function App() {
           onOpenSettings={() => setActiveModal('settings')}
           onExportExcel={() => handleExportExcel('excel')}
           onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+          onOpenLiveJobs={() => setIsLiveJobsOpen(true)}
+          onOpenOnboarding={() => setIsOnboardingOpen(true)}
         />
 
         {/* Main Content Area */}
@@ -691,6 +699,45 @@ export default function App() {
         isOpen={isShortcutsOpen}
         onClose={() => setIsShortcutsOpen(false)}
       />
+
+      {/* Enterprise First-Run Interactive Onboarding Wizard */}
+      <OnboardingModal
+        isOpen={isOnboardingOpen}
+        onSkip={() => {
+          localStorage.setItem('quarry_onboarding_completed', 'true');
+          setIsOnboardingOpen(false);
+        }}
+        onComplete={({ keyword, city }) => {
+          setIsOnboardingOpen(false);
+          setActiveNiche(keyword);
+          fetchLeads();
+          fetchStats();
+        }}
+      />
+
+      {/* Mission Control Background Worker & Live Jobs Center */}
+      <LiveJobsDrawer
+        isOpen={isLiveJobsOpen}
+        onClose={() => setIsLiveJobsOpen(false)}
+        stats={stats}
+        onRefresh={() => {
+          fetchLeads();
+          fetchStats();
+        }}
+      />
+
+      {/* Persistent Mission Control Bottom Pill */}
+      <div className="fixed bottom-4 left-6 z-30 hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-background-primary-default/90 border border-separator-border shadow-lg backdrop-blur-md font-mono text-[11px] text-text-tertiary hover:text-text-primary transition-all">
+        <button
+          onClick={() => setIsLiveJobsOpen(true)}
+          className="flex items-center gap-2 cursor-pointer hover:text-accent-500"
+          title="Open Mission Control Background Jobs Drawer"
+        >
+          <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="font-semibold text-text-secondary">Mission Control</span>
+          <span className="text-text-tertiary">| Fleet Ready</span>
+        </button>
+      </div>
 
       {/* Official BoardUI Toaster Stack */}
       <Toaster position="bottom-end" limit={4} />

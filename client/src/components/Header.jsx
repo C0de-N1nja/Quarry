@@ -19,6 +19,7 @@ import { IconButton } from '@/components/base/buttons/icon-button';
 import { Chip } from '@/components/base/badges/chip';
 import { StatusDot } from '@/components/base/badges/status-dot';
 import { Kbd } from '@/components/base/kbd/kbd';
+import { QuarryLogo } from './boardui/QuarryLogo';
 
 export default function Header({ 
   stats, 
@@ -29,7 +30,9 @@ export default function Header({
   theme, 
   onToggleTheme, 
   onExportExcel,
-  onOpenCommandPalette
+  onOpenCommandPalette,
+  onOpenLiveJobs,
+  onOpenOnboarding
 }) {
   const [tunnel, setTunnel] = useState(null);
 
@@ -54,8 +57,8 @@ export default function Header({
       <div className="mx-auto flex max-w-(--breakpoint-2xl) items-center justify-between gap-4 px-3 py-2.5 sm:px-6 lg:px-8">
         {/* Brand Logo & Clean Title (Visible on mobile/tablet; on desktop the sidebar displays branding) */}
         <div className="flex md:hidden items-center gap-2.5 shrink-0">
-          <div className="flex size-8 items-center justify-center rounded-xl bg-accent-600 text-white shadow-xs">
-            <RiFlashlightFill className="size-4" />
+          <div className="flex size-8 items-center justify-center rounded-xl bg-slate-900 border border-slate-700/60 text-white shadow-xs">
+            <QuarryLogo size={18} />
           </div>
           <div className="flex items-center gap-1.5">
             <h1 className="text-body-small font-semibold tracking-tight text-text-primary">
@@ -127,6 +130,18 @@ export default function Header({
               <StatusDot color="green" className="animate-pulse" />
               <span>Live Tunnel</span>
             </div>
+          )}
+
+          {/* Mission Control Trigger Pill */}
+          {onOpenLiveJobs && (
+            <button
+              onClick={onOpenLiveJobs}
+              className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-separator-border bg-background-secondary-default hover:bg-background-secondary-hover text-text-secondary hover:text-text-primary text-xs font-mono transition-colors cursor-pointer"
+              title="Open Mission Control Background Jobs Drawer"
+            >
+              <StatusDot color="green" className="animate-pulse" />
+              <span>Mission Control</span>
+            </button>
           )}
 
           <div className="mx-1 h-4 w-px bg-separator-border" />
