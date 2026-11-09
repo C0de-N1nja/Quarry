@@ -50,7 +50,7 @@ export default function Header({
         
         {/* Brand Logo (Visible on mobile/tablet; on desktop the sidebar displays branding) */}
         <div className="flex md:hidden items-center gap-2.5 shrink-0">
-          <div className="flex size-8 items-center justify-center rounded-xl bg-[var(--brand-solid)] text-white shadow-xs">
+          <div className="flex size-8 items-center justify-center rounded-xl bg-neutral-900 border border-neutral-800 text-white shadow-xs">
             <QuarryLogo size={18} />
           </div>
           <div className="flex items-center gap-1.5">

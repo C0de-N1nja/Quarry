@@ -36,9 +36,9 @@ export default function SummaryStrip({
       count: totalLeads,
       isActive: isTotalActive,
       icon: RiFolderUserLine,
-      chipColor: 'blue',
+      chipColor: 'neutral',
       chipText: 'Vault',
-      tileTone: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+      tileTone: 'bg-zinc-500/10 text-zinc-700 dark:text-zinc-300 border-zinc-500/20',
       onClick: () => {
         if (onFocusTierChange) onFocusTierChange('vault');
         if (onContactChannelChange) onContactChannelChange('all');
@@ -107,7 +107,7 @@ export default function SummaryStrip({
                 "group flex items-center gap-2.5 px-3 py-2 rounded-xl border transition-all cursor-pointer text-left w-full",
                 "button-press-motion focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus-ring focus-visible:ring-offset-2",
                 m.isActive
-                  ? "bg-background-primary-default border-accent-500 text-text-primary shadow-xs ring-1 ring-accent-500"
+                  ? "bg-background-primary-default border-text-primary/70 text-text-primary shadow-xs ring-1 ring-text-primary/40"
                   : "bg-background-primary-default/60 hover:bg-background-primary-default border-separator-border/70 hover:border-border-button-hover text-text-secondary hover:text-text-primary"
               )}
               title={`Filter by ${m.label} (${m.count.toLocaleString()})`}

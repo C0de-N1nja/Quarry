@@ -65,7 +65,7 @@ export default function DashboardSidebar({
             type="button"
             onClick={() => collapsed && setCollapsed(false)}
             className={cx(
-              "size-9 rounded-xl bg-slate-900 dark:bg-slate-800 border border-slate-800 dark:border-slate-700 shadow-xs flex items-center justify-center text-white shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2",
+              "size-9 rounded-xl bg-neutral-900 dark:bg-neutral-900 border border-neutral-800 dark:border-neutral-800 shadow-xs flex items-center justify-center text-white shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2",
               collapsed && "cursor-pointer hover:scale-105 transition-transform"
             )}
             title={collapsed ? "Quarry — Click to expand sidebar" : "Quarry"}

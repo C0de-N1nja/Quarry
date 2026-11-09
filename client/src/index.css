@@ -66,22 +66,22 @@
   }
 
   .dark {
-    /* Surfaces */
-    --page-bg: #0B0F1A;
-    --card-bg: #111827;
-    --card-border: #1F2937;
+    /* Surfaces — Pure neutral black/charcoal with zero blue */
+    --page-bg: #09090b;
+    --card-bg: #121214;
+    --card-border: #27272a;
 
     /* Text */
-    --text-primary: #F3F4F6;
-    --text-secondary: #9CA3AF;
-    --text-tertiary: #6B7280;
+    --text-primary: #f4f4f5;
+    --text-secondary: #a1a1aa;
+    --text-tertiary: #71717a;
 
-    /* Brand Indigo */
-    --brand-solid: #818CF8;
-    --brand-solid-hover: #6366F1;
-    --brand-tint-bg: rgba(129, 140, 248, 0.15);
-    --brand-tint-text: #A5B4FC;
-    --brand-tint-border: rgba(129, 140, 248, 0.25);
+    /* Brand Accent */
+    --brand-solid: #a1a1aa;
+    --brand-solid-hover: #e4e4e7;
+    --brand-tint-bg: rgba(255, 255, 255, 0.06);
+    --brand-tint-text: #f4f4f5;
+    --brand-tint-border: #27272a;
 
     /* Semantic Tints (Dark) */
     --tint-success-bg: rgba(110, 231, 183, 0.15);
@@ -104,29 +104,29 @@
     --tint-violet-text: #C4B5FD;
     --tint-violet-border: rgba(196, 181, 253, 0.25);
 
-    --tint-neutral-bg: rgba(148, 163, 184, 0.15);
-    --tint-neutral-text: #94A3B8;
-    --tint-neutral-border: rgba(148, 163, 184, 0.25);
+    --tint-neutral-bg: rgba(255, 255, 255, 0.06);
+    --tint-neutral-text: #a1a1aa;
+    --tint-neutral-border: #27272a;
 
     --tint-rose-bg: rgba(251, 113, 133, 0.15);
     --tint-rose-text: #FDA4AF;
     --tint-rose-border: rgba(251, 113, 133, 0.25);
 
     /* Interactive States */
-    --row-hover-bg: rgba(129, 140, 248, 0.05);
-    --row-selected-bg: rgba(129, 140, 248, 0.15);
-    --focus-ring: #818CF8;
+    --row-hover-bg: rgba(255, 255, 255, 0.03);
+    --row-selected-bg: rgba(255, 255, 255, 0.07);
+    --focus-ring: #71717a;
     --solid-won-bg: #059669;
 
     /* Compatibility Mappings */
     --canvas: var(--page-bg);
     --surface-0: var(--card-bg);
     --surface-1: var(--card-bg);
-    --surface-2: #181b29;
-    --surface-3: #202436;
-    --surface-4: #2b3047;
+    --surface-2: #18181b;
+    --surface-3: #202023;
+    --surface-4: #27272a;
     --border-subtle: var(--card-border);
-    --border-hover: #2f354f;
+    --border-hover: #3f3f46;
     --brand: var(--brand-solid);
     --brand-hover: var(--brand-solid-hover);
   }

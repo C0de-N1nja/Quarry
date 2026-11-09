@@ -18,20 +18,20 @@ export function QuarryLogo({ size = 20, className = '' }) {
     >
       <defs>
         <linearGradient id="quarry-prism-top" x1="16" y1="2" x2="16" y2="15" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#60A5FA" />
-          <stop offset="1" stopColor="#3B82F6" />
+          <stop stopColor="#F4F4F5" />
+          <stop offset="1" stopColor="#D4D4D8" />
         </linearGradient>
         <linearGradient id="quarry-prism-left" x1="4" y1="12" x2="16" y2="30" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#2563EB" />
-          <stop offset="1" stopColor="#1D4ED8" />
+          <stop stopColor="#A1A1AA" />
+          <stop offset="1" stopColor="#71717A" />
         </linearGradient>
         <linearGradient id="quarry-prism-right" x1="28" y1="12" x2="16" y2="30" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#1E40AF" />
-          <stop offset="1" stopColor="#172554" />
+          <stop stopColor="#52525B" />
+          <stop offset="1" stopColor="#27272A" />
         </linearGradient>
         <linearGradient id="quarry-specular" x1="16" y1="6" x2="16" y2="18" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#93C5FD" stopOpacity="0.8" />
-          <stop offset="1" stopColor="#60A5FA" stopOpacity="0" />
+          <stop stopColor="#FFFFFF" stopOpacity="0.85" />
+          <stop offset="1" stopColor="#E4E4E7" stopOpacity="0" />
         </linearGradient>
       </defs>
 
