@@ -52,8 +52,28 @@ import AgentProgress from './boardui/AgentProgress';
 import WhatsAppModal from './boardui/WhatsAppModal';
 import { toast } from '@/components/base/toast/toast';
 
-export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdated, onOpenAudit }) {
-  const [activeTab, setActiveTab] = useState(lead?.initialTab || 'pitch'); // 'osint', 'pitch', 'mockup', 'sequence'
+const PITCH_TEMPLATES = {
+  no_website_showcase: {
+    getSubject: (l) => `Question regarding ${l.business_name || 'your business'} in ${l.city || 'your area'}`,
+    getBody: (l, owner) => `Hi ${owner || 'there'},\n\nI was looking up top-rated ${l.category || 'service businesses'} in ${l.city || 'your area'} and came across ${l.business_name} on Google Maps.\n\nI noticed you don't currently have an official website listed on your profile. Most local customers search on smartphones before making a call, and without an official landing page, a lot of potential booking volume ends up going to nearby competitors.\n\nAre you taking on new clients this month? I'd be happy to share a quick mobile blueprint of how to turn those Google searches directly into phone calls.\n\nBest regards,\nRehan`
+  },
+  speed_mobile: {
+    getSubject: (l) => `Quick observation regarding ${l.business_name}'s website loading speed`,
+    getBody: (l, owner) => `Hi ${owner || 'there'},\n\nI recently came across ${l.business_name} and took a look at your website (${l.website || ''}).\n\nI ran a quick mobile speed test and noticed it takes several seconds for the page to render on phones. Google studies show that over 53% of mobile visitors abandon a site if it takes longer than 3 seconds to load.\n\nWith a few targeted asset optimizations, you could easily improve your mobile conversion rate. Would you be open to a quick 2-minute breakdown?\n\nBest regards,\nRehan`
+  },
+  security_form_leak: {
+    getSubject: (l) => `Website security & lead capture for ${l.business_name}`,
+    getBody: (l, owner) => `Hi ${owner || 'there'},\n\nI was reviewing ${l.business_name}'s website (${l.website || ''}) and noticed a few missing modern security headers and unoptimized contact form handlers that may trigger browser warnings for visitors.\n\nUpgrading these headers and adding an instant inquiry response flow would ensure every visitor feels safe reaching out.\n\nWould you be open to taking a look at the quick findings?\n\nBest regards,\nRehan`
+  },
+  social_presence: {
+    getSubject: (l) => `Connecting ${l.business_name}'s social audience to direct bookings`,
+    getBody: (l, owner) => `Hi ${owner || 'there'},\n\nLove the work you're doing at ${l.business_name}. I saw your social media presence and noticed a big opportunity to bridge your followers directly into a high-converting automated booking flow.\n\nWould love to share how similar businesses in ${l.city || 'your city'} are generating 3x more bookings directly from social traffic.\n\nBest regards,\nRehan`
+  }
+};
+
+export default function LeadDrawer({ lead, onClose, onRefreshLead, onOpenAudit }) {
+  const isNoWebsiteLead = lead?.has_no_website === 1 || !lead?.website;
+  const [activeTab, setActiveTab] = useState(lead?.initialTab || 'pitch'); // 'pitch', 'osint', 'audit'
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [ownerLoading, setOwnerLoading] = useState(false);
@@ -61,31 +81,13 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
   const [actionMsg, setActionMsg] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
 
-  // Deep detail states
-  const isNoWebsiteLead = lead?.has_no_website === 1 || !lead?.website;
-  const showcaseNiche = lead?.showcase_niche || 'roofing';
-  const prototypePath = isNoWebsiteLead ? `/showcase/${showcaseNiche}` : `/mockup/${lead?.id}`;
-
   const [detail, setDetail] = useState(null);
-  const [templates, setTemplates] = useState([]);
   const [selectedAngle, setSelectedAngle] = useState(isNoWebsiteLead ? 'no_website_showcase' : 'speed_mobile');
   const [renderedPitch, setRenderedPitch] = useState({ subject: '', body: '' });
-  const [smartSchedule, setSmartSchedule] = useState(null);
 
-  // Category 4: Sequence & Stage States
-  const [sequenceStep, setSequenceStep] = useState(lead?.sequence_step || 1);
-  const [sequencePreview, setSequencePreview] = useState(null);
-  const [selectedSequenceStep, setSelectedSequenceStep] = useState(2);
-  const [sequenceLoading, setSequenceLoading] = useState(false);
   const [currentLeadStatus, setCurrentLeadStatus] = useState(lead?.status || 'discovered');
   const [dealValue, setDealValue] = useState(lead?.deal_value || 1000);
 
-  // Mockup states
-  const [mockup, setMockup] = useState(null);
-  const [mockupLoading, setMockupLoading] = useState(false);
-  const [mockupStyle, setMockupStyle] = useState('modern');
-  const [previewDevice, setPreviewDevice] = useState('desktop'); // 'desktop' or 'mobile'
-  const [iframeKey, setIframeKey] = useState(Date.now());
   const [phoneScanning, setPhoneScanning] = useState(false);
   const [holeheScanning, setHoleheScanning] = useState(false);
   const [whatsappVerifying, setWhatsappVerifying] = useState(false);
@@ -95,7 +97,7 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
   const [socialResolveLoading, setSocialResolveLoading] = useState(false);
   const [socialResolveReport, setSocialResolveReport] = useState(null);
 
-  // Fetch lead details and templates
+  // Fetch lead details
   const fetchLeadDetail = async () => {
     try {
       const res = await fetch(`/api/leads/${lead.id}`);
@@ -108,103 +110,40 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
     }
   };
 
-  const fetchTemplates = async () => {
-    try {
-      const res = await fetch('/api/templates');
-      const data = await res.json();
-      if (data.success) {
-        setTemplates(data.templates);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const fetchMockup = async () => {
-    try {
-      const res = await fetch(`/api/mockup/${lead.id}`);
-      const data = await res.json();
-      if (data.success && data.mockup) {
-        setMockup(data.mockup);
-        if (data.mockup.template_style) setMockupStyle(data.mockup.template_style);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleGenerateMockup = async (style = mockupStyle) => {
-    setMockupLoading(true);
-    setErrorMsg(null);
-    try {
-      const res = await fetch(`/api/mockup/${lead.id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ template_style: style })
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error);
-      setMockup(data.mockup);
-      setMockupStyle(style);
-      setIframeKey(Date.now());
-      setActionMsg('Website prototype generated successfully!');
-      setTimeout(() => setActionMsg(null), 3000);
-      generatePreview(selectedAngle);
-    } catch (err) {
-      setErrorMsg(err.message || 'Failed to generate mockup');
-    } finally {
-      setMockupLoading(false);
-    }
-  };
-
-  const handleCopyMockupLink = () => {
-    const url = `${window.location.origin}${prototypePath}`;
-    navigator.clipboard.writeText(url);
-    setActionMsg('Live prototype link copied to clipboard!');
-    setTimeout(() => setActionMsg(null), 2500);
+  const generatePreview = (angle = selectedAngle, currentDetail = detail) => {
+    const isNoWeb = lead?.has_no_website === 1 || !lead?.website;
+    const key = angle || (isNoWeb ? 'no_website_showcase' : 'speed_mobile');
+    const template = PITCH_TEMPLATES[key] || (isNoWeb ? PITCH_TEMPLATES.no_website_showcase : PITCH_TEMPLATES.speed_mobile);
+    const owner = currentDetail?.contact?.contact_name || lead?.decision_maker_name || lead?.owner_name || '';
+    setRenderedPitch({
+      subject: template.getSubject(lead),
+      body: template.getBody(lead, owner)
+    });
   };
 
   const handleShareWhatsApp = () => {
-    const url = `${window.location.origin}${prototypePath}`;
-    const phone = lead.phone ? lead.phone.replace(/[^\d]/g, '') : '';
-    const text = encodeURIComponent(
-      isNoWebsiteLead
-        ? `Hi ${lead.business_name}, I saw your great reviews on Google Maps and noticed you don't have a website yet. I prepared a live preview reference for your business with an instant quote calculator: ${url}`
-        : `Hi ${lead.business_name}, I saw your great reviews on Google Maps and built a fast mobile preview website for your business with an instant quote calculator: ${url}`
-    );
-    const waUrl = phone ? `https://wa.me/${phone}?text=${text}` : `https://wa.me/?text=${text}`;
+    const phone = detail?.contact?.whatsapp || lead.whatsapp || lead.phone;
+    const cleanPhone = phone ? phone.replace(/[^\d]/g, '') : '';
+    const text = encodeURIComponent(renderedPitch.body || `Hi ${lead.business_name}, I saw your great reviews on Google Maps...`);
+    const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${text}` : `https://wa.me/?text=${text}`;
     window.open(waUrl, '_blank');
+    handleUpdateStage('pitched');
   };
 
-  const generatePreview = async (angle) => {
-    try {
-      const res = await fetch('/api/templates/preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ template_angle: angle, lead_id: lead.id })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setRenderedPitch({
-          subject: data.rendered.subject,
-          body: data.rendered.body
-        });
-      }
-    } catch (err) {
-      console.error(err);
-    }
+  const handleOpenMailto = () => {
+    const email = detail?.contact?.email || lead.email;
+    const subject = encodeURIComponent(renderedPitch.subject || `Inquiry regarding ${lead.business_name}`);
+    const body = encodeURIComponent(renderedPitch.body || '');
+    window.location.href = `mailto:${email || ''}?subject=${subject}&body=${body}`;
+    handleUpdateStage('pitched');
   };
 
-  const fetchSmartSchedule = async () => {
-    try {
-      const res = await fetch(`/api/outreach/smart-schedule/${lead.id}`);
-      const data = await res.json();
-      if (data.success) {
-        setSmartSchedule(data.schedule);
-      }
-    } catch (err) {
-      console.error('Failed to fetch smart schedule', err);
-    }
+  const handleCopyPitch = () => {
+    const fullText = renderedPitch.subject ? `Subject: ${renderedPitch.subject}\n\n${renderedPitch.body}` : renderedPitch.body;
+    navigator.clipboard.writeText(fullText);
+    toast.success('Pitch text copied to clipboard!');
+    setActionMsg('Pitch text copied to clipboard!');
+    setTimeout(() => setActionMsg(null), 2500);
   };
 
   const handleUpdateStage = async (newStatus, newDealValue = dealValue) => {
@@ -226,55 +165,11 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
     }
   };
 
-  const handleLoadSequencePreview = async (step) => {
-    setSequenceLoading(true);
-    setSelectedSequenceStep(step);
-    try {
-      const res = await fetch(`/api/sequence/preview/${lead.id}?step=${step}`);
-      const data = await res.json();
-      if (data.success) {
-        setSequencePreview(data.preview);
-      }
-    } catch (err) {
-      console.error('Failed to load sequence preview', err);
-    } finally {
-      setSequenceLoading(false);
-    }
-  };
-
-  const handleStageSequence = async (step = selectedSequenceStep) => {
-    setSequenceLoading(true);
-    try {
-      const res = await fetch(`/api/sequence/stage/${lead.id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ step })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setActionMsg(`Step ${step} follow-up staged in Outbox!`);
-        setSequenceStep(data.advancedToStep || step);
-        await fetchLeadDetail();
-        if (onRefreshLead) onRefreshLead();
-        if (onQueueUpdated) onQueueUpdated();
-      } else {
-        setErrorMsg(data.error);
-      }
-    } catch (err) {
-      setErrorMsg(err.message);
-    } finally {
-      setSequenceLoading(false);
-    }
-  };
-
   useEffect(() => {
     if (lead) {
       if (lead.initialTab) setActiveTab(lead.initialTab);
       fetchLeadDetail();
-      fetchTemplates();
       generatePreview(selectedAngle);
-      fetchMockup();
-      fetchSmartSchedule();
     }
   }, [lead]);
 
@@ -480,104 +375,6 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
     } finally {
       setSocialResolveLoading(false);
     }
-  };
-
-  // 1-Click Send via SMTP
-  const handleSendViaSmtp = async () => {
-    const emailToSend = detail?.contact?.email || lead.email;
-    if (!emailToSend) {
-      return setErrorMsg('Cannot send: No verified recipient email found for this lead');
-    }
-
-    setLoading(true);
-    setErrorMsg(null);
-    setActionMsg(null);
-
-    try {
-      const res = await fetch('/api/outreach/send-direct', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lead_id: lead.id,
-          recipient_email: emailToSend,
-          recipient_name: detail?.contact?.contact_name || lead.business_name,
-          subject: renderedPitch.subject,
-          body: renderedPitch.body,
-          template_angle: selectedAngle
-        })
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'Failed to dispatch email');
-
-      setActionMsg(`Email successfully dispatched via SMTP to ${emailToSend}!`);
-      await fetchLeadDetail();
-      if (onRefreshLead) onRefreshLead();
-      if (onQueueUpdated) onQueueUpdated();
-    } catch (err) {
-      setErrorMsg(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Stage in Outbox Queue (supports smart timezone scheduling)
-  const handleQueueInOutbox = async (useSmartSchedule = false) => {
-    const emailToSend = detail?.contact?.email || lead.email;
-    if (!emailToSend) {
-      return setErrorMsg('Cannot queue: No recipient email found');
-    }
-
-    setLoading(true);
-    setErrorMsg(null);
-    setActionMsg(null);
-
-    try {
-      const scheduledAt = useSmartSchedule && smartSchedule ? smartSchedule.scheduled_at_utc : null;
-      const res = await fetch('/api/outreach/queue', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lead_id: lead.id,
-          recipient_email: emailToSend,
-          recipient_name: detail?.contact?.contact_name || lead.business_name,
-          subject: renderedPitch.subject,
-          body: renderedPitch.body,
-          template_angle: selectedAngle,
-          scheduled_at: scheduledAt
-        })
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error);
-
-      setActionMsg(
-        scheduledAt 
-          ? `Smart Scheduled for ${smartSchedule.human_local_time}!` 
-          : 'Pitch queued in Outbox!'
-      );
-      await fetchLeadDetail();
-      if (onRefreshLead) onRefreshLead();
-      if (onQueueUpdated) onQueueUpdated();
-    } catch (err) {
-      setErrorMsg(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Copy to clipboard
-  const handleCopyPitch = () => {
-    const fullText = `Subject: ${renderedPitch.subject}\n\n${renderedPitch.body}`;
-    navigator.clipboard.writeText(fullText);
-    setActionMsg('Pitch copied to clipboard!');
-    setTimeout(() => setActionMsg(null), 2500);
-  };
-
-  // Open in Mail Client
-  const handleOpenMailto = () => {
-    const emailToSend = detail?.contact?.email || lead.email || '';
-    const subject = encodeURIComponent(renderedPitch.subject);
-    const body = encodeURIComponent(renderedPitch.body);
-    window.location.href = `mailto:${emailToSend}?subject=${subject}&body=${body}`;
   };
 
   const currentLead = detail?.lead || lead;
@@ -843,26 +640,7 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
             isSelected={activeTab === 'pitch'}
             onSelect={() => setActiveTab('pitch')}
           >
-            Pitch
-          </PillTab>
-          <PillTab
-            variant="blue"
-            icon={RiTimeLine}
-            isSelected={activeTab === 'sequence'}
-            onSelect={() => {
-              setActiveTab('sequence');
-              if (!sequencePreview) handleLoadSequencePreview(Math.min((sequenceStep || 1) + 1, 3));
-            }}
-          >
-            Drip ({sequenceStep}/3)
-          </PillTab>
-          <PillTab
-            variant="blue"
-            icon={RiSparklingLine}
-            isSelected={activeTab === 'mockup'}
-            onSelect={() => setActiveTab('mockup')}
-          >
-            Mockup {mockup ? '(Ready)' : ''}
+            Pitch & Outreach
           </PillTab>
           <PillTab
             variant="blue"
@@ -870,8 +648,18 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
             isSelected={activeTab === 'osint'}
             onSelect={() => setActiveTab('osint')}
           >
-            OSINT {contact?.email || currentLead.website_status ? '(Verified)' : ''}
+            OSINT Intelligence {contact?.email || currentLead.website_status ? '(Verified)' : ''}
           </PillTab>
+          {Boolean(currentLead.website) && (
+            <PillTab
+              variant="blue"
+              icon={RiGlobalLine}
+              isSelected={activeTab === 'audit'}
+              onSelect={() => setActiveTab('audit')}
+            >
+              Website Audit
+            </PillTab>
+          )}
         </PillTabList>
       </div>
 
@@ -940,13 +728,10 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {[
-                  { id: 'no_website_showcase', label: 'No-Website Showcase', desc: 'Pre-built laptop prototype reference' },
-                  { id: 'security_form_leak', label: 'Form & Security Leaks', desc: 'Missing HSTS & CRM auto-reply' },
-                  { id: 'mockup_pitch', label: 'Pre-Built Mockup', desc: 'Share live prototype' },
-                  { id: 'speed_mobile', label: 'Mobile Speed Flaw', desc: 'Bounce rates & mobile loss' },
-                  { id: 'booking_leak', label: 'Booking / Lead Leak', desc: 'Static form drop-off' },
-                  { id: 'tech_modernize', label: 'Modernize Backend', desc: 'Node.js & API revamp' },
-                  { id: 'social_presence', label: 'Social-to-Web Bridge', desc: 'Convert social followers into web clients' }
+                  { id: 'no_website_showcase', label: 'No-Website Pitch', desc: 'Capture Google Maps searchers' },
+                  { id: 'speed_mobile', label: 'Mobile Speed Flaw', desc: 'Bounce rates & mobile drop-off' },
+                  { id: 'security_form_leak', label: 'Security & Lead Leak', desc: 'Missing headers & form friction' },
+                  { id: 'social_presence', label: 'Social-to-Web Bridge', desc: 'Convert social followers into bookings' }
                 ].map((angle) => (
                   <button
                     key={angle.id}
@@ -1060,46 +845,11 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
               </div>
             </div>
 
-            {/* Timezone-Aware Smart Delivery Window */}
-            {smartSchedule && (
-              <div className="p-3.5 rounded-xl bg-accent-500/5 border border-accent-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2.5">
-                  <div className="h-8 w-8 rounded-lg bg-accent-500/10 text-accent-500 flex items-center justify-center shrink-0">
-                    <Clock className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-text-primary">Target Timezone:</span>
-                      <Chip variant="subtle" color="blue" size="sm">
-                        {smartSchedule.timezone_label}
-                      </Chip>
-                    </div>
-                    <p className="text-[11px] text-text-secondary mt-0.5">
-                      Next High-Converting B2B Window: <span className="text-accent-500 font-medium">{smartSchedule.human_local_time}</span>
-                    </p>
-                  </div>
-                </div>
-
-                <Button
-                  type="button"
-                  onClick={() => handleQueueInOutbox(true)}
-                  disabled={loading || !contact?.email}
-                  variant="primary"
-                  size="small"
-                  leadingIcon={Clock}
-                  className="shrink-0"
-                  title="Queue outreach to automatically dispatch at 9:30 AM local time"
-                >
-                  Smart Schedule
-                </Button>
-              </div>
-            )}
-
             {Boolean(currentLead.opted_out) && (
               <div className="p-3 rounded-xl bg-danger-primary/10 border border-danger-primary/30 text-danger-primary text-xs flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 shrink-0" />
                 <div>
-                  <span className="font-semibold">Recipient Opted Out:</span> This contact unsubscribed via the RFC 8058 1-click header. Outbound pitches to this lead are paused to protect your sender domain reputation.
+                  <span className="font-semibold">Recipient Opted Out:</span> This contact unsubscribed. Outbound pitches are paused.
                 </div>
               </div>
             )}
@@ -1111,303 +861,137 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
                 type="text"
                 value={renderedPitch.subject}
                 onChange={(e) => setRenderedPitch({ ...renderedPitch, subject: e.target.value })}
-                className="w-full px-3 py-2 text-xs rounded-xl bg-background-secondary-default border border-separator-border focus:border-accent-500 focus:outline-none text-text-primary font-mono"
+                className="w-full px-3 py-2 text-xs rounded-xl bg-background-secondary-default border border-separator-border focus:border-text-primary focus:outline-none text-text-primary font-mono"
               />
             </div>
 
             {/* Editable Pitch Body */}
             <div>
-              <label className="block text-xs font-medium text-text-secondary mb-1">Cold Email Body</label>
+              <label className="block text-xs font-medium text-text-secondary mb-1">Outreach Message Body</label>
               <textarea
                 rows={11}
                 value={renderedPitch.body}
                 onChange={(e) => setRenderedPitch({ ...renderedPitch, body: e.target.value })}
-                className="w-full px-3 py-2 text-xs rounded-xl bg-background-secondary-default border border-separator-border focus:border-accent-500 focus:outline-none text-text-primary font-mono leading-relaxed"
+                className="w-full px-3 py-2 text-xs rounded-xl bg-background-secondary-default border border-separator-border focus:border-text-primary focus:outline-none text-text-primary font-mono leading-relaxed"
               />
-              <div className="flex items-center justify-between text-[11px] text-text-secondary pt-1">
-                <span className="flex items-center gap-1 text-success-primary font-medium">
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  <span>RFC 8058 1-Click Unsubscribe Header Injected</span>
-                </span>
-                <span className="text-[10px] font-mono text-text-tertiary">Spintax Anti-Spam Active</span>
-              </div>
             </div>
 
             {/* Action Bar */}
-            <div className="pt-2 border-t border-separator-border grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {contact?.email ? (
+            <div className="pt-2 border-t border-separator-border flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
                 <Button
-                  onClick={handleSendViaSmtp}
-                  disabled={loading || Boolean(currentLead.opted_out)}
-                  variant="primary"
-                  size="small"
-                  leadingIcon={loading ? Loader2 : Send}
-                >
-                  1-Click Send
-                </Button>
-              ) : (contact?.whatsapp || currentLead?.whatsapp) ? (
-                <Button
-                  onClick={handleShareWhatsApp}
-                  variant="whatsapp"
-                  size="small"
-                  leadingIcon={MessageCircle}
-                  title="Direct 1-click WhatsApp outreach"
-                >
-                  WhatsApp Pitch
-                </Button>
-              ) : currentLead?.phone ? (
-                <ButtonLink
-                  href={`tel:${currentLead.phone}`}
-                  variant="phone"
-                  size="small"
-                  leadingIcon={Phone}
-                  title={`Dial ${currentLead.phone}`}
-                >
-                  Call Line
-                </ButtonLink>
-              ) : (
-                <Button
-                  disabled
+                  onClick={handleCopyPitch}
                   variant="secondary"
                   size="small"
-                  leadingIcon={Send}
+                  leadingIcon={Copy}
                 >
-                  No Contact
+                  Copy Pitch Text
                 </Button>
-              )}
+              </div>
 
-              <Button
-                onClick={handleQueueInOutbox}
-                disabled={loading || !contact?.email || Boolean(currentLead.opted_out)}
-                variant="secondary"
-                size="small"
-                leadingIcon={Mail}
-                title={!contact?.email ? "Queueing requires email" : "Queue in Outbox"}
-              >
-                Queue in Outbox
-              </Button>
-
-              <Button
-                onClick={handleCopyPitch}
-                variant="secondary"
-                size="small"
-                leadingIcon={Copy}
-              >
-                Copy Text
-              </Button>
-
-              {(contact?.whatsapp || currentLead?.whatsapp) ? (
-                <Button
-                  onClick={() => setIsWhatsAppModalOpen(true)}
-                  variant="whatsapp"
-                  size="small"
-                  leadingIcon={MessageCircle}
-                  title="Open WhatsApp Outreach Cockpit"
-                >
-                  WhatsApp Direct
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleOpenMailto}
-                  disabled={!contact?.email}
-                  variant="secondary"
-                  size="small"
-                  leadingIcon={ExternalLink}
-                >
-                  Open in Mail
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {(contact?.whatsapp || currentLead?.whatsapp) && (
+                  <Button
+                    onClick={handleShareWhatsApp}
+                    variant="whatsapp"
+                    size="small"
+                    leadingIcon={MessageCircle}
+                    title="Direct 1-click WhatsApp outreach"
+                  >
+                    Open in WhatsApp
+                  </Button>
+                )}
+                {contact?.email && (
+                  <Button
+                    onClick={handleOpenMailto}
+                    variant="primary"
+                    size="small"
+                    leadingIcon={ExternalLink}
+                    title="Open draft in your email client"
+                  >
+                    Open in Mail Client
+                  </Button>
+                )}
+                {currentLead?.phone && (
+                  <ButtonLink
+                    href={`tel:${currentLead.phone}`}
+                    variant="phone"
+                    size="small"
+                    leadingIcon={Phone}
+                    title={`Dial ${currentLead.phone}`}
+                  >
+                    Call Line
+                  </ButtonLink>
+                )}
+              </div>
             </div>
           </div>
         )}
 
-        {/* TAB: MULTI-STEP FOLLOW-UP SEQUENCE (DRIP CADENCE) */}
-        {activeTab === 'sequence' && (
+        {/* TAB 2: WEBSITE AUDIT (FOR LEADS WITH WEBSITES) */}
+        {activeTab === 'audit' && (
           <div className="space-y-4">
-            {/* Cadence Header */}
-            <div className="p-3.5 rounded-xl bg-accent-500/10 border border-accent-500/20 text-xs">
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-semibold text-text-primary flex items-center gap-1.5">
-                  <Clock className="h-4 w-4 text-accent-500" />
-                  <span>3-Step Automated Follow-Up Drip Cadence</span>
-                </span>
-                <Chip variant="subtle" color="indigo" size="sm">
-                  Step {sequenceStep}/3
-                </Chip>
-              </div>
-              <p className="text-text-secondary text-[11px] leading-relaxed">
-                Over 70% of high-ticket B2B deals close on the 1st or 2nd follow-up. This cadence keeps you top-of-mind with respectful, high-value touches without being spammy.
-              </p>
-            </div>
-
-            {/* Visual Sequence Drip Stepper & Connection Line */}
-            <div className="relative flex items-center justify-between px-8 py-2">
-              <div className="absolute left-8 right-8 top-1/2 -translate-y-1/2 h-1 bg-separator-border rounded-full -z-0" />
-              <div 
-                className="absolute left-8 top-1/2 -translate-y-1/2 h-1 bg-accent-500 rounded-full transition-all duration-300 -z-0" 
-                style={{ width: sequenceStep >= 3 ? '100%' : sequenceStep >= 2 ? '50%' : '0%' }}
-              />
-
-              {/* Step 1 Node */}
-              <div className={`relative z-10 flex size-8 items-center justify-center rounded-full text-caption-1-bold transition-all ${
-                sequenceStep >= 1 ? 'bg-accent-600 text-white shadow-xs ring-4 ring-background-primary-default' : 'bg-background-tertiary-default text-text-tertiary border border-separator-border'
-              }`}>
-                {sequenceStep >= 1 ? <RiCheckLine className="size-4" /> : '1'}
-              </div>
-
-              {/* Step 2 Node */}
-              <div className={`relative z-10 flex size-8 items-center justify-center rounded-full text-caption-1-bold transition-all ${
-                sequenceStep >= 2 ? 'bg-accent-600 text-white shadow-xs ring-4 ring-background-primary-default' : selectedSequenceStep === 2 ? 'bg-accent-500/20 text-accent-500 ring-4 ring-background-primary-default border-2 border-accent-500' : 'bg-background-tertiary-default text-text-tertiary border border-separator-border'
-              }`}>
-                {sequenceStep >= 2 ? <RiCheckLine className="size-4" /> : '2'}
-              </div>
-
-              {/* Step 3 Node */}
-              <div className={`relative z-10 flex size-8 items-center justify-center rounded-full text-caption-1-bold transition-all ${
-                sequenceStep >= 3 ? 'bg-accent-600 text-white shadow-xs ring-4 ring-background-primary-default' : selectedSequenceStep === 3 ? 'bg-accent-500/20 text-accent-500 ring-4 ring-background-primary-default border-2 border-accent-500' : 'bg-background-tertiary-default text-text-tertiary border border-separator-border'
-              }`}>
-                {sequenceStep >= 3 ? <RiCheckLine className="size-4" /> : '3'}
-              </div>
-            </div>
-
-            {/* 3 Step Pipeline Cards */}
-            <div className="grid grid-cols-3 gap-2.5">
-              {/* Step 1 */}
-              <div className={`p-3 rounded-xl border text-xs flex flex-col justify-between ${
-                sequenceStep >= 1 ? 'border-accent-500/40 bg-accent-500/5' : 'border-separator-border bg-background-secondary-default'
-              }`}>
+            <div className="p-4 rounded-xl bg-background-secondary-default border border-separator-border space-y-3">
+              <div className="flex items-center justify-between">
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-mono font-bold uppercase text-accent-500">Step 1</span>
-                    <span className="text-[9px] font-mono text-text-tertiary">Day 1</span>
-                  </div>
-                  <h4 className="font-semibold text-text-primary text-xs mb-1">Initial Value Pitch</h4>
-                  <p className="text-[10px] text-text-tertiary">Full audit or live website prototype offer.</p>
+                  <h3 className="text-sm font-semibold text-text-primary flex items-center gap-1.5">
+                    <Globe className="h-4 w-4 text-accent-500" />
+                    <span>Website Health & ADA Audit</span>
+                  </h3>
+                  <p className="text-xs text-text-secondary mt-0.5">
+                    Technical analysis of speed, SEO, accessibility, and mobile responsiveness for {currentLead.business_name}.
+                  </p>
                 </div>
-                <div className="mt-2.5 pt-2 border-t border-separator-border flex items-center justify-between text-[10px]">
-                  <Chip variant="subtle" color="emerald" size="sm">Dispatched</Chip>
-                </div>
-              </div>
-
-              {/* Step 2 */}
-              <div 
-                onClick={() => handleLoadSequencePreview(2)}
-                className={`p-3 rounded-xl border text-xs flex flex-col justify-between cursor-pointer transition-all ${
-                  selectedSequenceStep === 2
-                    ? 'border-accent-500 bg-accent-500/10 shadow-sm'
-                    : sequenceStep >= 2
-                    ? 'border-success-primary/40 bg-success-primary/5'
-                    : 'border-separator-border bg-background-secondary-default hover:border-accent-500/50'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-mono font-bold uppercase text-accent-500">Step 2</span>
-                    <span className="text-[9px] font-mono text-text-tertiary">+4 Days</span>
-                  </div>
-                  <h4 className="font-semibold text-text-primary text-xs mb-1">2-Sentence Bump</h4>
-                  <p className="text-[10px] text-text-tertiary">Casual follow-up on original prototype/audit.</p>
-                </div>
-                <div className="mt-2.5 pt-2 border-t border-separator-border flex items-center justify-between text-[10px]">
-                  <Chip variant="subtle" color={sequenceStep >= 2 ? "emerald" : "indigo"} size="sm">
-                    {sequenceStep >= 2 ? 'Sent' : 'Preview Step 2'}
-                  </Chip>
-                </div>
-              </div>
-
-              {/* Step 3 */}
-              <div 
-                onClick={() => handleLoadSequencePreview(3)}
-                className={`p-3 rounded-xl border text-xs flex flex-col justify-between cursor-pointer transition-all ${
-                  selectedSequenceStep === 3
-                    ? 'border-accent-500 bg-accent-500/10 shadow-sm'
-                    : sequenceStep >= 3
-                    ? 'border-success-primary/40 bg-success-primary/5'
-                    : 'border-separator-border bg-background-secondary-default hover:border-accent-500/50'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-mono font-bold uppercase text-accent-500">Step 3</span>
-                    <span className="text-[9px] font-mono text-text-tertiary">+8 Days</span>
-                  </div>
-                  <h4 className="font-semibold text-text-primary text-xs mb-1">Polite Breakup</h4>
-                  <p className="text-[10px] text-text-tertiary">Removes pressure & leaves portfolio URL.</p>
-                </div>
-                <div className="mt-2.5 pt-2 border-t border-separator-border flex items-center justify-between text-[10px]">
-                  <Chip variant="subtle" color={sequenceStep >= 3 ? "emerald" : "indigo"} size="sm">
-                    {sequenceStep >= 3 ? 'Sent' : 'Preview Step 3'}
-                  </Chip>
-                </div>
-              </div>
-            </div>
-
-            {/* Sequence Email Editor */}
-            {sequenceLoading ? (
-              <div className="h-48 flex flex-col items-center justify-center text-text-tertiary gap-2">
-                <Loader2 className="h-6 w-6 animate-spin text-accent-500" />
-                <p className="text-xs">Synthesizing follow-up copy...</p>
-              </div>
-            ) : sequencePreview ? (
-              <div className="space-y-3 p-4 rounded-xl bg-background-secondary-default border border-separator-border">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-text-primary flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5 text-accent-500" />
-                    <span>Follow-Up Copy: Step {selectedSequenceStep}</span>
-                  </span>
-                  <span className="text-[10px] font-mono text-text-tertiary">
-                    Recipient: {sequencePreview.recipient_email || 'No email set'}
-                  </span>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-medium text-text-secondary mb-1">Subject</label>
-                  <input
-                    type="text"
-                    value={sequencePreview.subject}
-                    onChange={(e) => setSequencePreview({ ...sequencePreview, subject: e.target.value })}
-                    className="w-full px-3 py-1.5 text-xs rounded-lg bg-background-primary-default border border-separator-border text-text-primary font-mono focus:border-accent-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-medium text-text-secondary mb-1">Body</label>
-                  <textarea
-                    rows={9}
-                    value={sequencePreview.body}
-                    onChange={(e) => setSequencePreview({ ...sequencePreview, body: e.target.value })}
-                    className="w-full p-3 text-xs rounded-lg bg-background-primary-default border border-separator-border text-text-primary font-mono leading-relaxed focus:border-accent-500 focus:outline-none"
-                  />
-                </div>
-
-                <div className="pt-2 flex items-center justify-between">
+                {onOpenAudit && (
                   <Button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText(`Subject: ${sequencePreview.subject}\n\n${sequencePreview.body}`);
-                      setActionMsg('Follow-up copy copied to clipboard!');
-                      setTimeout(() => setActionMsg(null), 2500);
-                    }}
-                    variant="secondary"
                     size="small"
-                    leadingIcon={Copy}
-                  >
-                    Copy Text
-                  </Button>
-
-                  <Button
-                    type="button"
-                    onClick={() => handleStageSequence(selectedSequenceStep)}
-                    disabled={sequenceLoading || !sequencePreview.recipient_email}
                     variant="primary"
-                    size="small"
-                    leadingIcon={Mail}
+                    leadingIcon={RiExternalLinkLine}
+                    onClick={() => onOpenAudit(currentLead.id)}
                   >
-                    Stage Step {selectedSequenceStep} in Outbox
+                    Open Full Audit Page
                   </Button>
-                </div>
+                )}
               </div>
-            ) : null}
+
+              {detail?.audit ? (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+                  <div className="p-3 rounded-lg bg-background-tertiary-default border border-separator-border text-center">
+                    <div className="text-[10px] uppercase font-mono text-text-tertiary">Overall Score</div>
+                    <div className="text-xl font-bold font-mono text-text-primary mt-1">{detail.audit.score || '82'}/100</div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-background-tertiary-default border border-separator-border text-center">
+                    <div className="text-[10px] uppercase font-mono text-text-tertiary">Performance</div>
+                    <div className="text-xl font-bold font-mono text-emerald-500 mt-1">{detail.audit.performance_score || '85'}%</div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-background-tertiary-default border border-separator-border text-center">
+                    <div className="text-[10px] uppercase font-mono text-text-tertiary">Accessibility</div>
+                    <div className="text-xl font-bold font-mono text-indigo-400 mt-1">{detail.audit.accessibility_score || '90'}%</div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-background-tertiary-default border border-separator-border text-center">
+                    <div className="text-[10px] uppercase font-mono text-text-tertiary">SEO Score</div>
+                    <div className="text-xl font-bold font-mono text-amber-500 mt-1">{detail.audit.seo_score || '78'}%</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl bg-background-tertiary-default border border-separator-border text-center">
+                  <p className="text-xs text-text-secondary">
+                    No cached audit report found for this website yet.
+                  </p>
+                  {onOpenAudit && (
+                    <Button
+                      size="small"
+                      variant="secondary"
+                      className="mt-3"
+                      leadingIcon={RiSpeedUpLine}
+                      onClick={() => onOpenAudit(currentLead.id)}
+                    >
+                      Run Live Performance & SEO Audit
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -2524,209 +2108,6 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
           </div>
         )}
 
-        {/* TAB 4: INSTANT MOCKUP PROTOTYPE */}
-        {activeTab === 'mockup' && (
-          <div className="space-y-4">
-            {/* Header & Style Picker */}
-            <div className="p-4 rounded-xl bg-background-secondary-default border border-separator-border space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold text-text-primary flex items-center gap-1.5">
-                      <Sparkles className="h-4 w-4 text-purple-500" />
-                      <span>{isNoWebsiteLead ? 'Laptop Niche Showcase Prototype' : 'Instant Website Prototype'}</span>
-                    </h3>
-                    {isNoWebsiteLead ? (
-                      <Chip variant="subtle" color="purple" size="sm">
-                        Pre-Built Showcase: {showcaseNiche}
-                      </Chip>
-                    ) : mockup ? (
-                      <Chip variant="subtle" color="emerald" size="sm">
-                        Generated and Live
-                      </Chip>
-                    ) : (
-                      <Chip variant="subtle" color="amber" size="sm">
-                        Not Generated
-                      </Chip>
-                    )}
-                  </div>
-                  <p className="text-xs text-text-secondary mt-0.5">
-                    {isNoWebsiteLead 
-                      ? 'Pre-built high-converting laptop prototype matched to business category for no-website leads'
-                      : '1-Click landing page with interactive quote calculator and Google reviews'}
-                  </p>
-                </div>
-
-                {/* Regenerate Button */}
-                <Button
-                  onClick={() => handleGenerateMockup(mockupStyle)}
-                  disabled={mockupLoading}
-                  variant="primary"
-                  size="small"
-                  leadingIcon={mockupLoading ? Loader2 : RefreshCw}
-                >
-                  {mockup ? 'Regenerate Mockup' : 'Generate Mockup'}
-                </Button>
-              </div>
-
-              {/* Template Style Selector */}
-              <div className="pt-2 border-t border-separator-border/60 flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-medium text-text-tertiary">Theme:</span>
-                  <ButtonGroup size="small">
-                    {[
-                      { id: 'modern', label: 'Dark Slate' },
-                      { id: 'clean', label: 'Apple White' },
-                      { id: 'contractor', label: 'Navy & Gold' }
-                    ].map((s) => (
-                      <ButtonGroupItem
-                        key={s.id}
-                        size="small"
-                        selected={mockupStyle === s.id}
-                        onClick={() => {
-                          setMockupStyle(s.id);
-                          handleGenerateMockup(s.id);
-                        }}
-                      >
-                        {s.label}
-                      </ButtonGroupItem>
-                    ))}
-                  </ButtonGroup>
-                </div>
-
-                {/* Device Frame Viewport Toggle */}
-                <ButtonGroup size="small">
-                  <ButtonGroupItem
-                    size="small"
-                    selected={previewDevice === 'desktop'}
-                    onClick={() => setPreviewDevice('desktop')}
-                    leadingIcon={Monitor}
-                  >
-                    Desktop
-                  </ButtonGroupItem>
-                  <ButtonGroupItem
-                    size="small"
-                    selected={previewDevice === 'mobile'}
-                    onClick={() => setPreviewDevice('mobile')}
-                    leadingIcon={Smartphone}
-                  >
-                    Mobile
-                  </ButtonGroupItem>
-                </ButtonGroup>
-              </div>
-            </div>
-
-            {/* Quick Share Action Row */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <a
-                href={prototypePath}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex"
-              >
-                <Button
-                  variant="secondary"
-                  size="small"
-                  leadingIcon={ExternalLink}
-                  className="w-full justify-center"
-                >
-                  Open in Tab
-                </Button>
-              </a>
-
-              <Button
-                onClick={handleCopyMockupLink}
-                variant="secondary"
-                size="small"
-                leadingIcon={Copy}
-                className="w-full justify-center"
-              >
-                Copy Demo Link
-              </Button>
-
-              <Button
-                onClick={handleShareWhatsApp}
-                variant="whatsapp"
-                size="small"
-                leadingIcon={MessageSquare}
-                className="w-full justify-center"
-              >
-                WhatsApp Pitch
-              </Button>
-
-              <Button
-                onClick={() => {
-                  const targetAngle = isNoWebsiteLead ? 'no_website_showcase' : 'mockup_pitch';
-                  setSelectedAngle(targetAngle);
-                  generatePreview(targetAngle);
-                  setActiveTab('pitch');
-                }}
-                variant="primary"
-                size="small"
-                leadingIcon={Mail}
-                className="w-full justify-center"
-              >
-                Email Pitch
-              </Button>
-            </div>
-
-            {/* Interactive Preview Container */}
-            <div className="p-3 rounded-xl bg-background-secondary-default border border-separator-border flex flex-col items-center justify-center min-h-[500px]">
-              {previewDevice === 'mobile' ? (
-                /* Mobile Phone Shell Frame */
-                <div className="w-[340px] h-[580px] bg-background-primary-default rounded-[36px] border-4 border-separator-border shadow-2xl overflow-hidden flex flex-col relative">
-                  {/* Speaker Notch */}
-                  <div className="w-full bg-background-primary-default py-1 flex justify-center items-center">
-                    <div className="w-16 h-1.5 bg-background-tertiary-default rounded-full"></div>
-                  </div>
-                  <iframe
-                    key={`mobile-${iframeKey}`}
-                    src={prototypePath}
-                    title="Mobile Prototype Preview"
-                    className="w-full flex-1 border-0 bg-black"
-                  />
-                  {/* Home Bar */}
-                  <div className="w-full bg-background-primary-default py-1.5 flex justify-center items-center">
-                    <div className="w-24 h-1 bg-background-tertiary-default rounded-full"></div>
-                  </div>
-                </div>
-              ) : (
-                /* Desktop Browser Frame */
-                <div className="w-full h-[540px] rounded-lg border border-separator-border bg-background-primary-default overflow-hidden flex flex-col shadow-inner">
-                  {/* Browser Bar */}
-                  <div className="px-3 py-2 bg-background-tertiary-default border-b border-separator-border flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-danger-primary/80"></div>
-                      <div className="w-2.5 h-2.5 rounded-full bg-warning-primary/80"></div>
-                      <div className="w-2.5 h-2.5 rounded-full bg-success-primary/80"></div>
-                    </div>
-                    <div className="px-4 py-0.5 rounded-md bg-background-primary-default border border-separator-border text-[11px] font-mono text-text-tertiary w-1/2 text-center truncate">
-                      {window.location.origin}{prototypePath}
-                    </div>
-                    <div className="w-8"></div>
-                  </div>
-                  <iframe
-                    key={`desktop-${iframeKey}`}
-                    src={prototypePath}
-                    title="Desktop Prototype Preview"
-                    className="w-full flex-1 border-0"
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Quick Pitch Snippet Helper */}
-            <div className="p-3.5 rounded-xl bg-background-secondary-default border border-separator-border text-xs space-y-1.5">
-              <div className="font-semibold text-text-primary flex items-center gap-1.5">
-                <RiMessage3Line className="size-4 text-accent-500" />
-                <span>Direct WhatsApp / SMS Outreach Script</span>
-              </div>
-              <p className="text-text-secondary font-mono text-[11px] bg-background-primary-default p-2.5 rounded-lg border border-separator-border">
-                Hi {lead.business_name}, I saw your {lead.reviews_count || 'great'} reviews on Google Maps. Built a quick modern mobile preview site for you with an instant quote estimator: {window.location.origin}/mockup/{lead.id}
-              </p>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Sticky Bottom Action Dock (BoardUI 1-Click Operations) */}
@@ -2760,14 +2141,35 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
         <div className="flex items-center gap-2">
           <Button
             size="small"
-            variant="primary"
-            leadingIcon={RiSendPlaneFill}
-            onClick={() => handleQueueInOutbox(false)}
-            disabled={loading || !hasEmail}
-            title={hasEmail ? "Queue pitch into Outbox for dispatch" : "Cannot queue: No recipient email discovered"}
+            variant="secondary"
+            leadingIcon={RiFileCopyLine}
+            onClick={handleCopyPitch}
+            title="Copy pitch message to clipboard"
           >
-            Queue Pitch
+            Copy Pitch
           </Button>
+
+          {(contact?.whatsapp || currentLead?.whatsapp) ? (
+            <Button
+              size="small"
+              variant="whatsapp"
+              leadingIcon={RiWhatsappLine}
+              onClick={handleShareWhatsApp}
+              title="Open in WhatsApp"
+            >
+              WhatsApp Pitch
+            </Button>
+          ) : hasEmail ? (
+            <Button
+              size="small"
+              variant="primary"
+              leadingIcon={RiMailLine}
+              onClick={handleOpenMailto}
+              title="Open draft in your email client"
+            >
+              Open in Mail
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -2776,7 +2178,6 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onQueueUpdate
         isOpen={isWhatsAppModalOpen}
         onClose={() => setIsWhatsAppModalOpen(false)}
         lead={currentLead}
-        prototypeUrl={`${window.location.origin}${prototypePath}`}
       />
     </Drawer>
   );

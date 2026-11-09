@@ -3,14 +3,9 @@ import {
   RiDashboardLine, 
   RiKanbanView2, 
   RiSearch2Line,
-  RiMailSendLine, 
   RiSettings4Line, 
-  RiFlashlightFill,
-  RiCompass3Line,
   RiArrowLeftSLine,
   RiArrowRightSLine,
-  RiArrowDownSLine,
-  RiArrowUpSLine,
   RiAlertLine
 } from '@remixicon/react';
 import { IconButton } from '@/components/base/buttons/icon-button';
@@ -21,13 +16,10 @@ export default function DashboardSidebar({
   onViewModeChange,
   stats,
   onOpenSearch,
-  onOpenAutoPilot,
-  onOpenQueue,
   onOpenSettings,
   onOpenOnboarding
 }) {
   const [collapsed, setCollapsed] = useState(false);
-  const [isAutomationOpen, setIsAutomationOpen] = useState(false);
   const [systemError, setSystemError] = useState(null);
 
   // Monitor health silently — show status indicator ONLY when something is wrong
@@ -186,28 +178,6 @@ export default function DashboardSidebar({
             {!collapsed && <span className="flex-1 text-left truncate">Find Leads</span>}
           </button>
 
-          {/* Outreach Queue */}
-          <button
-            type="button"
-            onClick={onOpenQueue}
-            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-text-secondary hover:bg-background-tertiary-default/60 hover:text-text-primary transition-colors cursor-pointer ${
-              collapsed ? 'justify-center px-0' : ''
-            }`}
-            title="Outreach Queue"
-          >
-            <RiMailSendLine className="size-4 shrink-0" aria-hidden="true" />
-            {!collapsed && (
-              <>
-                <span className="flex-1 text-left truncate">Outreach Queue</span>
-                {inFlightCount > 0 && (
-                  <span className="px-1.5 py-0.5 text-[10px] bg-background-tertiary-default text-text-primary border border-separator-border rounded-full font-mono font-bold">
-                    {inFlightCount}
-                  </span>
-                )}
-              </>
-            )}
-          </button>
-
           {/* Settings */}
           <button
             type="button"
@@ -220,72 +190,6 @@ export default function DashboardSidebar({
             <RiSettings4Line className="size-4 shrink-0" aria-hidden="true" />
             {!collapsed && <span className="flex-1 text-left truncate">Settings</span>}
           </button>
-        </div>
-
-        {/* Collapsed "Automation" Group (Auto-Pilot Agent and Discovery Wizard) */}
-        <div className="pt-2 border-t border-separator-border/60">
-          {!collapsed ? (
-            <div>
-              <button
-                type="button"
-                onClick={() => setIsAutomationOpen(prev => !prev)}
-                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-text-tertiary hover:text-text-primary transition-colors cursor-pointer"
-                aria-expanded={isAutomationOpen}
-              >
-                <span>Automation</span>
-                {isAutomationOpen ? (
-                  <RiArrowUpSLine className="size-3.5" aria-hidden="true" />
-                ) : (
-                  <RiArrowDownSLine className="size-3.5" aria-hidden="true" />
-                )}
-              </button>
-
-              {isAutomationOpen && (
-                <div className="space-y-1 mt-1 pl-1">
-                  <button
-                    type="button"
-                    onClick={() => onOpenAutoPilot && onOpenAutoPilot()}
-                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:bg-background-tertiary-default/60 hover:text-text-primary transition-colors cursor-pointer"
-                    title="Launch Auto-Pilot Agent"
-                  >
-                    <RiFlashlightFill className="size-3.5 text-text-tertiary shrink-0" aria-hidden="true" />
-                    <span className="truncate">Auto-Pilot Agent</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => onOpenOnboarding && onOpenOnboarding()}
-                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:bg-background-tertiary-default/60 hover:text-text-primary transition-colors cursor-pointer"
-                    title="Launch Discovery Wizard"
-                  >
-                    <RiCompass3Line className="size-3.5 text-text-tertiary shrink-0" aria-hidden="true" />
-                    <span className="truncate">Discovery Wizard</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-1">
-              <button
-                type="button"
-                onClick={() => onOpenAutoPilot && onOpenAutoPilot()}
-                className="w-full flex items-center justify-center py-2 rounded-xl text-text-secondary hover:bg-background-tertiary-default/60 hover:text-text-primary transition-colors cursor-pointer"
-                title="Auto-Pilot Agent"
-                aria-label="Auto-Pilot Agent"
-              >
-                <RiFlashlightFill className="size-4 shrink-0" aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                onClick={() => onOpenOnboarding && onOpenOnboarding()}
-                className="w-full flex items-center justify-center py-2 rounded-xl text-text-secondary hover:bg-background-tertiary-default/60 hover:text-text-primary transition-colors cursor-pointer"
-                title="Discovery Wizard"
-                aria-label="Discovery Wizard"
-              >
-                <RiCompass3Line className="size-4 shrink-0" aria-hidden="true" />
-              </button>
-            </div>
-          )}
         </div>
       </div>
 

@@ -32,9 +32,7 @@ export default function CommandPalette({
   leads = [],
   onSelectLead,
   onOpenAudit,
-  onOpenAutoPilot,
   onOpenSearch,
-  onOpenQueue,
   onOpenSettings,
   onOpenOnboarding,
   onExportExcel,
@@ -56,15 +54,6 @@ export default function CommandPalette({
 
   // Static commands list
   const actions = useMemo(() => [
-    {
-      id: 'autopilot',
-      category: 'Actions',
-      title: 'Launch 1-Click Auto-Pilot',
-      description: 'Run automated batch scraping, OSINT and outreach pipeline',
-      icon: RiFlashlightFill,
-      iconColor: 'text-accent-500',
-      action: () => { onClose(); onOpenAutoPilot && onOpenAutoPilot(); }
-    },
     {
       id: 'onboarding-wizard',
       category: 'Actions',
@@ -93,15 +82,6 @@ export default function CommandPalette({
       action: () => { onClose(); onOpenSearch && onOpenSearch('csv'); }
     },
     {
-      id: 'delivery-queue',
-      category: 'Actions',
-      title: 'Open Delivery Outbox Queue',
-      description: 'Inspect pending scheduled emails and campaign drips',
-      icon: RiMailSendLine,
-      iconColor: 'text-amber-500',
-      action: () => { onClose(); onOpenQueue && onOpenQueue(); }
-    },
-    {
       id: 'export-excel',
       category: 'Actions',
       title: 'Export Leads to Excel (.xlsx)',
@@ -122,8 +102,8 @@ export default function CommandPalette({
     {
       id: 'settings',
       category: 'Preferences',
-      title: 'Settings & SMTP Pool',
-      description: 'Configure email providers, API keys and automation options',
+      title: 'Settings & OSINT Options',
+      description: 'Configure scrapers, API keys and preferences',
       icon: RiSettings4Line,
       iconColor: 'text-neutral-400',
       action: () => { onClose(); onOpenSettings && onOpenSettings(); }
@@ -155,7 +135,7 @@ export default function CommandPalette({
       iconColor: 'text-accent-500',
       action: () => { onClose(); onViewModeChange && onViewModeChange('kanban'); }
     }
-  ], [theme, onClose, onOpenAutoPilot, onOpenSearch, onOpenQueue, onExportExcel, onToggleTheme, onOpenSettings, onViewModeChange]);
+  ], [theme, onClose, onOpenSearch, onExportExcel, onToggleTheme, onOpenSettings, onViewModeChange]);
 
   // Lead search results
   const matchingLeads = useMemo(() => {

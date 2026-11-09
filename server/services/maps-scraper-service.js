@@ -10,7 +10,6 @@ const Lead = require('../models/Lead');
 const noWebsiteVerifier = require('./no-website-verifier');
 const { isSocialOrAggregator, extractSocialUrls } = require('./social-domains');
 const timezoneService = require('./timezone-service');
-const showcaseService = require('./showcase-service');
 const notificationService = require('./notification-service');
 const telemetryService = require('./telemetry-service');
 const phoneService = require('./phone-service');
@@ -912,7 +911,7 @@ class MapsScraperService {
           sequence_step: 1,
           has_no_website: isSocialOrNone ? 1 : 0,
           website_status: isSocialOrNone ? (!rawWeb ? 'no_website' : 'social_only') : 'active',
-          showcase_niche: isSocialOrNone ? showcaseService.matchNiche(keyword, title) : null
+          showcase_niche: isSocialOrNone ? (keyword || 'general') : null
         });
       }
 

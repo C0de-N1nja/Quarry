@@ -79,7 +79,6 @@ export default function BoardLeadTable({
   onOpenOsintRun,
   onDeleteLead,
   onArchiveLead,
-  onOpenAutoPilot,
   onOpenSearch,
   onExportExcel,
   activeFilter = 'all',
@@ -505,7 +504,11 @@ export default function BoardLeadTable({
                 size="small"
                 variant="secondary"
                 leadingIcon={RiCheckDoubleLine}
-                onClick={() => onOpenAutoPilot && onOpenAutoPilot(Array.from(selectedLeadIds))}
+                onClick={() => {
+                  const firstId = Array.from(selectedLeadIds)[0];
+                  const targetLead = leads.find(l => l.id === firstId);
+                  if (targetLead && onOpenLeadDrawer) onOpenLeadDrawer(targetLead);
+                }}
               >
                 Pitch
               </Button>

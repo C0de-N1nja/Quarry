@@ -33,7 +33,6 @@ export default function SplitView({
   onRefreshLead,
   onOpenOsintRun,
   onDeleteLead,
-  onOpenAutoPilot,
   onOpenLeadDrawer,
   activeFilter,
   stats

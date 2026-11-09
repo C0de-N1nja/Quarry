@@ -18,7 +18,6 @@ export default function LeadTable({
   onArchiveLead,
   onResolveWebsite,
   onOpenSearch,
-  onOpenAutoPilot,
   onExportExcel,
   viewMode = 'table',
   onViewModeChange,
@@ -65,7 +64,6 @@ export default function LeadTable({
           onRefreshLead={onRefresh}
           onOpenOsintRun={onOpenOsintRun}
           onDeleteLead={onDeleteLead}
-          onOpenAutoPilot={onOpenAutoPilot}
           onOpenLeadDrawer={onOpenLeadDrawer || onSelectLead}
           activeFilter={activeFilter}
           stats={stats}
@@ -87,7 +85,6 @@ export default function LeadTable({
         onOpenOsintRun={onOpenOsintRun}
         onDeleteLead={onDeleteLead}
         onArchiveLead={onArchiveLead}
-        onOpenAutoPilot={onOpenAutoPilot}
         onOpenSearch={onOpenSearch}
         onExportExcel={onExportExcel}
         viewMode={viewMode}

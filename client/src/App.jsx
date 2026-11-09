@@ -7,9 +7,7 @@ import DashboardSidebar from './components/boardui/DashboardSidebar';
 import LeadTable from './components/LeadTable';
 import LeadDrawer from './components/LeadDrawer';
 import SearchModal from './components/SearchModal';
-import QueueManager from './components/QueueManager';
 import SettingsModal from './components/SettingsModal';
-import AutoPilotModal from './components/AutoPilotModal';
 import OsintRunModal from './components/OsintRunModal';
 import AuditPage from './components/audit/AuditPage';
 import CommandPalette from './components/boardui/CommandPalette';
@@ -50,12 +48,11 @@ export default function App() {
     return () => clearTimeout(handler);
   }, [searchTerm]);
   const [selectedLead, setSelectedLead] = useState(null);
-  const [autoPilotSelectedLeads, setAutoPilotSelectedLeads] = useState(null);
   const [osintSelectedLeads, setOsintSelectedLeads] = useState(null);
   const [osintCategory, setOsintCategory] = useState('all');
   const [osintParams, setOsintParams] = useState(null);
   const [osintJobId, setOsintJobId] = useState(null);
-  const [activeModal, setActiveModal] = useState(null); // 'search', 'csv', 'queue', 'settings', 'autopilot', 'osint', 'drawer'
+  const [activeModal, setActiveModal] = useState(null); // 'search', 'csv', 'settings', 'osint', 'drawer'
   const [viewMode, setViewMode] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     const viewParam = params.get('view');
@@ -156,24 +153,6 @@ export default function App() {
     setViewMode(mode);
     localStorage.setItem('viewMode', mode);
   };
-
-  const [tunnel, setTunnel] = useState(null);
-
-  useEffect(() => {
-    const checkStatus = async () => {
-      try {
-        const res = await fetch('/api/settings/tunnel');
-        const data = await res.json();
-        if (data.success) {
-          setTunnel(data.tunnel);
-        }
-      } catch (err) {}
-    };
-
-    checkStatus();
-    const interval = setInterval(checkStatus, 30000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Auto-dismiss toast notification after 7 seconds
   useEffect(() => {
@@ -481,17 +460,11 @@ export default function App() {
         theme={theme}
         onToggleTheme={toggleTheme}
         onOpenSearch={(tab) => setActiveModal(tab === 'csv' ? 'csv' : 'search')}
-        onOpenAutoPilot={(selectedLeads) => {
-          setAutoPilotSelectedLeads(selectedLeads || null);
-          setActiveModal('autopilot');
-        }}
-        onOpenQueue={() => setActiveModal('queue')}
         onOpenSettings={() => setActiveModal('settings')}
         onOpenOnboarding={() => setIsOnboardingOpen(true)}
         onExportExcel={() => handleExportExcel('excel')}
         activeFilter={activeFilter}
         onFilterChange={setActiveFilter}
-        tunnel={tunnel}
       />
 
       {/* Main Canvas Area */}
@@ -502,11 +475,6 @@ export default function App() {
           theme={theme}
           onToggleTheme={toggleTheme}
           onOpenSearch={(tab) => setActiveModal(tab === 'csv' ? 'csv' : 'search')}
-          onOpenAutoPilot={(selectedLeads) => {
-            setAutoPilotSelectedLeads(selectedLeads || null);
-            setActiveModal('autopilot');
-          }}
-          onOpenQueue={() => setActiveModal('queue')}
           onOpenSettings={() => setActiveModal('settings')}
           onExportExcel={() => handleExportExcel('excel')}
           onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
@@ -526,10 +494,7 @@ export default function App() {
           onFilterChange={setActiveFilter}
           onContactChannelChange={setContactChannel}
           onFocusTierChange={setFocusTier}
-          onStartOutreachBatch={() => {
-            setAutoPilotSelectedLeads(null);
-            setActiveModal('autopilot');
-          }}
+          onOpenSearch={(tab) => setActiveModal(tab === 'csv' ? 'csv' : 'search')}
         />
 
         <LeadTable
@@ -563,10 +528,6 @@ export default function App() {
           onArchiveLead={handleArchiveLead}
           onResolveWebsite={handleResolveWebsite}
           onOpenSearch={(tab) => setActiveModal(tab)}
-          onOpenAutoPilot={(selectedLeads) => {
-            setAutoPilotSelectedLeads(selectedLeads || null);
-            setActiveModal('autopilot');
-          }}
           onExportExcel={handleExportExcel}
           selectedLead={selectedLead}
           viewMode={viewMode}
@@ -617,10 +578,6 @@ export default function App() {
             fetchLeads();
             fetchStats();
           }}
-          onQueueUpdated={() => {
-            fetchLeads();
-            fetchStats();
-          }}
         />
       )}
 
@@ -652,41 +609,11 @@ export default function App() {
         />
       )}
 
-      {/* Outbox Queue Modal */}
-      {activeModal === 'queue' && (
-        <QueueManager
-          onClose={() => setActiveModal(null)}
-          onQueueUpdated={() => {
-            fetchLeads();
-            fetchStats();
-          }}
-        />
-      )}
-
       {/* Settings Modal */}
       {activeModal === 'settings' && (
         <SettingsModal 
           onClose={() => setActiveModal(null)} 
           onOpenOnboarding={() => setIsOnboardingOpen(true)}
-        />
-      )}
-
-      {/* Auto-Pilot 1-Click Batch Pipeline Modal */}
-      {activeModal === 'autopilot' && (
-        <AutoPilotModal
-          preSelectedLeads={autoPilotSelectedLeads || []}
-          initialFilter={activeFilter}
-          onClose={() => {
-            setActiveModal(null);
-            setAutoPilotSelectedLeads(null);
-          }}
-          onPipelineUpdated={() => {
-            fetchLeads();
-            fetchStats();
-          }}
-          onOpenQueue={() => {
-            setActiveModal('queue');
-          }}
         />
       )}
 
@@ -751,12 +678,7 @@ export default function App() {
           setActiveModal('drawer');
         }}
         onOpenAudit={(leadId) => handleOpenAudit(leadId)}
-        onOpenAutoPilot={(selected) => {
-          setAutoPilotSelectedLeads(selected || null);
-          setActiveModal('autopilot');
-        }}
         onOpenSearch={(tab) => setActiveModal(tab)}
-        onOpenQueue={() => setActiveModal('queue')}
         onOpenSettings={() => setActiveModal('settings')}
         onOpenOnboarding={() => setIsOnboardingOpen(true)}
         onExportExcel={() => handleExportExcel('excel')}

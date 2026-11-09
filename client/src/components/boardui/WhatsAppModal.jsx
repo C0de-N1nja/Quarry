@@ -25,16 +25,15 @@ export default function WhatsAppModal({
   const businessName = lead.business_name || 'Business Owner';
   const ownerName = lead.decision_maker_name || lead.owner_name || '';
   const greetingName = ownerName || businessName;
-  const demoUrl = prototypeUrl || `${window.location.origin}/mockup/${lead.id}`;
 
   const scripts = [
     {
       id: 'no_website_hook',
-      title: 'No-Website Hook + Quote Prototype',
+      title: 'No-Website Direct Hook',
       icon: RiSparklingLine,
       color: 'indigo',
       badge: 'Highest Reply Rate',
-      text: `Hi ${greetingName}, I saw your high rating on Google Maps and noticed you don't have an official website yet. I built a fast mobile preview site for ${businessName} with an instant quote calculator: ${demoUrl}`
+      text: `Hi ${greetingName}, I saw your high rating on Google Maps for ${businessName} in ${lead.city || 'your area'} and noticed you don't have an official website linked. Are you currently taking on new clients this month? Most local competitors capture bookings directly through search.`
     },
     {
       id: 'speed_audit_hook',
@@ -42,7 +41,7 @@ export default function WhatsAppModal({
       icon: RiSpeedUpLine,
       color: 'emerald',
       badge: 'Audit Focused',
-      text: `Hi ${greetingName}, quick heads up — I ran a mobile test on ${businessName} and noticed it takes over 4s to load on smartphones. I built a modern, fast prototype for you with an online quote estimator: ${demoUrl}`
+      text: `Hi ${greetingName}, quick heads up — I ran a mobile audit on ${businessName} and noticed it takes several seconds to load on smartphones. Would you like me to send over a quick 2-minute breakdown of the fixes?`
     },
     {
       id: 'casual_one_liner',
@@ -50,7 +49,7 @@ export default function WhatsAppModal({
       icon: RiQuestionLine,
       color: 'yellow',
       badge: 'Direct & Simple',
-      text: `Hi ${greetingName}, quick question — are you currently taking new clients this month for ${businessName}? I prepared a quick interactive quote calculator preview for your business: ${demoUrl}`
+      text: `Hi ${greetingName}, quick question — are you currently taking new clients this month for ${businessName}? Had a quick observation regarding your local search visibility.`
     }
   ];
 

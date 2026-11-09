@@ -1,6 +1,5 @@
 const ExcelJS = require('exceljs');
 const db = require('../db/database');
-const showcaseService = require('./showcase-service');
 
 /**
  * ExportService: Generates structured, professional Excel (.xlsx) and CSV spreadsheets
@@ -131,7 +130,7 @@ class ExportService {
     // Populate data rows
     rows.forEach((row, index) => {
       const isNoWebsite = row.has_no_website === 1 || !row.website;
-      const matchedNiche = row.showcase_niche || showcaseService.matchNiche(row.category, row.business_name);
+      const matchedNiche = row.showcase_niche || 'general';
       const cleanBaseUrl = baseUrl.replace(/\/$/, '');
       const showcaseUrl = `${cleanBaseUrl}/showcase/${matchedNiche}`;
 

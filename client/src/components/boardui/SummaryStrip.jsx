@@ -1,5 +1,5 @@
 import React from 'react';
-import { RiFlashlightFill } from '@remixicon/react';
+import { RiSearch2Line, RiDownload2Line } from '@remixicon/react';
 import { Button } from '@/components/base/buttons/button';
 import { cx } from '@/utils/cx';
 
@@ -11,14 +11,13 @@ export default function SummaryStrip({
   onFilterChange,
   onContactChannelChange,
   onFocusTierChange,
-  onStartOutreachBatch,
+  onOpenSearch,
   totalCount
 }) {
   const totalLeads = stats?.totalLeads ?? totalCount ?? 0;
   const noWebsite = stats?.noWebsite ?? 0;
   const readyToPitch = stats?.enriched ?? 0;
   const replied = stats?.replied ?? 0;
-  const sentToday = stats?.sent ?? 0;
 
   // Active filter states matching tabs exactly
   const isTotalActive = activeFilter === 'all' && contactChannel === 'all' && focusTier === 'vault';
@@ -110,25 +109,21 @@ export default function SummaryStrip({
         ))}
       </div>
 
-      {/* Right Action: Capacity text + Sole Primary Button on screen */}
-      <div className="flex items-center justify-end gap-3 w-full md:w-auto shrink-0 border-t md:border-t-0 border-separator-border/60 pt-2 md:pt-0">
-        <div className="text-right">
-          <span className="text-xs font-mono font-medium text-text-secondary">
-            Sent today <strong className="text-text-primary font-bold">{sentToday}</strong> / 143
-          </span>
+      {/* Right Action: Find Fresh Targets */}
+      {onOpenSearch && (
+        <div className="flex items-center justify-end gap-2 w-full md:w-auto shrink-0 border-t md:border-t-0 border-separator-border/60 pt-2 md:pt-0">
+          <Button
+            size="small"
+            variant="secondary"
+            leadingIcon={RiSearch2Line}
+            onClick={() => onOpenSearch('search')}
+            className="shadow-2xs font-semibold whitespace-nowrap cursor-pointer text-xs"
+            title="Search Google Maps for new local leads"
+          >
+            Find Leads
+          </Button>
         </div>
-
-        <Button
-          size="small"
-          variant="primary"
-          leadingIcon={RiFlashlightFill}
-          onClick={onStartOutreachBatch}
-          className="shadow-sm font-semibold whitespace-nowrap cursor-pointer"
-          title="Start Daily Outreach automation"
-        >
-          Start Daily Outreach
-        </Button>
-      </div>
+      )}
     </div>
   );
 }
