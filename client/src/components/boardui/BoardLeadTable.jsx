@@ -440,7 +440,7 @@ export default function BoardLeadTable({
 
           {/* Right Toolbar Actions: BoardUI Buttons and Dropdowns */}
           <div className="flex items-center gap-2 shrink-0">
-            {/* Run OSINT Button (BoardUI Secondary Button with Icon) */}
+            {/* Find Contacts Button (BoardUI Secondary Button with Icon) */}
             <Button
               size="small"
               variant="secondary"
@@ -449,13 +449,13 @@ export default function BoardLeadTable({
                 setOsintScopeChoice(selectedLeadIds.size > 0 ? 'selected' : 'filter');
                 setIsOsintScopeModalOpen(true);
               }}
-              title="Run OSINT intelligence pipeline with scope selector"
+              title="Find verified owners and contact details across leads"
               className="cursor-pointer font-semibold shadow-xs"
             >
-              Run OSINT
+              Find Contacts
             </Button>
 
-            {/* "More" Menu: Reset OSINT + Clean N Sites (BoardUI Dropdown) */}
+            {/* "More" Menu: Reset Research Data + Clean N Sites (BoardUI Dropdown) */}
             <Dropdown>
               <DropdownTrigger className="inline-flex items-center gap-1 px-3 py-1.5 rounded-2lg border border-border-button-default bg-background-primary-default hover:bg-background-primary-hover text-text-secondary hover:text-text-primary text-xs font-medium transition-colors cursor-pointer shadow-2xs button-press-motion">
                 <span>More</span>
@@ -465,7 +465,7 @@ export default function BoardLeadTable({
                 <DropdownGroup>
                   <DropdownItem onSelect={() => setIsResetOsintConfirmOpen(true)} className="px-2.5 py-2 rounded-lg text-body-medium">
                     <RiRefreshLine className="size-4 text-text-secondary" />
-                    <span>Reset OSINT</span>
+                    <span>Reset Research Data</span>
                   </DropdownItem>
                   <DropdownItem onSelect={() => setIsCleanSitesConfirmOpen(true)} className="px-2.5 py-2 rounded-lg text-body-medium text-status-rose-text hover:bg-status-rose-background">
                     <RiDeleteBin6Line className="size-4 text-status-rose-text" />
@@ -604,7 +604,7 @@ export default function BoardLeadTable({
                 }}
                 className="text-xs"
               >
-                Run OSINT
+                Find Contacts
               </Button>
 
               <Button
@@ -922,7 +922,7 @@ export default function BoardLeadTable({
 
                               <DropdownItem onSelect={() => onRunOsint && onRunOsint(lead.id)} className="px-2.5 py-2 rounded-lg text-body-medium">
                                 <RiShieldCheckLine className="size-4 text-text-secondary" />
-                                <span>Run OSINT for this lead</span>
+                                <span>Find Owner & Contacts</span>
                               </DropdownItem>
 
                               {lead.website && !isNoWebsite && (
@@ -1006,7 +1006,7 @@ export default function BoardLeadTable({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <RiShieldCheckLine className="size-5 text-accent-500" />
-                <h3 className="text-body-large font-bold text-text-primary">Run OSINT Investigation</h3>
+                <h3 className="text-body-large font-bold text-text-primary">Research Leads & Find Contacts</h3>
               </div>
               <IconButton
                 icon={RiCloseLine}
@@ -1018,7 +1018,7 @@ export default function BoardLeadTable({
             </div>
 
             <p className="text-body-medium text-text-secondary">
-              Select the prospect scope to harvest contact information, verify social accounts, and detect active websites:
+              Select which prospects to research for owners, direct phone numbers, email addresses, and website status:
             </p>
 
             <div className="space-y-2">
@@ -1188,10 +1188,10 @@ export default function BoardLeadTable({
           <div className="w-full max-w-sm rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xl space-y-3">
             <div className="flex items-center gap-2 text-status-yellow-text">
               <RiRefreshLine className="size-5 shrink-0" />
-              <h3 className="text-body-large font-bold text-text-primary">Reset OSINT Data</h3>
+              <h3 className="text-body-large font-bold text-text-primary">Reset Contact & Research Data</h3>
             </div>
             <p className="text-body-medium text-text-secondary leading-relaxed">
-              Are you sure you want to delete and reset all OSINT verification data for <strong className="text-text-primary font-bold">{activeNiche !== 'all' ? `collection "${activeNiche}"` : `all ${totalItems.toLocaleString()} prospects`}</strong>? This clears contact records and resets status to discovered.
+              Are you sure you want to delete and reset all contact details and research data for <strong className="text-text-primary font-bold">{activeNiche !== 'all' ? `collection "${activeNiche}"` : `all ${totalItems.toLocaleString()} prospects`}</strong>? This clears contact records and resets status to discovered.
             </p>
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-separator-border">
               <Button
@@ -1209,7 +1209,7 @@ export default function BoardLeadTable({
                   onResetOsint && onResetOsint(activeNiche);
                 }}
               >
-                Reset OSINT
+                Reset Research Data
               </Button>
             </div>
           </div>

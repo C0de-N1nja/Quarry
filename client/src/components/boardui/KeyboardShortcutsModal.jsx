@@ -23,7 +23,7 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }) {
       items: [
         { keys: ['A'], desc: 'Open full Website Audit page' },
         { keys: ['E'], desc: 'Verify email deliverability' },
-        { keys: ['O'], desc: 'Trigger OSINT enrichment' }
+        { keys: ['O'], desc: 'Find owner & contact details' }
       ]
     },
     {

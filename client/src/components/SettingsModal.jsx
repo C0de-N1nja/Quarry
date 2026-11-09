@@ -113,7 +113,7 @@ export default function SettingsModal({ onClose, onOpenOnboarding }) {
             isSelected={activeTab === 'osint'}
             onSelect={() => setActiveTab('osint')}
           >
-            OSINT & Crawlers
+            Lead Research & Scanners
           </PillTab>
         </PillTabList>
       </div>
@@ -209,7 +209,7 @@ export default function SettingsModal({ onClose, onOpenOnboarding }) {
             <div>
               <h3 className="font-semibold text-text-primary uppercase tracking-wider text-[11px] mb-3 flex items-center gap-1.5">
                 <RiShieldCheckLine className="size-3.5 text-text-tertiary" />
-                <span>OSINT Verification Engines</span>
+                <span>Automated Research Engines</span>
               </h3>
               <div className="space-y-3 bg-background-secondary-default p-4 rounded-2xl border border-separator-border">
                 <div className="flex items-center justify-between">

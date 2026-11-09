@@ -16,7 +16,7 @@ import BoardTicket from './boardui/BoardTicket';
 
 const STAGES = [
   { id: 'discovered', label: '1. Discovered', dotColor: 'indigo', chipColor: 'blue' },
-  { id: 'enriched', label: '2. OSINT Enriched', dotColor: 'indigo', chipColor: 'purple', match: ['enriched'] },
+  { id: 'enriched', label: '2. Contacts Found', dotColor: 'indigo', chipColor: 'purple', match: ['enriched'] },
   { id: 'pitched', label: '3. Pitched / Outreached', dotColor: 'yellow', chipColor: 'yellow', match: ['pitched', 'sent'] },
   { id: 'replied', label: '4. In Discussion', dotColor: 'indigo', chipColor: 'cyan', match: ['replied'] },
   { id: 'won', label: '5. Deal Won', dotColor: 'green', chipColor: 'lime', match: ['won'] }

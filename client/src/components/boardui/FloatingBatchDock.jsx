@@ -51,16 +51,16 @@ export default function FloatingBatchDock({
         <span className="sm:hidden">Auto-Pilot</span>
       </Button>
 
-      {/* Batch OSINT Enrichment */}
+      {/* Batch Contact Research */}
       <Button
         size="small"
         variant="secondary"
         leadingIcon={RiShieldCheckLine}
         onClick={onRunOsint}
         disabled={isProcessing}
-        title="Run OSINT & Social Enrichment on selected leads"
+        title="Find owner and contact info for selected leads"
       >
-        <span>OSINT</span>
+        <span>Find Contacts</span>
       </Button>
 
       {/* Batch Email Verification */}
@@ -72,7 +72,7 @@ export default function FloatingBatchDock({
           onClick={onVerifyEmails}
           disabled={isProcessing}
           className="hidden md:inline-flex"
-          title="Verify email deliverability via MX & SMTP"
+          title="Verify if email addresses are valid and safe to send to"
         >
           Verify
         </Button>

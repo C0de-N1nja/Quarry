@@ -33,13 +33,13 @@ import { Avatar } from '@/components/base/avatar/avatar';
 import { toast } from '@/components/base/toast/toast';
 import { cx } from '@/utils/cx';
 
-// Concrete Real-Time OSINT Stages
+// Friendly Step-by-Step Research Stages
 const RECON_STEPS = [
-  { id: 'init', label: 'Resolving Target & Query Vectors', desc: 'Validating business name, category, and municipal footprint' },
-  { id: 'dns', label: 'Probing Candidate Domains & Active DNS', desc: 'Querying A/AAAA, MX records, WHOIS, and HTTP headers' },
-  { id: 'registry', label: 'Searching State Filings & Corporate Registries', desc: 'Checking public business listings and registered agents' },
-  { id: 'contacts', label: 'Validating Phone Lines & WhatsApp Direct', desc: 'Carrier classification (Mobile/Landline/VOIP) and WhatsApp status' },
-  { id: 'consolidation', label: 'Extracting Decision Makers & Merging Dossier', desc: 'Synthesizing all intelligence data points into lead file' }
+  { id: 'init', label: 'Checking Business & Location', desc: 'Confirming company name, city, and category' },
+  { id: 'dns', label: 'Checking Website & Online Status', desc: 'Looking for official website and online presence' },
+  { id: 'registry', label: 'Finding Owner in Business Records', desc: 'Searching official registrations for owner or founder name' },
+  { id: 'contacts', label: 'Verifying Phone Lines & WhatsApp', desc: 'Detecting mobile vs office numbers and messaging readiness' },
+  { id: 'consolidation', label: 'Finalizing Lead Details', desc: 'Organizing contact info so you can reach out' }
 ];
 
 export default function LeadDossierPage({
@@ -279,10 +279,10 @@ export default function LeadDossierPage({
       await new Promise(r => setTimeout(r, 450));
 
       const contactCount = (data.contacts && data.contacts.length) || 0;
-      toast.success('OSINT Intelligence Refreshed!', {
+      toast.success('Lead Research Complete!', {
         description: contactCount > 0 
-          ? `Discovered ${contactCount} verified contact points & updated profile.` 
-          : 'Dossier successfully updated with live verification.'
+          ? `Found ${contactCount} verified contact points & updated profile.` 
+          : 'Lead details updated successfully.'
       });
 
       await fetchLeadDetails();
@@ -290,9 +290,9 @@ export default function LeadDossierPage({
     } catch (err) {
       if (scanTimerRef.current) clearInterval(scanTimerRef.current);
       if (err.name === 'AbortError') {
-        toast.info('OSINT reconnaissance cancelled');
+        toast.info('Research cancelled');
       } else {
-        toast.error(err.message || 'OSINT enrichment failed');
+        toast.error(err.message || 'Could not complete research');
       }
     } finally {
       if (scanTimerRef.current) clearInterval(scanTimerRef.current);
@@ -320,13 +320,13 @@ export default function LeadDossierPage({
       if (!data.success) throw new Error(data.error);
 
       if (data.email_verification?.deliverable) {
-        toast.success('Email deliverable! (MX & SMTP Valid)', { description: targetEmail });
+        toast.success('Email is verified and safe to send!', { description: targetEmail });
       } else {
-        toast.error('Email verification failed: undeliverable', { description: targetEmail });
+        toast.error('Email could not be verified (might bounce)', { description: targetEmail });
       }
       await fetchLeadDetails();
     } catch (err) {
-      toast.error(err.message || 'Email deliverability check failed');
+      toast.error(err.message || 'Could not verify email');
     } finally {
       setEmailVerifying(false);
     }
@@ -459,9 +459,9 @@ export default function LeadDossierPage({
               leadingIcon={osintLoading ? RiLoader4Line : RiShieldCheckLine}
               onClick={handleRunOsint}
               disabled={osintLoading}
-              title="Run live OSINT scanner on this prospect"
+              title="Find owner and verified contact info for this business"
             >
-              {osintLoading ? `Scanning (${Math.floor(scanElapsed)}s)...` : 'Run OSINT'}
+              {osintLoading ? `Researching (${Math.floor(scanElapsed)}s)...` : 'Find Contacts'}
             </Button>
           </div>
         </div>
@@ -489,14 +489,14 @@ export default function LeadDossierPage({
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="text-sm font-bold text-text-primary tracking-tight">
-                          OSINT Reconnaissance Active
+                          Researching Business & Contacts
                         </h3>
                         <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
                           {Math.round(scanProgress)}%
                         </span>
                       </div>
                       <p className="text-[11px] text-text-secondary mt-0.5">
-                        Probing live DNS, corporate registries & telecom lines for <strong className="text-text-primary">{currentLead.business_name}</strong>
+                        Finding owner details, verified phone numbers, and website status for <strong className="text-text-primary">{currentLead.business_name}</strong>
                       </p>
                     </div>
                   </div>
@@ -511,7 +511,7 @@ export default function LeadDossierPage({
                       variant="secondary"
                       leadingIcon={RiCloseLine}
                       onClick={handleCancelOsint}
-                      title="Abort current OSINT reconnaissance"
+                      title="Cancel research"
                     >
                       Cancel
                     </Button>
@@ -582,9 +582,9 @@ export default function LeadDossierPage({
                     <RiSparklingLine className="size-5" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-text-primary">Automated Intelligence Scan Pending</h3>
+                    <h3 className="text-sm font-bold text-text-primary">Automated Research Ready</h3>
                     <p className="text-xs text-text-secondary mt-0.5 leading-relaxed">
-                      Run automated OSINT reconnaissance to verify web presence, probe candidate domains, and discover registered corporate officers.
+                      Find the business owner's name, verify phone numbers and email address, and check if they have a working website.
                     </p>
                   </div>
                 </div>
@@ -596,12 +596,12 @@ export default function LeadDossierPage({
                   disabled={osintLoading}
                   className="shrink-0"
                 >
-                  ⚡ Run Full Recon
+                  ⚡ Find Owner & Contacts
                 </Button>
               </div>
             )}
 
-            {/* 1. Website Presence & Live Digital Footprint */}
+            {/* 1. Website & Online Presence */}
             <section className="rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xs space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
@@ -609,18 +609,18 @@ export default function LeadDossierPage({
                     <RiGlobalLine className="size-4" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-bold text-text-primary">Website Status & Live Digital Footprint</h2>
-                    <p className="text-[11px] text-text-secondary">Domain verification, security headers, and live tech stack</p>
+                    <h2 className="text-sm font-bold text-text-primary">Website & Online Presence</h2>
+                    <p className="text-[11px] text-text-secondary">Official website status, security check, and platform</p>
                   </div>
                 </div>
 
                 {isNoWebsite ? (
                   <Chip variant="subtle" color="emerald" size="sm">
-                    Verified: No Custom Website
+                    Needs a Website (High Opportunity)
                   </Chip>
                 ) : (
                   <Chip variant="subtle" color="blue" size="sm">
-                    Active Commercial Website
+                    Website Active
                   </Chip>
                 )}
               </div>
@@ -635,11 +635,11 @@ export default function LeadDossierPage({
                         Verified Google Business
                       </Chip>
                       <span className="text-xs font-semibold text-emerald-400">
-                        High-Intent Prospect (Needs Website)
+                        Opportunity: Needs a Modern Website
                       </span>
                     </div>
                     <p className="text-xs text-text-secondary leading-relaxed">
-                      This business has established commercial demand with verified Google reviews, but does not own an active commercial website or booking funnel.
+                      This business is active with real customer reviews on Google, but doesn't have an official website. Perfect prospect for web design or marketing services.
                     </p>
                   </div>
                   <Button
@@ -713,11 +713,11 @@ export default function LeadDossierPage({
                 </div>
               )}
 
-              {/* Candidate Domains Probed Trail */}
+              {/* Candidate Domains Checked */}
               {parsedOsint?.candidate_domains && parsedOsint.candidate_domains.length > 0 && (
                 <div className="space-y-2 pt-2 border-t border-separator-border/60">
                   <h3 className="text-xs font-mono uppercase tracking-wider text-text-tertiary">
-                    Candidate Domains Probed ({parsedOsint.candidate_domains.length})
+                    Web Addresses Checked ({parsedOsint.candidate_domains.length})
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {parsedOsint.candidate_domains.map((cd, idx) => (
@@ -727,14 +727,14 @@ export default function LeadDossierPage({
                         </span>
                         <div className="flex items-center gap-1.5 shrink-0 text-[10px] font-mono">
                           <Chip variant="subtle" color={cd.dns ? "emerald" : "gray"} size="sm">
-                            DNS {cd.dns ? 'Active' : 'Missing'}
+                            {cd.dns ? 'Registered' : 'Available'}
                           </Chip>
                           <Chip variant="subtle" color={cd.http ? "emerald" : "rose"} size="sm">
-                            HTTP {cd.statusCode || 'Err'}
+                            {cd.http ? 'Live' : 'Inactive'}
                           </Chip>
                           {cd.isParked && (
                             <Chip variant="subtle" color="amber" size="sm">
-                              Parked
+                              For Sale
                             </Chip>
                           )}
                         </div>
@@ -745,21 +745,21 @@ export default function LeadDossierPage({
               )}
             </section>
 
-            {/* 2. Decision Maker & Corporate Registry Intel */}
+            {/* 2. Owner & Leadership */}
             <section className="rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xs space-y-4">
               <div className="flex items-center gap-2">
                 <div className="size-8 rounded-lg bg-background-tertiary-default border border-separator-border flex items-center justify-center text-text-secondary">
                   <RiUser3Line className="size-4" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold text-text-primary">Decision Maker & Corporate Registry</h2>
-                  <p className="text-[11px] text-text-secondary">Secretary of State business filings and verified leadership</p>
+                  <h2 className="text-sm font-bold text-text-primary">Owner & Leadership</h2>
+                  <p className="text-[11px] text-text-secondary">Verified business owners and official public filings</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div className="p-3.5 rounded-xl bg-background-secondary-default border border-separator-border space-y-1">
-                  <span className="text-[10px] uppercase font-mono text-text-tertiary block">Identified Officer / Owner</span>
+                  <span className="text-[10px] uppercase font-mono text-text-tertiary block">Owner / Decision Maker</span>
                   <span className="text-sm font-bold text-text-primary block">
                     {contact?.contact_name || currentLead.decision_maker_name || currentLead.owner_name || 'Not discovered yet'}
                   </span>
@@ -769,26 +769,26 @@ export default function LeadDossierPage({
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-background-secondary-default border border-separator-border space-y-1">
-                  <span className="text-[10px] uppercase font-mono text-text-tertiary block">Corporate Entity Record</span>
+                  <span className="text-[10px] uppercase font-mono text-text-tertiary block">Official Business Name</span>
                   <span className="text-sm font-bold text-text-primary block">
                     {currentLead.business_name}
                   </span>
                   <span className="text-xs text-text-secondary block">
-                    {currentLead.city ? `Jurisdiction: ${currentLead.city}` : 'Municipal Business Filing'}
+                    {currentLead.city ? `Location: ${currentLead.city}` : 'Municipal Business Filing'}
                   </span>
                 </div>
               </div>
             </section>
 
-            {/* 3. Discovered Social Footprints */}
+            {/* 3. Social Profiles & Online Links */}
             <section className="rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xs space-y-4">
               <div className="flex items-center gap-2">
                 <div className="size-8 rounded-lg bg-background-tertiary-default border border-separator-border flex items-center justify-center text-text-secondary">
                   <RiBuildingLine className="size-4" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold text-text-primary">Social Channels & Public Footprint</h2>
-                  <p className="text-[11px] text-text-secondary">Verified online commercial channels and social profiles</p>
+                  <h2 className="text-sm font-bold text-text-primary">Social Profiles & Online Links</h2>
+                  <p className="text-[11px] text-text-secondary">Verified company social media and directory links</p>
                 </div>
               </div>
 
@@ -824,7 +824,7 @@ export default function LeadDossierPage({
                     onClick={handleRunOsint}
                     disabled={osintLoading}
                   >
-                    {osintLoading ? 'Scanning...' : 'Scan Socials'}
+                    {osintLoading ? 'Searching...' : 'Find Social Profiles'}
                   </Button>
                 </div>
               )}
@@ -839,8 +839,8 @@ export default function LeadDossierPage({
                       <RiSpeedUpLine className="size-4" />
                     </div>
                     <div>
-                      <h2 className="text-sm font-bold text-text-primary">Website Technical Health & ADA Audit</h2>
-                      <p className="text-[11px] text-text-secondary">Core Web Vitals, accessibility compliance, and technical SEO</p>
+                      <h2 className="text-sm font-bold text-text-primary">Website Speed & Mobile Quality</h2>
+                      <p className="text-[11px] text-text-secondary">Page loading speed, mobile friendliness, and performance</p>
                     </div>
                   </div>
 
@@ -851,7 +851,7 @@ export default function LeadDossierPage({
                       leadingIcon={RiExternalLinkLine}
                       onClick={() => onOpenAudit(currentLead.id)}
                     >
-                      Open Interactive Audit
+                      Check Speed & Mobile
                     </Button>
                   )}
                 </div>
@@ -971,15 +971,23 @@ export default function LeadDossierPage({
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] uppercase font-mono text-text-tertiary flex items-center gap-1.5">
                       <RiPhoneLine className="size-3 text-text-secondary" />
-                      Direct Voice Line
+                      Phone Number
                     </span>
-                    {currentLead.phone_type ? (
+                    {currentLead.phone_type === 'wireless' || currentLead.phone_type === 'mobile' ? (
+                      <Chip variant="subtle" color="emerald" size="sm">
+                        Mobile (Calls & SMS)
+                      </Chip>
+                    ) : currentLead.phone_type === 'landline' ? (
                       <Chip variant="subtle" color="blue" size="sm">
-                        {currentLead.phone_type}
+                        Office Landline
+                      </Chip>
+                    ) : currentLead.phone_type === 'voip' ? (
+                      <Chip variant="subtle" color="purple" size="sm">
+                        VOIP Phone
                       </Chip>
                     ) : (
                       <Chip variant="subtle" color="gray" size="sm">
-                        Unclassified
+                        Business Phone
                       </Chip>
                     )}
                   </div>
@@ -1049,7 +1057,7 @@ export default function LeadDossierPage({
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] uppercase font-mono text-text-tertiary flex items-center gap-1.5">
                       <RiMailLine className="size-3 text-blue-400" />
-                      Direct Email
+                      Email Address
                     </span>
                     {primaryEmail && (
                       <Button
@@ -1059,9 +1067,9 @@ export default function LeadDossierPage({
                         onClick={handleVerifyEmail}
                         disabled={emailVerifying}
                         className="h-auto p-0 text-[10px] text-blue-400 hover:underline"
-                        title="Verify MX and mailbox deliverability"
+                        title="Check if this email address is active and safe to send to"
                       >
-                        {emailVerifying ? 'Checking...' : 'Check Deliverability'}
+                        {emailVerifying ? 'Checking...' : 'Verify Email'}
                       </Button>
                     )}
                   </div>
@@ -1169,7 +1177,7 @@ export default function LeadDossierPage({
                 disabled={osintLoading}
                 className="w-full justify-center"
               >
-                {osintLoading ? `Scanning Lead (${Math.floor(scanElapsed)}s)...` : 'Run OSINT Scan'}
+                {osintLoading ? `Researching Lead (${Math.floor(scanElapsed)}s)...` : 'Find Owner & Contacts'}
               </Button>
 
               {onArchiveLead && (

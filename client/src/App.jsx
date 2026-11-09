@@ -408,7 +408,7 @@ export default function App() {
   // 1-Click Reset OSINT Data (for all leads or specific collection)
   const handleResetOsint = async (category = 'all') => {
     const scopeLabel = category && category !== 'all' ? `collection "${category}"` : 'ALL leads in the database';
-    if (!window.confirm(`Reset OSINT Data:\n\nAre you sure you want to delete and reset all OSINT verification and contact details for ${scopeLabel}?\n\nThis will clear all contacts/social profiles and return the leads to "discovered" status so you can re-run fresh.`)) {
+    if (!window.confirm(`Reset Research & Contact Details:\n\nAre you sure you want to delete and reset all contact details for ${scopeLabel}?\n\nThis will clear all contacts and return the leads to "discovered" status so you can research them fresh.`)) {
       return;
     }
     try {
@@ -419,7 +419,7 @@ export default function App() {
       });
       const data = await res.json();
       if (data.success) {
-        alert(data.message || 'OSINT data reset successfully!');
+        alert(data.message || 'Contact and research data reset successfully!');
         await fetchLeads();
         await fetchStats();
       } else {

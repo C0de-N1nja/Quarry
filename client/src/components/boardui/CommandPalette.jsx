@@ -85,7 +85,7 @@ export default function CommandPalette({
       id: 'export-excel',
       category: 'Actions',
       title: 'Export Leads to Excel (.xlsx)',
-      description: 'Download full database with enriched OSINT contacts',
+      description: 'Download full database with verified contacts',
       icon: RiDownloadLine,
       iconColor: 'text-sky-500',
       action: () => { onClose(); onExportExcel && onExportExcel(); }
@@ -102,7 +102,7 @@ export default function CommandPalette({
     {
       id: 'settings',
       category: 'Preferences',
-      title: 'Settings & OSINT Options',
+      title: 'Settings & Research Options',
       description: 'Configure scrapers, API keys and preferences',
       icon: RiSettings4Line,
       iconColor: 'text-neutral-400',

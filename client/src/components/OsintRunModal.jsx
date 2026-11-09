@@ -300,14 +300,14 @@ export default function OsintRunModal({
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base font-bold text-text-primary">
-                OSINT Social Website Verifier
+                Lead Research & Contact Finder
               </h2>
               <Chip variant="subtle" color={isRunning ? "amber" : isCompleted ? "emerald" : "neutral"} size="sm">
-                {isRunning ? `Running (${job?.activeThreads || job?.concurrency || 8} CPU Workers)` : isCompleted ? 'Completed' : isCancelled ? 'Cancelled' : 'Ready'}
+                {isRunning ? `Running (${job?.activeThreads || job?.concurrency || 8} Fast Workers)` : isCompleted ? 'Completed' : isCancelled ? 'Cancelled' : 'Ready'}
               </Chip>
             </div>
             <p className="text-xs text-text-secondary mt-0.5">
-              Probing Facebook, Instagram, LinkedIn, X, TikTok & Linktree to classify authentic no-website prospects
+              Finding owners, verifying active websites, phone numbers, and discovering social media profiles
             </p>
           </div>
         </div>
@@ -331,7 +331,7 @@ export default function OsintRunModal({
         <div className="flex flex-col gap-2 px-5 py-2.5 bg-background-secondary-default border-b border-separator-border shrink-0">
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
             <span className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider shrink-0 mr-1">
-              OSINT Target Scope:
+              Leads to Research:
             </span>
 
             {targetLeadIds.length > 0 && (
