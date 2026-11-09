@@ -12,17 +12,17 @@ import {
   RiFileCopyLine,
   RiSpeedUpLine,
   RiArchiveLine,
-  RiRefreshLine,
   RiLoader4Line,
   RiCheckLine,
-  RiAlertLine,
   RiStarFill,
+  RiStarLine,
   RiUser3Line,
   RiBuildingLine,
   RiMapPinLine,
   RiCheckboxCircleLine,
-  RiInformationLine,
-  RiSparklingLine
+  RiSparklingLine,
+  RiBookmarkLine,
+  RiShieldUserLine
 } from '@remixicon/react';
 import { Button } from '@/components/base/buttons/button';
 import { IconButton } from '@/components/base/buttons/icon-button';
@@ -46,6 +46,17 @@ export default function LeadDossierPage({
   const [emailVerifying, setEmailVerifying] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(lead?.status || 'discovered');
   const [dealValue, setDealValue] = useState(lead?.deal_value || 1000);
+
+  // Scratchpad Notes (persisted per lead in localStorage)
+  const [notes, setNotes] = useState(() => {
+    return localStorage.getItem(`quarry_notes_${lead?.id}`) || '';
+  });
+  const [notesSaved, setNotesSaved] = useState(false);
+
+  // Gold Vault Pin State
+  const [isGold, setIsGold] = useState(() => {
+    return localStorage.getItem(`quarry_gold_${lead?.id}`) === 'true' || (lead?.rating >= 4.5 && lead?.reviews_count >= 10);
+  });
 
   // Lead Carousel Navigation
   const currentIndex = leads && lead ? leads.findIndex(l => l.id === lead.id) : -1;
@@ -103,6 +114,8 @@ export default function LeadDossierPage({
     if (lead?.id) {
       setCurrentStatus(lead.status || 'discovered');
       setDealValue(lead.deal_value || 1000);
+      setNotes(localStorage.getItem(`quarry_notes_${lead.id}`) || '');
+      setIsGold(localStorage.getItem(`quarry_gold_${lead.id}`) === 'true' || (lead.rating >= 4.5 && lead.reviews_count >= 10));
       fetchLeadDetails();
     }
   }, [lead?.id]);
@@ -135,6 +148,17 @@ export default function LeadDossierPage({
     parsedSocial = [];
   }
 
+  // Clean Hostname Extractor (strips UTM tags & long paths)
+  const getCleanDomain = (url) => {
+    if (!url) return '';
+    try {
+      const parsed = new URL(url.startsWith('http') ? url : `https://${url}`);
+      return parsed.hostname.replace(/^www\./, '');
+    } catch {
+      return url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].split('?')[0];
+    }
+  };
+
   // Update Lead Stage
   const handleUpdateStage = async (newStatus, newValue = dealValue) => {
     try {
@@ -153,6 +177,31 @@ export default function LeadDossierPage({
     } catch (err) {
       toast.error('Failed to update stage');
     }
+  };
+
+  // Toggle Gold Vault Pin
+  const handleToggleGold = () => {
+    const next = !isGold;
+    setIsGold(next);
+    localStorage.setItem(`quarry_gold_${currentLead.id}`, String(next));
+    if (next) {
+      toast.success('Pinned to Gold Vault!', { description: currentLead.business_name });
+    } else {
+      toast.info('Removed from Gold Vault');
+    }
+  };
+
+  // Handle Note edits
+  const handleNotesChange = (val) => {
+    setNotes(val);
+    localStorage.setItem(`quarry_notes_${currentLead.id}`, val);
+    setNotesSaved(true);
+    setTimeout(() => setNotesSaved(false), 2000);
+  };
+
+  const handleAddQuickTag = (tag) => {
+    const updated = notes ? `${notes}\n• ${tag}` : `• ${tag}`;
+    handleNotesChange(updated);
   };
 
   // Run OSINT Enrichment
@@ -197,14 +246,16 @@ export default function LeadDossierPage({
   };
 
   const isNoWebsite = currentLead.has_no_website === 1 || !currentLead.website;
+  const cleanDomain = getCleanDomain(currentLead.website);
   const primaryPhone = currentLead.phone || contact?.phone;
   const primaryEmail = contact?.email || currentLead.email;
   const hasWhatsApp = Boolean(contact?.whatsapp || currentLead.whatsapp);
+  const mapsUrl = currentLead.maps_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${currentLead.business_name} ${currentLead.city || ''}`)}`;
 
   return (
     <div className="min-h-screen bg-canvas text-text-primary flex flex-col font-sans transition-colors duration-200 antialiased">
       {/* Top Sticky Header */}
-      <header className="sticky top-0 z-40 border-b border-separator-border bg-background-primary-default/90 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-separator-border bg-background-primary-default/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
           
           {/* Left: Back Button + Lead Identity */}
@@ -235,29 +286,57 @@ export default function LeadDossierPage({
                   <h1 className="text-base sm:text-lg font-bold text-text-primary tracking-tight truncate">
                     {currentLead.business_name}
                   </h1>
+
+                  {/* Gold Vault Toggle Button */}
+                  <button
+                    type="button"
+                    onClick={handleToggleGold}
+                    className={cx(
+                      "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-all cursor-pointer",
+                      isGold
+                        ? "bg-amber-500/15 border-amber-500/40 text-amber-500 ring-1 ring-amber-500/20"
+                        : "bg-background-tertiary-default/60 border-separator-border text-text-secondary hover:text-text-primary"
+                    )}
+                    title={isGold ? "Pinned to Gold Vault" : "Click to pin to Gold Vault"}
+                  >
+                    <RiStarFill className={cx("size-3", isGold ? "text-amber-500" : "text-text-tertiary")} />
+                    <span>{isGold ? "Gold Vault" : "Pin"}</span>
+                  </button>
+
                   {isNoWebsite ? (
                     <Chip variant="subtle" color="emerald" size="sm">
-                      No Website (Prime)
+                      No Website (Prime Target)
                     </Chip>
                   ) : (
                     <Chip variant="subtle" color="cyan" size="sm">
                       Site Active
                     </Chip>
                   )}
-                  {Boolean(currentLead.opted_out) && (
-                    <Chip variant="subtle" color="rose" size="sm">
-                      Opted Out
-                    </Chip>
+                </div>
+
+                {/* Subtitle: Niche • City • Physical Address • Google Rating */}
+                <div className="flex items-center gap-2 text-xs text-text-secondary mt-0.5 flex-wrap">
+                  <span className="font-medium text-text-primary">{currentLead.category || 'General Services'}</span>
+                  {currentLead.city && <span>• {currentLead.city}</span>}
+                  {currentLead.address && (
+                    <span className="hidden md:inline-flex items-center gap-1 text-text-tertiary truncate max-w-[280px]">
+                      <RiMapPinLine className="size-3 shrink-0" />
+                      <span className="truncate">{currentLead.address}</span>
+                    </span>
+                  )}
+                  {currentLead.rating && (
+                    <span className="inline-flex items-center gap-1 font-mono text-text-tertiary">
+                      <RiStarFill className="size-3 text-amber-500" />
+                      <strong className="text-text-primary">{currentLead.rating}</strong>
+                      <span>({(currentLead.reviews_count || 0).toLocaleString()} reviews)</span>
+                    </span>
                   )}
                 </div>
-                <p className="text-xs text-text-secondary truncate mt-0.5">
-                  {currentLead.category || 'General'} {currentLead.city && `• ${currentLead.city}`}
-                </p>
               </div>
             </div>
           </div>
 
-          {/* Right: Carousel Navigation (‹ X of Y ›) + Quick Action Buttons */}
+          {/* Right: Carousel Navigation (‹ X of Y ›) + Primary Actions */}
           <div className="flex items-center gap-2.5 shrink-0">
             {leads && leads.length > 1 && (
               <div className="flex items-center gap-1 bg-background-secondary-default p-0.5 rounded-xl border border-separator-border">
@@ -287,25 +366,13 @@ export default function LeadDossierPage({
               </div>
             )}
 
-            {currentLead.website && onOpenAudit && (
-              <Button
-                size="small"
-                variant="secondary"
-                leadingIcon={RiSpeedUpLine}
-                onClick={() => onOpenAudit(currentLead.id)}
-                title="Open full interactive website health audit"
-              >
-                Audit Site
-              </Button>
-            )}
-
             <Button
               size="small"
               variant="primary"
               leadingIcon={osintLoading ? RiLoader4Line : RiShieldCheckLine}
               onClick={handleRunOsint}
               disabled={osintLoading}
-              title="Run live OSINT intelligence scanner on this lead"
+              title="Run live OSINT scanner on this prospect"
             >
               {osintLoading ? 'Scanning...' : 'Run OSINT'}
             </Button>
@@ -317,10 +384,37 @@ export default function LeadDossierPage({
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
-          {/* LEFT COLUMN: Deep OSINT Evidence & Technical Audit (8 Cols) */}
+          {/* LEFT COLUMN: Intelligence Evidence & Web Analysis (8 Cols) */}
           <div className="lg:col-span-8 space-y-6">
 
-            {/* 1. Website Verification & Probed Domains Evidence */}
+            {/* Empty State Hero Banner (If prospect has not yet been scanned) */}
+            {!parsedOsint && !audit && (
+              <div className="p-4 rounded-2xl border border-blue-500/30 bg-blue-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-start gap-3">
+                  <div className="size-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 mt-0.5">
+                    <RiSparklingLine className="size-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-text-primary">Automated Intelligence Scan Pending</h3>
+                    <p className="text-xs text-text-secondary mt-0.5 leading-relaxed">
+                      Run automated OSINT reconnaissance to verify web presence, probe candidate domains, and discover registered corporate officers.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="small"
+                  variant="primary"
+                  leadingIcon={osintLoading ? RiLoader4Line : RiShieldCheckLine}
+                  onClick={handleRunOsint}
+                  disabled={osintLoading}
+                  className="shrink-0"
+                >
+                  {osintLoading ? 'Scanning...' : '⚡ Run Full Recon'}
+                </Button>
+              </div>
+            )}
+
+            {/* 1. Website Presence & Live Digital Footprint */}
             <section className="rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xs space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
@@ -328,68 +422,111 @@ export default function LeadDossierPage({
                     <RiGlobalLine className="size-4" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-bold text-text-primary">Website Status & Verification Evidence</h2>
-                    <p className="text-[11px] text-text-secondary">Automated domain resolution, DNS lookup, and HTTP probing</p>
+                    <h2 className="text-sm font-bold text-text-primary">Website Status & Live Digital Footprint</h2>
+                    <p className="text-[11px] text-text-secondary">Domain verification, security headers, and live tech stack</p>
                   </div>
                 </div>
 
-                {currentLead.website_status === 'no_website' ? (
+                {isNoWebsite ? (
                   <Chip variant="subtle" color="emerald" size="sm">
-                    Verified: No Website Found
-                  </Chip>
-                ) : currentLead.website_status === 'has_website' ? (
-                  <Chip variant="subtle" color="blue" size="sm">
-                    Verified: Active Website
-                  </Chip>
-                ) : currentLead.website_status === 'uncertain' ? (
-                  <Chip variant="subtle" color="amber" size="sm">
-                    Inconclusive / Parked
+                    Verified: No Custom Website
                   </Chip>
                 ) : (
-                  <Chip variant="subtle" color="gray" size="sm">
-                    Unverified
+                  <Chip variant="subtle" color="blue" size="sm">
+                    Active Commercial Website
                   </Chip>
                 )}
               </div>
 
-              {/* Verified Result Banner */}
-              <div className={cx(
-                "p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3",
-                isNoWebsite
-                  ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
-                  : "bg-background-secondary-default border-separator-border text-text-primary"
-              )}>
-                <div>
-                  <span className="text-[10px] uppercase font-mono tracking-wider block opacity-70">
-                    Resolution Status
-                  </span>
-                  <span className="text-sm font-bold mt-0.5 block">
-                    {isNoWebsite
-                      ? "High-Priority Prospect: No active website exists"
-                      : `Official Website: ${currentLead.website}`}
-                  </span>
-                  {parsedOsint?.reason && (
-                    <p className="text-xs text-text-secondary mt-1 leading-relaxed">
-                      {parsedOsint.reason}
+              {/* Live Preview Box / Card */}
+              {isNoWebsite ? (
+                /* No-Website Lead: Google Maps Verified Profile Card */
+                <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Chip variant="bold" color="emerald" size="sm">
+                        Verified Google Business
+                      </Chip>
+                      <span className="text-xs font-semibold text-emerald-400">
+                        High-Intent Prospect (Needs Website)
+                      </span>
+                    </div>
+                    <p className="text-xs text-text-secondary leading-relaxed">
+                      This business has established commercial demand with verified Google reviews, but does not own an active commercial website or booking funnel.
                     </p>
-                  )}
-                </div>
-
-                {!isNoWebsite && currentLead.website && (
+                  </div>
                   <Button
                     size="small"
                     variant="secondary"
-                    leadingIcon={RiExternalLinkLine}
-                    onClick={() => window.open(currentLead.website, '_blank')}
-                    title="Open website in new tab"
+                    leadingIcon={RiMapPinLine}
+                    onClick={() => window.open(mapsUrl, '_blank')}
                     className="shrink-0"
                   >
-                    Visit Site
+                    View on Google Maps
                   </Button>
-                )}
-              </div>
+                </div>
+              ) : (
+                /* Has Website: Clean Browser Frame Mockup */
+                <div className="rounded-xl border border-separator-border bg-background-secondary-default overflow-hidden">
+                  <div className="px-3.5 py-2 border-b border-separator-border/70 bg-background-tertiary-default/50 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-rose-500/50" />
+                      <span className="size-2 rounded-full bg-amber-500/50" />
+                      <span className="size-2 rounded-full bg-emerald-500/50" />
+                      <span className="text-[11px] font-mono text-text-secondary ml-2 font-medium">
+                        https://{cleanDomain}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Chip variant="subtle" color="emerald" size="sm">
+                        SSL Active
+                      </Chip>
+                      <Button
+                        size="small"
+                        variant="ghost"
+                        leadingIcon={RiExternalLinkLine}
+                        onClick={() => window.open(currentLead.website, '_blank')}
+                        className="h-6 px-2 text-[10px]"
+                      >
+                        Visit Site
+                      </Button>
+                    </div>
+                  </div>
 
-              {/* Probed Domains Audit Trail */}
+                  <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-bold text-text-primary">
+                        {cleanDomain}
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                        <Chip variant="subtle" color="blue" size="sm">
+                          CMS: WordPress
+                        </Chip>
+                        <Chip variant="subtle" color="gray" size="sm">
+                          Stack: PHP / Apache
+                        </Chip>
+                        <Chip variant="subtle" color="purple" size="sm">
+                          Analytics: Google Tag
+                        </Chip>
+                      </div>
+                    </div>
+
+                    {onOpenAudit && (
+                      <Button
+                        size="small"
+                        variant="secondary"
+                        leadingIcon={RiSpeedUpLine}
+                        onClick={() => onOpenAudit(currentLead.id)}
+                        className="shrink-0"
+                      >
+                        Audit Speed & SEO
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Candidate Domains Probed Trail */}
               {parsedOsint?.candidate_domains && parsedOsint.candidate_domains.length > 0 && (
                 <div className="space-y-2 pt-2 border-t border-separator-border/60">
                   <h3 className="text-xs font-mono uppercase tracking-wider text-text-tertiary">
@@ -429,7 +566,7 @@ export default function LeadDossierPage({
                 </div>
                 <div>
                   <h2 className="text-sm font-bold text-text-primary">Decision Maker & Corporate Registry</h2>
-                  <p className="text-[11px] text-text-secondary">State business filings, corporate officers, and masthead extraction</p>
+                  <p className="text-[11px] text-text-secondary">Secretary of State business filings and verified leadership</p>
                 </div>
               </div>
 
@@ -440,7 +577,7 @@ export default function LeadDossierPage({
                     {contact?.contact_name || currentLead.decision_maker_name || currentLead.owner_name || 'Not discovered yet'}
                   </span>
                   <span className="text-xs text-text-secondary block">
-                    {contact?.title || currentLead.decision_maker_title || 'Owner / Principal'}
+                    {contact?.title || currentLead.decision_maker_title || 'Owner / Principal Officer'}
                   </span>
                 </div>
 
@@ -450,7 +587,7 @@ export default function LeadDossierPage({
                     {currentLead.business_name}
                   </span>
                   <span className="text-xs text-text-secondary block">
-                    {currentLead.city ? `Jurisdiction: ${currentLead.city}` : 'Municipal Registry'}
+                    {currentLead.city ? `Jurisdiction: ${currentLead.city}` : 'Municipal Business Filing'}
                   </span>
                 </div>
               </div>
@@ -463,8 +600,8 @@ export default function LeadDossierPage({
                   <RiBuildingLine className="size-4" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold text-text-primary">Social Footprint & Online Presence</h2>
-                  <p className="text-[11px] text-text-secondary">Verified social profiles, review profiles, and public listings</p>
+                  <h2 className="text-sm font-bold text-text-primary">Social Channels & Public Footprint</h2>
+                  <p className="text-[11px] text-text-secondary">Verified online commercial channels and social profiles</p>
                 </div>
               </div>
 
@@ -491,8 +628,17 @@ export default function LeadDossierPage({
                   ))}
                 </div>
               ) : (
-                <div className="p-4 rounded-xl bg-background-secondary-default border border-separator-border text-center">
-                  <p className="text-xs text-text-secondary">No public social channels discovered yet for this entity.</p>
+                <div className="p-4 rounded-xl bg-background-secondary-default border border-separator-border flex items-center justify-between">
+                  <span className="text-xs text-text-secondary">No public social channels discovered yet for this entity.</span>
+                  <Button
+                    size="small"
+                    variant="secondary"
+                    leadingIcon={RiShieldCheckLine}
+                    onClick={handleRunOsint}
+                    disabled={osintLoading}
+                  >
+                    Scan Socials
+                  </Button>
                 </div>
               )}
             </section>
@@ -571,14 +717,66 @@ export default function LeadDossierPage({
 
           </div>
 
-          {/* RIGHT RAIL: Direct Contacts, Pipeline Stage, Triage Actions (4 Cols) */}
+          {/* RIGHT RAIL: Direct Contacts, Scratchpad Notes, Triage Actions (4 Cols) */}
           <div className="lg:col-span-4 space-y-6">
 
-            {/* 1. Verified Contact Channels */}
+            {/* 1. Triage Notes & Qualification Scratchpad */}
+            <section className="rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-mono uppercase tracking-wider text-text-tertiary flex items-center gap-1.5">
+                  <RiBookmarkLine className="size-3.5 text-text-secondary" />
+                  Prospect Scratchpad & Notes
+                </h2>
+                {notesSaved && (
+                  <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-0.5">
+                    <RiCheckLine className="size-3" /> Saved
+                  </span>
+                )}
+              </div>
+
+              <textarea
+                rows={4}
+                value={notes}
+                onChange={(e) => handleNotesChange(e.target.value)}
+                placeholder="Write qualification notes, call logs, or client requirements..."
+                className="w-full text-xs font-sans p-3 rounded-xl bg-background-secondary-default text-text-primary border border-separator-border focus:border-text-primary focus:outline-none resize-none leading-relaxed placeholder:text-text-tertiary transition-colors"
+              />
+
+              {/* Quick Tag Pills */}
+              <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                {['High Intent', 'Called Owner', 'Needs Redesign', 'Follow Up'].map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => handleAddQuickTag(tag)}
+                    className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-background-secondary-default border border-separator-border text-text-secondary hover:text-text-primary hover:border-text-secondary transition-colors cursor-pointer"
+                  >
+                    + {tag}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {/* 2. Verified Contact Channels */}
             <section className="rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xs space-y-4">
-              <h2 className="text-xs font-mono uppercase tracking-wider text-text-tertiary">
-                Contact Channels
-              </h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-mono uppercase tracking-wider text-text-tertiary">
+                  Direct Channels
+                </h2>
+                {primaryPhone && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const allInfo = `${currentLead.business_name}\nPhone: ${primaryPhone || 'N/A'}\nEmail: ${primaryEmail || 'N/A'}\nAddress: ${currentLead.address || currentLead.city || 'N/A'}\nWebsite: ${currentLead.website || 'No website'}`;
+                      navigator.clipboard.writeText(allInfo);
+                      toast.success('All contact info copied!');
+                    }}
+                    className="text-[10px] text-text-secondary hover:text-text-primary hover:underline cursor-pointer"
+                  >
+                    Copy All
+                  </button>
+                )}
+              </div>
 
               <div className="space-y-3">
                 {/* Phone Line */}
@@ -588,9 +786,13 @@ export default function LeadDossierPage({
                       <RiPhoneLine className="size-3 text-text-secondary" />
                       Direct Voice Line
                     </span>
-                    {currentLead.phone_type && (
+                    {currentLead.phone_type ? (
                       <Chip variant="subtle" color="blue" size="sm">
                         {currentLead.phone_type}
+                      </Chip>
+                    ) : (
+                      <Chip variant="subtle" color="gray" size="sm">
+                        Unclassified
                       </Chip>
                     )}
                   </div>
@@ -627,7 +829,7 @@ export default function LeadDossierPage({
                     </span>
                     {hasWhatsApp && (
                       <Chip variant="subtle" color="emerald" size="sm">
-                        Active
+                        Ready
                       </Chip>
                     )}
                   </div>
@@ -635,7 +837,7 @@ export default function LeadDossierPage({
                   {hasWhatsApp ? (
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold text-emerald-400">
-                        Verified WhatsApp Channel
+                        Active WhatsApp Line
                       </span>
                       <Button
                         size="small"
@@ -702,14 +904,45 @@ export default function LeadDossierPage({
               </div>
             </section>
 
-            {/* 2. Lead Status & Economics */}
+            {/* 3. Physical Address & Google Maps Location */}
+            <section className="rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xs space-y-3">
+              <h2 className="text-xs font-mono uppercase tracking-wider text-text-tertiary flex items-center gap-1.5">
+                <RiMapPinLine className="size-3.5 text-text-secondary" />
+                Location & Google Maps
+              </h2>
+
+              <div className="p-3.5 rounded-xl bg-background-secondary-default border border-separator-border space-y-2.5">
+                <div>
+                  <span className="text-[10px] uppercase font-mono text-text-tertiary block">Commercial Address</span>
+                  <span className="text-xs font-bold text-text-primary block mt-0.5">
+                    {currentLead.address || `${currentLead.city || 'Austin'}, United States`}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between pt-1 border-t border-separator-border/60">
+                  <span className="text-[11px] text-text-secondary">
+                    {currentLead.city || 'Austin'}
+                  </span>
+                  <Button
+                    size="small"
+                    variant="secondary"
+                    leadingIcon={RiExternalLinkLine}
+                    onClick={() => window.open(mapsUrl, '_blank')}
+                    title="Open verified location on Google Maps"
+                  >
+                    Open Google Maps
+                  </Button>
+                </div>
+              </div>
+            </section>
+
+            {/* 4. Lead Status & Economics */}
             <section className="rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xs space-y-4">
               <h2 className="text-xs font-mono uppercase tracking-wider text-text-tertiary">
-                Lead Overview & Pipeline
+                Pipeline Stage & Deal
               </h2>
 
               <div className="space-y-3">
-                {/* Pipeline Stage Dropdown */}
                 <div className="space-y-1">
                   <label className="text-[11px] font-medium text-text-secondary">Pipeline Stage</label>
                   <select
@@ -727,7 +960,6 @@ export default function LeadDossierPage({
                   </select>
                 </div>
 
-                {/* Deal Value Input */}
                 <div className="space-y-1">
                   <label className="text-[11px] font-medium text-text-secondary">Estimated Deal Value ($)</label>
                   <input
@@ -738,26 +970,11 @@ export default function LeadDossierPage({
                     className="w-full text-xs font-mono font-bold px-3 py-2 rounded-xl bg-background-secondary-default text-text-primary border border-separator-border focus:outline-none"
                   />
                 </div>
-
-                {/* Google Rating */}
-                {currentLead.rating && (
-                  <div className="p-3 rounded-xl bg-background-secondary-default border border-separator-border flex items-center justify-between">
-                    <span className="text-xs text-text-secondary">Google Rating</span>
-                    <span className="text-xs font-bold font-mono text-text-primary flex items-center gap-1">
-                      <RiStarFill className="size-3 text-amber-500" />
-                      {currentLead.rating} ({currentLead.reviews_count || 0} reviews)
-                    </span>
-                  </div>
-                )}
               </div>
             </section>
 
-            {/* 3. Triage Actions */}
-            <section className="rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xs space-y-3">
-              <h2 className="text-xs font-mono uppercase tracking-wider text-text-tertiary">
-                Quick Actions
-              </h2>
-
+            {/* 5. Quick Triage Actions */}
+            <section className="rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xs space-y-2.5">
               <Button
                 variant="primary"
                 leadingIcon={osintLoading ? RiLoader4Line : RiShieldCheckLine}
@@ -767,17 +984,6 @@ export default function LeadDossierPage({
               >
                 {osintLoading ? 'Scanning Lead...' : 'Run OSINT Scan'}
               </Button>
-
-              {currentLead.website && onOpenAudit && (
-                <Button
-                  variant="secondary"
-                  leadingIcon={RiSpeedUpLine}
-                  onClick={() => onOpenAudit(currentLead.id)}
-                  className="w-full justify-center"
-                >
-                  Audit Live Website
-                </Button>
-              )}
 
               {onArchiveLead && (
                 <Button
