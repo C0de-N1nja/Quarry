@@ -5,7 +5,8 @@ import {
   RiDatabase2Line, RiServerLine, RiGlobalLine,
   RiTimeLine, RiCloseLine, RiRestartLine,
   RiPhoneLine, RiWhatsappLine, RiFireLine,
-  RiTerminalBoxLine, RiStarFill, RiFlashlightFill
+  RiTerminalBoxLine, RiStarFill, RiFlashlightFill,
+  RiLoader4Line
 } from '@remixicon/react';
 import { Button } from '@/components/base/buttons/button';
 import { Chip } from '@/components/base/badges/chip';
@@ -51,6 +52,7 @@ export default function OnboardingModal({
   const pollRef = useRef(null);
   const terminalEndRef = useRef(null);
   const activeJobIdRef = useRef(null);
+  const loggedPlacesRef = useRef(new Set());
 
   const POPULAR_NICHES = ['HVAC', 'Roofing', 'Plumbing', 'Tree Care', 'Landscaping', 'Pressure Washing', 'Electrician'];
   const POPULAR_CITIES = ['Austin, TX', 'Miami, FL', 'Dallas, TX', 'Denver, CO', 'Tampa, FL', 'Phoenix, AZ'];
@@ -102,7 +104,45 @@ export default function OnboardingModal({
 
   const addLog = (tag, text, color = 'text-slate-300') => {
     const timeStr = new Date().toTimeString().split(' ')[0];
-    setTerminalLogs(prev => [...prev.slice(-30), { id: Math.random().toString(36).slice(2), time: timeStr, tag, text, color }]);
+    setTerminalLogs(prev => [...prev.slice(-35), { id: Math.random().toString(36).slice(2), time: timeStr, tag, text, color }]);
+  };
+
+  // Unified telemetry processing for both SSE and Polling
+  const processTelemetryUpdate = (data) => {
+    if (!data) return;
+    setTelemetry(prev => ({ ...(prev || {}), ...data }));
+
+    const incoming = Array.isArray(data.recentPlaces)
+      ? data.recentPlaces
+      : (data.recentPlace ? [data.recentPlace] : []);
+
+    if (incoming.length > 0) {
+      setDiscoveredPlaces(prev => {
+        const map = new Map();
+        for (const p of prev) {
+          const k = p.name || p.title;
+          if (k) map.set(k, p);
+        }
+        for (const p of incoming) {
+          const k = p.name || p.title;
+          if (k) map.set(k, p);
+        }
+        return Array.from(map.values()).slice(0, 20);
+      });
+
+      for (const place of incoming) {
+        const title = place.name || place.title;
+        if (title && !loggedPlacesRef.current.has(title)) {
+          loggedPlacesRef.current.add(title);
+          const isNoWeb = place.hasNoWebsite || !place.website;
+          addLog(
+            'TARGET',
+            `Discovered: ${title} • ${place.phone || 'Phone on file'} • ${isNoWeb ? '★ NO WEBSITE (Hot Lead)' : 'Website Active'}`,
+            isNoWeb ? 'text-rose-400 font-semibold' : 'text-slate-300'
+          );
+        }
+      }
+    }
   };
 
   const startMining = async () => {
@@ -118,6 +158,7 @@ export default function OnboardingModal({
     setHarvestedLeads([]);
     setTelemetry(null);
     setElapsed(0);
+    loggedPlacesRef.current = new Set();
 
     const jobId = `job_onboarding_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     activeJobIdRef.current = jobId;
@@ -163,15 +204,7 @@ export default function OnboardingModal({
         try {
           const data = JSON.parse(evt.data);
           if (data && data.status) {
-            setTelemetry(prev => ({ ...(prev || {}), ...data }));
-            if (data.recentPlace) {
-              const place = data.recentPlace;
-              setDiscoveredPlaces(prev => {
-                if (prev.some(p => p.id === place.id || p.title === place.title)) return prev;
-                return [place, ...prev].slice(0, 15);
-              });
-              addLog('TARGET', `${place.title || place.name} • ${place.website ? 'Website Active' : '★ NO WEBSITE (Hot Lead)'}`, place.website ? 'text-slate-300' : 'text-rose-400 font-semibold');
-            }
+            processTelemetryUpdate(data);
           }
         } catch (e) {}
       };
@@ -190,11 +223,11 @@ export default function OnboardingModal({
         if (pRes.ok) {
           const pData = await pRes.json();
           if (pData.success) {
-            setTelemetry(prev => ({ ...(prev || {}), ...pData }));
+            processTelemetryUpdate(pData);
           }
         }
       } catch (e) {}
-    }, 1200);
+    }, 1000);
 
     try {
       const res = await fetch('/api/search/maps', {
@@ -253,15 +286,20 @@ export default function OnboardingModal({
     if (onSkip) onSkip();
   };
 
+  // Live telemetry counts
+  const liveDiscoveredCount = telemetry?.uniqueBusinesses || telemetry?.placesHarvested || discoveredPlaces.length || 0;
+  const liveNoWebsiteCount = telemetry?.noWebsiteCount || discoveredPlaces.filter(p => p.hasNoWebsite || !p.website).length || 0;
+
   // Compute smooth animated progress percentage
   const dynamicProgress = step === 4 
     ? 100 
-    : Math.min(96, Math.max(10, Math.round((elapsed / 32) * 85 + (discoveredPlaces.length * 1.5))));
+    : Math.min(96, Math.max(10, Math.round((elapsed / 32) * 85 + (liveDiscoveredCount * 1.5))));
 
-  const totalMinedCount = harvestedLeads.length || telemetry?.totalFound || discoveredPlaces.length || targetCount;
+  // Final Step 4 counts
+  const totalMinedCount = harvestedLeads.length || liveDiscoveredCount || targetCount;
   const noWebsiteLeads = harvestedLeads.length > 0 
     ? harvestedLeads.filter(l => l.has_no_website === 1 || !l.website)
-    : discoveredPlaces.filter(p => !p.website);
+    : discoveredPlaces.filter(p => p.hasNoWebsite || !p.website);
   const noWebsiteCount = noWebsiteLeads.length || Math.max(1, Math.round(totalMinedCount * 0.25));
   const phoneCount = harvestedLeads.filter(l => l.phone).length || Math.round(totalMinedCount * 0.9);
 
@@ -500,67 +538,107 @@ export default function OnboardingModal({
             </div>
           )}
 
-          {/* STEP 3: Animated Radar & Live Stream Feed */}
+          {/* STEP 3: Integrated Precision Radar Cockpit & Live Stream Feed */}
           {step === 3 && (
-            <div className="space-y-5">
+            <div className="space-y-4">
               {/* Top Banner */}
               <div className="flex items-start justify-between">
                 <div>
                   <h2 className="text-xl font-bold tracking-tight text-text-primary flex items-center gap-2">
                     <span>Mining Live Prospects</span>
-                    <span className="size-2.5 rounded-full bg-accent-500 animate-ping" />
+                    <span className="size-2 rounded-full bg-accent-500 animate-ping" />
                   </h2>
                   <p className="text-xs text-text-secondary mt-1">
                     Scraping Google Maps in real-time for <span className="font-semibold text-text-primary">{keyword}</span> across <span className="font-semibold text-text-primary">{city}</span>.
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-background-secondary-default border border-separator-border font-mono text-xs text-text-primary shadow-xs">
-                    <RiTimeLine className="size-3.5 text-accent-500 animate-spin" />
-                    <span>{elapsed}s</span>
-                  </div>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-background-secondary-default border border-separator-border font-mono text-xs text-text-primary shadow-xs">
+                  <RiTimeLine className="size-3.5 text-accent-500 animate-spin" />
+                  <span>{elapsed}s</span>
                 </div>
               </div>
 
-              {/* High-Tech Visual Section: Radar Scanner + Real-time Telemetry */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-2xl bg-slate-950 border border-slate-800 text-white shadow-xl overflow-hidden relative">
-                {/* Visual Radar Hologram */}
-                <div className="flex flex-col items-center justify-center p-3 relative">
-                  <div className="relative size-28 flex items-center justify-center">
-                    {/* Pulsing Sonar Ring */}
-                    <div className="absolute inset-0 rounded-full border border-blue-500/30 animate-ping opacity-30" />
-                    {/* Concentric Grid Rings */}
-                    <div className="absolute inset-0 rounded-full border border-blue-500/20 bg-blue-950/20 shadow-[0_0_25px_rgba(59,130,246,0.2)]" />
-                    <div className="absolute inset-3 rounded-full border border-dashed border-blue-400/30" />
-                    <div className="absolute inset-7 rounded-full border border-blue-500/40 bg-blue-500/10" />
+              {/* Precision Vector Radar + Telemetry Instrument Cockpit */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 rounded-2xl bg-slate-950 border border-slate-800 text-white shadow-xl relative overflow-hidden">
+                {/* Visual SVG Precision Radar Scanner */}
+                <div className="md:col-span-5 flex flex-col items-center justify-center p-2 relative">
+                  <div className="relative size-36 flex items-center justify-center select-none">
+                    {/* SVG Vector Radar Grid with Concentric Rings and Crosshairs */}
+                    <svg className="absolute inset-0 size-full" viewBox="0 0 120 120">
+                      {/* Dark Cockpit Canvas */}
+                      <circle cx="60" cy="60" r="56" fill="#040914" stroke="#1e293b" strokeWidth="1.5" />
+                      {/* Distance Range Rings */}
+                      <circle cx="60" cy="60" r="42" fill="none" stroke="#0ea5e9" strokeWidth="0.75" strokeOpacity="0.2" strokeDasharray="3 3" />
+                      <circle cx="60" cy="60" r="28" fill="none" stroke="#0ea5e9" strokeWidth="0.75" strokeOpacity="0.3" />
+                      <circle cx="60" cy="60" r="14" fill="none" stroke="#0ea5e9" strokeWidth="0.75" strokeOpacity="0.4" />
+                      {/* Quadrant Crosshairs */}
+                      <line x1="6" y1="60" x2="114" y2="60" stroke="#0ea5e9" strokeWidth="0.75" strokeOpacity="0.35" />
+                      <line x1="60" y1="6" x2="60" y2="114" stroke="#0ea5e9" strokeWidth="0.75" strokeOpacity="0.35" />
+                      {/* Cardinal Compass Labels */}
+                      <text x="60" y="11" textAnchor="middle" fill="#38bdf8" fontSize="5.5" fontFamily="monospace" fontWeight="bold">N</text>
+                      <text x="111" y="62" textAnchor="middle" fill="#38bdf8" fontSize="5.5" fontFamily="monospace" fontWeight="bold">E</text>
+                      <text x="60" y="114" textAnchor="middle" fill="#38bdf8" fontSize="5.5" fontFamily="monospace" fontWeight="bold">S</text>
+                      <text x="9" y="62" textAnchor="middle" fill="#38bdf8" fontSize="5.5" fontFamily="monospace" fontWeight="bold">W</text>
+                    </svg>
 
-                    {/* Rotating Conic Radar Sweep */}
+                    {/* Smooth 360-Degree Radar Sweep Beam */}
                     <div 
-                      className="absolute inset-0 rounded-full overflow-hidden animate-spin pointer-events-none"
-                      style={{ animationDuration: '2.4s' }}
+                      className="absolute inset-1 rounded-full overflow-hidden pointer-events-none animate-spin"
+                      style={{ animationDuration: '2.5s' }}
                     >
+                      {/* Phosphor Glow Trail */}
                       <div 
-                        className="w-1/2 h-1/2 origin-bottom-right"
+                        className="size-full rounded-full"
                         style={{
-                          background: 'conic-gradient(from 0deg, rgba(59, 130, 246, 0.7) 0deg, rgba(14, 165, 233, 0.3) 45deg, transparent 90deg)'
+                          background: 'conic-gradient(from 0deg, rgba(56, 189, 248, 0.45) 0deg, rgba(14, 165, 233, 0.15) 30deg, transparent 65deg, transparent 360deg)'
                         }}
                       />
+                      {/* Sharp Neon Needle Scanline at 0 deg */}
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-1/2 bg-sky-300 shadow-[0_0_8px_#38bdf8]" />
                     </div>
 
-                    {/* Detected Target Blips */}
-                    <div className="absolute top-4 right-6 size-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.9)]" title="No Website Prospect" />
-                    <div className="absolute bottom-5 left-7 size-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
-                    <div className="absolute top-8 left-5 size-2 rounded-full bg-sky-400 animate-pulse" />
-                    <div className="absolute bottom-8 right-7 size-1.5 rounded-full bg-rose-400 animate-pulse" />
+                    {/* Dynamic Responsive Blip Targets */}
+                    {discoveredPlaces.length > 0 ? (
+                      discoveredPlaces.slice(0, 10).map((p, idx) => {
+                        const name = p.name || p.title || '';
+                        const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), idx * 29);
+                        const angle = (hash * 43) % 360;
+                        const radius = 14 + ((hash * 17) % 32);
+                        const rad = (angle * Math.PI) / 180;
+                        const left = 50 + radius * Math.cos(rad);
+                        const top = 50 + radius * Math.sin(rad);
+                        const isNoWeb = p.hasNoWebsite || !p.website;
 
-                    {/* Center Crosshair Dot */}
-                    <div className="relative size-3.5 rounded-full bg-blue-500 border-2 border-white shadow-md z-10" />
+                        return (
+                          <div
+                            key={idx}
+                            className={`absolute size-2 rounded-full -translate-x-1/2 -translate-y-1/2 transition-all duration-300 ${
+                              isNoWeb 
+                                ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.95)] animate-pulse ring-2 ring-rose-400/40' 
+                                : 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]'
+                            }`}
+                            style={{ left: `${left}%`, top: `${top}%` }}
+                            title={`${name} • ${isNoWeb ? 'No Website' : 'Active Site'}`}
+                          />
+                        );
+                      })
+                    ) : (
+                      <>
+                        {/* Ambient Searching Blips while scanning */}
+                        <div className="absolute top-8 right-9 size-1.5 rounded-full bg-rose-400/80 animate-pulse shadow-[0_0_6px_#f43f5e]" />
+                        <div className="absolute bottom-9 left-10 size-1.5 rounded-full bg-emerald-400/80 animate-pulse shadow-[0_0_6px_#34d399]" />
+                        <div className="absolute top-11 left-8 size-1.5 rounded-full bg-sky-400/70 animate-pulse shadow-[0_0_6px_#38bdf8]" />
+                      </>
+                    )}
+
+                    {/* Center Micro Crosshair Beacon */}
+                    <div className="relative size-2 rounded-full bg-sky-400 shadow-[0_0_8px_#38bdf8] ring-4 ring-sky-500/20 z-10" />
                   </div>
 
                   <div className="mt-2 text-center">
                     <span className="inline-flex items-center gap-1 font-mono text-[10px] text-emerald-400 font-semibold uppercase tracking-wider">
                       <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      Radar Active
+                      Sector Radar Active
                     </span>
                     <div className="text-[10px] font-mono text-slate-400 mt-0.5">
                       {coords.lat} • {coords.lng}
@@ -569,7 +647,7 @@ export default function OnboardingModal({
                 </div>
 
                 {/* Real-time Telemetry Dashboard */}
-                <div className="md:col-span-2 flex flex-col justify-between py-1 border-t md:border-t-0 md:border-l border-slate-800/80 md:pl-4 space-y-3">
+                <div className="md:col-span-7 flex flex-col justify-between py-1 border-t md:border-t-0 md:border-l border-slate-800/80 md:pl-4 space-y-3">
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
                       <span>STEALTH ENGINE STATUS:</span>
@@ -587,7 +665,7 @@ export default function OnboardingModal({
                       <span className="text-slate-400">Acquisition Pipeline</span>
                       <span className="text-blue-400 font-bold">{dynamicProgress}%</span>
                     </div>
-                    <div className="h-2.5 w-full rounded-full bg-slate-800 overflow-hidden border border-slate-700/60 p-0.5">
+                    <div className="h-2 w-full rounded-full bg-slate-800 overflow-hidden border border-slate-700/60">
                       <div 
                         className="h-full rounded-full bg-linear-to-r from-blue-500 via-indigo-500 to-emerald-400 transition-all duration-300 shadow-sm"
                         style={{ width: `${dynamicProgress}%` }}
@@ -595,38 +673,70 @@ export default function OnboardingModal({
                     </div>
                   </div>
 
-                  {/* Live Metrics Row */}
+                  {/* Live Metrics Row with Zero Stagnation */}
                   <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/60 font-mono text-xs">
-                    <div className="bg-slate-900/80 p-2 rounded-xl border border-slate-800">
-                      <div className="text-[10px] text-slate-400 uppercase">Total Discovered</div>
-                      <div className="text-base font-bold text-white mt-0.5">
-                        {telemetry?.totalFound || discoveredPlaces.length || 0} / {targetCount}
+                    <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 flex flex-col justify-between">
+                      <div className="text-[10px] text-slate-400 uppercase tracking-wider">Total Discovered</div>
+                      <div className="mt-1 flex items-baseline gap-1.5">
+                        {liveDiscoveredCount === 0 ? (
+                          <span className="text-xs font-mono text-slate-400 flex items-center gap-1.5">
+                            <RiLoader4Line className="size-3.5 animate-spin text-blue-400" />
+                            <span>Scanning Grid...</span>
+                          </span>
+                        ) : (
+                          <>
+                            <span className="text-lg font-bold text-white font-mono">{liveDiscoveredCount}</span>
+                            <span className="text-xs font-mono text-slate-500">/ {targetCount} targets</span>
+                          </>
+                        )}
                       </div>
                     </div>
-                    <div className="bg-slate-900/80 p-2 rounded-xl border border-slate-800">
-                      <div className="text-[10px] text-rose-400 uppercase flex items-center gap-1">
+
+                    <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 flex flex-col justify-between">
+                      <div className="text-[10px] text-rose-400 uppercase tracking-wider flex items-center gap-1 font-semibold">
                         <RiFireLine className="size-3" />
                         <span>No-Website Hot Leads</span>
                       </div>
-                      <div className="text-base font-bold text-rose-400 mt-0.5">
-                        {discoveredPlaces.filter(p => !p.website).length} Detected
+                      <div className="mt-1 flex items-baseline gap-1.5">
+                        {liveNoWebsiteCount === 0 ? (
+                          <span className="text-xs font-mono text-slate-400 flex items-center gap-1.5">
+                            <span className="size-1.5 rounded-full bg-slate-500 animate-ping" />
+                            <span>Auditing Domains...</span>
+                          </span>
+                        ) : (
+                          <>
+                            <span className="text-lg font-bold text-rose-400 font-mono flex items-center gap-1">
+                              {liveNoWebsiteCount}
+                            </span>
+                            <span className="text-xs font-mono text-rose-400/70">detected</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Streaming Terminal Log Console */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs font-mono text-text-tertiary">
-                  <span className="uppercase tracking-wider font-semibold flex items-center gap-1.5">
-                    <RiTerminalBoxLine className="size-3.5 text-accent-500" />
-                    <span>Real-Time Acquisition Feed</span>
-                  </span>
-                  <span className="text-[10px]">Auto-scrolling stream</span>
+              {/* Streaming Terminal Log Console with Integrated Shell Style */}
+              <div className="rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-lg">
+                {/* Terminal Window Header */}
+                <div className="flex items-center justify-between px-3.5 py-2 bg-slate-900/90 border-b border-slate-800 font-mono text-[11px] text-slate-400">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="size-2.5 rounded-full bg-rose-500/80" />
+                      <span className="size-2.5 rounded-full bg-amber-500/80" />
+                      <span className="size-2.5 rounded-full bg-emerald-500/80" />
+                    </div>
+                    <span className="text-slate-300 font-semibold ml-1 flex items-center gap-1.5">
+                      <RiTerminalBoxLine className="size-3.5 text-accent-500" />
+                      quarry-maps-stealth.sh
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-mono">LIVE STDOUT</span>
                 </div>
 
-                <div className="h-44 rounded-2xl border border-separator-border bg-slate-950 p-3 overflow-y-auto space-y-1.5 font-mono text-[11px] shadow-inner">
+                {/* Terminal Content with Clean Padding and Custom Sleek Scrollbar */}
+                <div className="h-40 p-3.5 overflow-y-auto space-y-1.5 font-mono text-[11px] [scrollbar-width:thin] [scrollbar-color:#334155_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-800 [&::-webkit-scrollbar-thumb]:rounded-full">
                   {terminalLogs.map((log) => (
                     <div key={log.id} className="flex items-start gap-2 leading-relaxed">
                       <span className="text-slate-500 shrink-0 select-none">[{log.time}]</span>
