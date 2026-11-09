@@ -970,7 +970,7 @@ export default function LeadDossierPage({
 
           </div>
 
-          {/* RIGHT RAIL: Direct Contacts, Location, Pipeline Stage (4 Cols) */}
+          {/* RIGHT RAIL: Direct Contacts, Location, Actions (4 Cols) */}
           <div className="lg:col-span-4 space-y-6">
 
             {/* 1. Verified Contact Channels */}
@@ -1160,44 +1160,7 @@ export default function LeadDossierPage({
               </div>
             </section>
 
-            {/* 4. Lead Status & Economics */}
-            <section className="rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xs space-y-4">
-              <h2 className="text-xs font-mono uppercase tracking-wider text-text-tertiary">
-                Pipeline Stage & Deal
-              </h2>
-
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-text-secondary">Pipeline Stage</label>
-                  <select
-                    value={currentStatus}
-                    onChange={(e) => handleUpdateStage(e.target.value)}
-                    className="w-full text-xs font-semibold px-3 py-2 rounded-xl bg-background-secondary-default text-text-primary border border-separator-border focus:outline-none cursor-pointer"
-                  >
-                    <option value="discovered">1. Discovered</option>
-                    <option value="enriched">2. Contacts Found</option>
-                    <option value="pitched">3. Pitched / Outreached</option>
-                    <option value="replied">4. In Discussion</option>
-                    <option value="won">5. Deal Won</option>
-                    <option value="archived">Archived</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-text-secondary">Estimated Deal Value ($)</label>
-                  <input
-                    type="number"
-                    value={dealValue}
-                    placeholder="e.g. 500"
-                    onChange={(e) => setDealValue(e.target.value)}
-                    onBlur={() => handleUpdateStage(currentStatus, dealValue ? parseInt(dealValue, 10) : 0)}
-                    className="w-full text-xs font-mono font-bold px-3 py-2 rounded-xl bg-background-secondary-default text-text-primary border border-separator-border focus:outline-none placeholder:text-text-tertiary"
-                  />
-                </div>
-              </div>
-            </section>
-
-            {/* 4. Archive Lead Action */}
+            {/* 3. Archive Lead Action */}
             {onArchiveLead && (
               <Button
                 variant="secondary"
