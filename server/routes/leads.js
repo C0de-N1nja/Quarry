@@ -24,6 +24,8 @@ router.post('/:id/scan-blackbird', leadController.scanBlackbird);
 router.post('/:id/scan-harvester', leadController.scanHarvester);
 router.post('/:id/verify-email', leadController.verifyEmail);
 router.get('/:id/audit', leadController.getWebsiteAudit);
+router.get('/:id/audit-report', leadController.getAuditReportHtml);
+router.get('/:id/audit-pdf', leadController.downloadAuditReportPdf);
 router.post('/:id/audit-website', leadController.auditWebsite);
 
 module.exports = router;

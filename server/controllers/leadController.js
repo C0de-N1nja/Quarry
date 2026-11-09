@@ -3,6 +3,7 @@ const Contact = require('../models/Contact');
 const Outbox = require('../models/Outbox');
 const crawlerService = require('../services/crawler-service');
 const db = require('../db/database');
+const AuditReportGenerator = require('../services/auditReportGenerator');
 
 /**
  * Lead Controller: Handles HTTP requests for lead CRM operations.
@@ -154,6 +155,33 @@ class LeadController {
       const updated = Lead.clearFollowUp(id);
       if (!updated) return res.status(404).json({ success: false, error: 'Lead not found' });
       res.json({ success: true, lead: updated });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
+  async getAuditReportHtml(req, res) {
+    try {
+      const id = req.params.id;
+      const data = AuditReportGenerator.getReportData(id);
+      if (!data) return res.status(404).send('Lead not found');
+      const autoPrint = req.query.print === 'true';
+      const html = AuditReportGenerator.renderHtml(data, autoPrint);
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(html);
+    } catch (err) {
+      res.status(500).send(`Error generating audit report: ${err.message}`);
+    }
+  }
+
+  async downloadAuditReportPdf(req, res) {
+    try {
+      const id = req.params.id;
+      const { buffer, filename } = AuditReportGenerator.generatePdf(id);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', buffer.length);
+      res.send(buffer);
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
     }

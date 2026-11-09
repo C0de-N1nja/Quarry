@@ -37,7 +37,9 @@ import {
 import { Button } from '@/components/base/buttons/button';
 import { IconButton } from '@/components/base/buttons/icon-button';
 import { Chip } from '@/components/base/badges/chip';
+import { StatusDot } from '@/components/base/badges/status-dot';
 import { Avatar } from '@/components/base/avatar/avatar';
+import { PillTabList, PillTab } from '@/components/base/tabs/pill-tab';
 import { toast } from '@/components/base/toast/toast';
 import { cx } from '@/utils/cx';
 import { PITCH_ANGLES, generatePitchDraft, determineOptimalAngle } from '@/utils/pitchGenerator';
@@ -912,122 +914,131 @@ export default function LeadDossierPage({
               </div>
             )}
 
-            {/* STAGE PROGRESSION & FOLLOW-UP REMINDER BAR */}
-            <section className="rounded-2xl border border-separator-border bg-background-primary-default p-4 sm:p-5 shadow-xs space-y-3.5">
+            {/* STAGE PROGRESSION & FOLLOW-UP REMINDER BAR (100% BoardUI) */}
+            <section className="rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xs space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-xs font-mono uppercase tracking-wider text-text-tertiary flex items-center gap-1.5">
+                  <h2 className="text-caption-1-semibold font-mono uppercase tracking-wider text-text-tertiary flex items-center gap-1.5">
                     <RiCalendarCheckLine className="size-3.5 text-text-secondary" />
                     Pipeline Stage & Follow-Up Tracker
                   </h2>
-                  <p className="text-[11px] text-text-secondary mt-0.5">
+                  <p className="text-caption-1-regular text-text-secondary mt-0.5">
                     Move lead through active closing stages. Marking contacted sets an automatic follow-up reminder.
                   </p>
                 </div>
 
-                {/* Follow-up reminder badge */}
+                {/* Follow-up reminder badge using BoardUI Chip */}
                 {currentLead.follow_up_at && !['replied', 'won', 'archived'].includes(currentStatus) && (() => {
                   const today = new Date().toISOString().split('T')[0];
                   const isOverdue = currentLead.follow_up_at < today;
                   const isToday = currentLead.follow_up_at === today;
                   return (
-                    <div className={cx(
-                      "px-3 py-1.5 rounded-xl border flex items-center gap-2 text-xs font-medium shrink-0",
-                      isOverdue 
-                        ? "bg-rose-500/15 border-rose-500/30 text-rose-500 animate-pulse" 
-                        : isToday 
-                          ? "bg-amber-500/15 border-amber-500/30 text-amber-500" 
-                          : "bg-background-secondary-default border-separator-border text-text-secondary"
-                    )}>
-                      <RiCalendarCheckLine className="size-4 shrink-0" />
-                      <div>
-                        <span className="font-bold">
-                          {isOverdue ? `Overdue (${currentLead.follow_up_at})` : isToday ? 'Follow-up Due Today!' : `Follow-up: ${currentLead.follow_up_at}`}
-                        </span>
-                        {currentLead.follow_up_note && (
-                          <span className="text-[10px] block opacity-80 truncate max-w-[200px]">
-                            {currentLead.follow_up_note}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                    <Chip
+                      variant="bold"
+                      color={isOverdue ? "rose" : isToday ? "yellow" : "neutral"}
+                      className={cx("gap-1.5 py-1 px-2.5 font-medium shrink-0", isOverdue && "animate-pulse")}
+                    >
+                      <RiCalendarCheckLine className="size-3.5" />
+                      <span>
+                        {isOverdue 
+                          ? `Overdue (${currentLead.follow_up_at})` 
+                          : isToday 
+                            ? 'Follow-up Due Today!' 
+                            : `Follow-up: ${currentLead.follow_up_at}`}
+                      </span>
+                    </Chip>
                   );
                 })()}
               </div>
 
-              {/* Stage Progression Pills */}
-              <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-separator-border/60">
-                {[
-                  { id: 'discovered', label: '1. Discovered' },
-                  { id: 'contacted', label: '2. Contacted' },
-                  { id: 'replied', label: '3. Replied' },
-                  { id: 'won', label: '4. Deal Won 🎉' },
-                  { id: 'archived', label: 'Archived' }
-                ].map((stg) => {
-                  const isActive = currentStatus === stg.id;
-                  return (
-                    <button
-                      key={stg.id}
-                      type="button"
-                      onClick={() => handleUpdateStage(stg.id)}
-                      className={cx(
-                        "px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5",
-                        isActive
-                          ? (stg.id === 'won' 
-                              ? "bg-emerald-500 text-white border-emerald-400 shadow-sm"
-                              : stg.id === 'replied'
-                                ? "bg-purple-600 text-white border-purple-500 shadow-sm"
-                                : stg.id === 'contacted'
-                                  ? "bg-blue-600 text-white border-blue-500 shadow-sm"
-                                  : "bg-text-primary text-background-primary-default border-text-primary shadow-sm")
-                          : "bg-background-secondary-default border-separator-border text-text-secondary hover:text-text-primary hover:border-text-secondary"
-                      )}
-                    >
-                      {isActive && <RiCheckLine className="size-3.5 stroke-[3]" />}
-                      <span>{stg.label}</span>
-                    </button>
-                  );
-                })}
+              {/* BoardUI PillTabList for Stage Progression */}
+              <div className="pt-1">
+                <PillTabList className="w-full flex-wrap gap-1">
+                  <PillTab
+                    variant="blue"
+                    isSelected={currentStatus === 'discovered'}
+                    onSelect={() => handleUpdateStage('discovered')}
+                  >
+                    <StatusDot color="indigo" className="mr-1.5" />
+                    1. Discovered
+                  </PillTab>
+                  <PillTab
+                    variant="blue"
+                    isSelected={currentStatus === 'contacted'}
+                    onSelect={() => handleUpdateStage('contacted')}
+                  >
+                    <StatusDot color="blue" className="mr-1.5" />
+                    2. Contacted
+                  </PillTab>
+                  <PillTab
+                    variant="blue"
+                    isSelected={currentStatus === 'replied'}
+                    onSelect={() => handleUpdateStage('replied')}
+                  >
+                    <StatusDot color="purple" className="mr-1.5" />
+                    3. Replied
+                  </PillTab>
+                  <PillTab
+                    variant="blue"
+                    isSelected={currentStatus === 'won'}
+                    onSelect={() => handleUpdateStage('won')}
+                  >
+                    <StatusDot color="green" className="mr-1.5" />
+                    4. Deal Won 🎉
+                  </PillTab>
+                  <PillTab
+                    variant="gray"
+                    isSelected={currentStatus === 'archived'}
+                    onSelect={() => handleUpdateStage('archived')}
+                  >
+                    <StatusDot color="neutral" className="mr-1.5" />
+                    Archived
+                  </PillTab>
+                </PillTabList>
               </div>
 
-              {/* Follow-up Quick Action Strip */}
-              <div className="p-3 rounded-xl bg-background-secondary-default border border-separator-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              {/* Follow-up Quick Action Strip (BoardUI Buttons) */}
+              <div className="p-3.5 rounded-xl bg-background-secondary-default border border-separator-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-text-secondary font-medium">Quick Follow-up:</span>
-                  <button
-                    type="button"
+                  <span className="text-caption-1-medium text-text-tertiary">Quick Follow-up:</span>
+                  <Button
+                    size="small"
+                    variant="secondary"
+                    leadingIcon={RiCalendarCheckLine}
                     onClick={() => handleMarkContacted(3)}
-                    className="px-2.5 py-1 rounded-lg bg-background-primary-default border border-separator-border hover:border-text-primary text-text-primary font-semibold text-[11px] transition-colors cursor-pointer"
+                    title="Mark contacted and schedule follow-up for today + 3 days"
                   >
-                    Mark Contacted (+3 Days)
-                  </button>
-                  <button
-                    type="button"
+                    Mark Contacted (+3d)
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="secondary"
                     onClick={() => handleMarkContacted(7)}
-                    className="px-2.5 py-1 rounded-lg bg-background-primary-default border border-separator-border hover:border-text-primary text-text-primary font-semibold text-[11px] transition-colors cursor-pointer"
+                    title="Schedule follow-up for 1 week out"
                   >
                     +1 Week
-                  </button>
-                  <button
-                    type="button"
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="ghost"
                     onClick={() => setShowFollowUpCustom(!showFollowUpCustom)}
-                    className="px-2.5 py-1 rounded-lg bg-background-primary-default border border-separator-border hover:border-text-primary text-text-secondary hover:text-text-primary text-[11px] transition-colors cursor-pointer"
                   >
                     {showFollowUpCustom ? 'Close Date Picker' : 'Custom Date...'}
-                  </button>
+                  </Button>
                   {currentLead.follow_up_at && (
-                    <button
-                      type="button"
+                    <Button
+                      size="small"
+                      variant="ghost"
                       onClick={handleClearFollowUp}
-                      className="text-[11px] text-text-tertiary hover:text-rose-400 underline cursor-pointer ml-1"
+                      className="text-status-rose-text hover:bg-status-rose-background text-xs"
                     >
                       Clear Reminder
-                    </button>
+                    </Button>
                   )}
                 </div>
 
                 {currentLead.contacted_at && (
-                  <span className="text-[10px] font-mono text-text-tertiary">
+                  <span className="text-caption-1-medium font-mono text-text-tertiary">
                     Last Contact: {new Date(currentLead.contacted_at).toLocaleDateString()}
                   </span>
                 )}
@@ -1035,14 +1046,14 @@ export default function LeadDossierPage({
 
               {/* Custom Date & Note Input Drawer */}
               {showFollowUpCustom && (
-                <div className="p-3 rounded-xl bg-background-secondary-default/70 border border-separator-border flex flex-col sm:flex-row items-center gap-3 text-xs">
+                <div className="p-3.5 rounded-xl bg-background-secondary-default/80 border border-separator-border flex flex-col sm:flex-row items-center gap-3 text-xs">
                   <div className="flex-1 w-full space-y-1">
                     <label className="text-[10px] uppercase font-mono text-text-tertiary">Target Follow-Up Date</label>
                     <input
                       type="date"
                       value={customFollowUpDate}
                       onChange={(e) => setCustomFollowUpDate(e.target.value)}
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-background-primary-default border border-separator-border text-text-primary font-mono text-xs focus:outline-none focus:border-text-primary"
+                      className="h-9 w-full px-3 py-1.5 rounded-xl bg-background-primary-default border border-separator-border text-text-primary font-mono text-xs focus:outline-none focus:border-text-primary shadow-2xs"
                     />
                   </div>
                   <div className="flex-1 w-full space-y-1">
@@ -1052,7 +1063,7 @@ export default function LeadDossierPage({
                       placeholder="e.g. Call owner after estimate review"
                       value={followUpNote}
                       onChange={(e) => setFollowUpNote(e.target.value)}
-                      className="w-full px-2.5 py-1.5 rounded-lg bg-background-primary-default border border-separator-border text-text-primary text-xs focus:outline-none focus:border-text-primary"
+                      className="h-9 w-full px-3 py-1.5 rounded-xl bg-background-primary-default border border-separator-border text-text-primary text-xs focus:outline-none focus:border-text-primary shadow-2xs"
                     />
                   </div>
                   <Button
@@ -1060,7 +1071,7 @@ export default function LeadDossierPage({
                     variant="primary"
                     onClick={() => handleScheduleFollowUp(customFollowUpDate)}
                     disabled={!customFollowUpDate}
-                    className="sm:self-end mt-2 sm:mt-0 text-xs font-semibold"
+                    className="sm:self-end mt-2 sm:mt-0 font-semibold"
                   >
                     Set Reminder
                   </Button>
@@ -1068,22 +1079,22 @@ export default function LeadDossierPage({
               )}
             </section>
 
-            {/* COLD EMAIL OUTREACH COMPOSE BOX (Tareeqa A - 100% Real Fields) */}
+            {/* COLD EMAIL OUTREACH COMPOSE BOX (100% BoardUI) */}
             <section className="rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xs space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="size-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
+                  <div className="size-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 shrink-0">
                     <RiMailSendLine className="size-4" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-bold text-text-primary flex items-center gap-1.5">
-                      Cold Email Pitch Composer
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                    <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
+                      <span>Cold Email Pitch Composer</span>
+                      <Chip variant="bold" color="emerald" size="sm">
                         Zero Hallucination
-                      </span>
+                      </Chip>
                     </h2>
-                    <p className="text-[11px] text-text-secondary">
-                      Suggested draft based strictly on real Google reviews, rating, and speed audit.
+                    <p className="text-caption-1-regular text-text-secondary mt-0.5">
+                      Suggested draft based strictly on real Google reviews, rating, and website audit metrics.
                     </p>
                   </div>
                 </div>
@@ -1092,10 +1103,9 @@ export default function LeadDossierPage({
                   <Button
                     size="small"
                     variant="secondary"
-                    leadingIcon={RiPrinterLine}
+                    leadingIcon={RiFilePdfLine}
                     onClick={() => setShowClientAuditModal(true)}
-                    className="text-xs font-semibold"
-                    title="Generate and print 1-page client audit report"
+                    title="Generate and download 1-page client PDF audit report"
                   >
                     1-Page PDF Audit
                   </Button>
@@ -1105,61 +1115,55 @@ export default function LeadDossierPage({
                     variant="primary"
                     leadingIcon={RiSparklingLine}
                     onClick={() => handleGeneratePitch()}
-                    className="text-xs font-semibold"
-                    title="Generate high-converting pitch using real lead data"
+                    title="Generate tailored pitch using real lead data"
                   >
                     {isDraftGenerated ? 'Regenerate Draft' : 'Suggest Pitch'}
                   </Button>
                 </div>
               </div>
 
-              {/* Pitch Angle Selector Chips */}
-              <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                <span className="text-[11px] text-text-tertiary font-mono mr-1">Angle:</span>
-                {PITCH_ANGLES.map((a) => {
-                  const isSelected = pitchAngle === a.id;
-                  return (
-                    <button
+              {/* Pitch Angle Selector (BoardUI PillTabList) */}
+              <div className="space-y-1.5 pt-1">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-text-tertiary">
+                  Select Pitch Angle
+                </div>
+                <PillTabList className="w-full flex-wrap gap-1">
+                  {PITCH_ANGLES.map((a) => (
+                    <PillTab
                       key={a.id}
-                      type="button"
-                      onClick={() => {
+                      variant="blue"
+                      isSelected={pitchAngle === a.id}
+                      onSelect={() => {
                         setPitchAngle(a.id);
                         handleGeneratePitch(a.id);
                       }}
-                      className={cx(
-                        "px-2.5 py-1 rounded-lg text-xs font-medium border transition-all cursor-pointer",
-                        isSelected
-                          ? "bg-text-primary text-background-primary-default border-text-primary font-semibold shadow-2xs"
-                          : "bg-background-secondary-default border-separator-border text-text-secondary hover:text-text-primary hover:border-text-secondary"
-                      )}
-                      title={a.desc}
                     >
                       {a.label}
-                    </button>
-                  );
-                })}
+                    </PillTab>
+                  ))}
+                </PillTabList>
               </div>
 
-              {/* Subject Line Field */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-[11px] text-text-secondary">
+              {/* Subject Line Field (BoardUI Input styling) */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-caption-1-medium text-text-secondary">
                   <label className="font-mono uppercase text-text-tertiary text-[10px]">Subject Line</label>
-                  <span>{pitchSubject.length} chars</span>
+                  <span className="font-mono text-[10px] text-text-tertiary">{pitchSubject.length} chars</span>
                 </div>
                 <input
                   type="text"
                   placeholder="Subject line will be suggested, or write your own..."
                   value={pitchSubject}
                   onChange={(e) => setPitchSubject(e.target.value)}
-                  className="w-full text-xs font-sans font-medium px-3 py-2 rounded-xl bg-background-secondary-default text-text-primary border border-separator-border focus:border-text-primary focus:outline-none transition-colors"
+                  className="h-10 w-full px-3.5 py-2 rounded-xl bg-background-secondary-default text-text-primary border border-separator-border focus:border-text-primary focus:outline-none text-xs font-medium transition-colors shadow-2xs"
                 />
               </div>
 
-              {/* Email Body Field */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-[11px] text-text-secondary">
+              {/* Email Body Field (BoardUI TextArea styling) */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-caption-1-medium text-text-secondary">
                   <label className="font-mono uppercase text-text-tertiary text-[10px]">Email Body (Plain English, 80-100 Words)</label>
-                  <span className="font-mono text-[10px]">
+                  <span className="font-mono text-[10px] text-text-tertiary">
                     {pitchBody ? `${pitchBody.trim().split(/\s+/).filter(Boolean).length} words` : '0 words'}
                   </span>
                 </div>
@@ -1168,19 +1172,19 @@ export default function LeadDossierPage({
                   placeholder="Click 'Suggest Pitch' to auto-fill a tailored email using this lead's Google rating, review count, and speed findings — or type your custom message..."
                   value={pitchBody}
                   onChange={(e) => setPitchBody(e.target.value)}
-                  className="w-full text-xs font-sans p-3.5 rounded-xl bg-background-secondary-default text-text-primary border border-separator-border focus:border-text-primary focus:outline-none resize-none leading-relaxed placeholder:text-text-tertiary transition-colors"
+                  className="w-full text-xs font-sans p-3.5 rounded-xl bg-background-secondary-default text-text-primary border border-separator-border focus:border-text-primary focus:outline-none resize-none leading-relaxed placeholder:text-text-tertiary transition-colors shadow-2xs"
                 />
               </div>
 
-              {/* Action Buttons: Open in Gmail, Copy, Mark Contacted */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1 border-t border-separator-border/60">
+              {/* Action Buttons: Open in Gmail, Copy, Mark Contacted (Official BoardUI Buttons) */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-separator-border">
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                   <Button
                     size="small"
                     variant="primary"
                     leadingIcon={RiGoogleFill}
                     onClick={handleOpenGmail}
-                    className="flex-1 sm:flex-none text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white border-transparent"
+                    className="flex-1 sm:flex-none font-semibold"
                     title="Open Gmail compose tab with recipient, subject, and body prefilled"
                   >
                     Open in Gmail ↗
@@ -1195,10 +1199,9 @@ export default function LeadDossierPage({
                       navigator.clipboard.writeText(fullEmail);
                       toast.success('Subject & email body copied to clipboard!');
                     }}
-                    className="text-xs"
                     title="Copy full email to clipboard"
                   >
-                    Copy
+                    Copy Email
                   </Button>
                 </div>
 
@@ -1208,7 +1211,6 @@ export default function LeadDossierPage({
                     variant="secondary"
                     leadingIcon={RiCalendarCheckLine}
                     onClick={() => handleMarkContacted(3)}
-                    className="flex-1 sm:flex-none text-xs font-semibold text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/10"
                     title="Mark lead as contacted and schedule a 3-day follow-up reminder"
                   >
                     ✓ Mark Contacted (+3d)
