@@ -5,7 +5,7 @@ import { CloseButton } from '@/components/base/buttons/close-button';
 import Header from './components/Header';
 import DashboardSidebar from './components/boardui/DashboardSidebar';
 import LeadTable from './components/LeadTable';
-import LeadDrawer from './components/LeadDrawer';
+import LeadDossierPage from './components/boardui/LeadDossierPage';
 import SearchModal from './components/SearchModal';
 import SettingsModal from './components/SettingsModal';
 import OsintRunModal from './components/OsintRunModal';
@@ -444,7 +444,27 @@ export default function App() {
           setAuditLeadId(null);
           window.history.pushState({}, '', '/');
           setSelectedLead(lead);
-          setActiveModal('drawer');
+        }}
+      />
+    );
+  }
+
+  // Dedicated Full-Width Lead Dossier View (Option 1)
+  if (selectedLead) {
+    return (
+      <LeadDossierPage
+        lead={selectedLead}
+        leads={leads}
+        onBack={() => {
+          setSelectedLead(null);
+          if (activeModal === 'drawer') setActiveModal(null);
+        }}
+        onSelectLead={(nextLead) => setSelectedLead(nextLead)}
+        onOpenAudit={(id) => handleOpenAudit(id)}
+        onArchiveLead={handleArchiveLead}
+        onRefreshLead={() => {
+          fetchLeads();
+          fetchStats();
         }}
       />
     );
@@ -561,28 +581,6 @@ export default function App() {
         />
       </main>
       </div>
-
-      {/* Lead Detail & OSINT Intelligence Drawer */}
-      {selectedLead && (viewMode !== 'split' || activeModal === 'drawer') && (
-        <LeadDrawer
-          lead={selectedLead}
-          leads={leads}
-          onNavigateLead={(newLead) => setSelectedLead(newLead)}
-          onOpenAudit={handleOpenAudit}
-          onArchiveLead={handleArchiveLead}
-          onClose={() => {
-            if (activeModal === 'drawer') {
-              setActiveModal(null);
-            } else {
-              setSelectedLead(null);
-            }
-          }}
-          onRefreshLead={() => {
-            fetchLeads();
-            fetchStats();
-          }}
-        />
-      )}
 
       {/* Search / CSV Ingestion Modal */}
       {(activeModal === 'search' || activeModal === 'csv') && (
