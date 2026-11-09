@@ -562,11 +562,14 @@ export default function App() {
       </main>
       </div>
 
-      {/* Lead Detail & Pitch Synthesis Drawer (Opens in table/kanban view or when explicitly requested in split view) */}
+      {/* Lead Detail & OSINT Intelligence Drawer */}
       {selectedLead && (viewMode !== 'split' || activeModal === 'drawer') && (
         <LeadDrawer
           lead={selectedLead}
+          leads={leads}
+          onNavigateLead={(newLead) => setSelectedLead(newLead)}
           onOpenAudit={handleOpenAudit}
+          onArchiveLead={handleArchiveLead}
           onClose={() => {
             if (activeModal === 'drawer') {
               setActiveModal(null);

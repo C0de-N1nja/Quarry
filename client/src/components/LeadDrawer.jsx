@@ -38,7 +38,12 @@ import {
   RiLockLine,
   RiMailCheckLine,
   RiSpeedUpLine,
-  RiArrowDownSLine
+  RiArrowDownSLine,
+  RiArrowLeftSLine,
+  RiArrowRightSLine,
+  RiShieldUserLine,
+  RiStarFill,
+  RiArchiveLine
 } from '@remixicon/react';
 import { Drawer } from '@/components/base/drawer/drawer';
 import { CloseButton } from '@/components/base/buttons/close-button';
@@ -71,9 +76,53 @@ const PITCH_TEMPLATES = {
   }
 };
 
-export default function LeadDrawer({ lead, onClose, onRefreshLead, onOpenAudit }) {
+export default function LeadDrawer({ 
+  lead, 
+  leads = [], 
+  onNavigateLead, 
+  onClose, 
+  onRefreshLead, 
+  onOpenAudit,
+  onArchiveLead 
+}) {
   const isNoWebsiteLead = lead?.has_no_website === 1 || !lead?.website;
   const [activeTab, setActiveTab] = useState(lead?.initialTab && lead.initialTab !== 'pitch' ? lead.initialTab : 'osint'); // 'osint', 'audit'
+
+  // Lead Navigation Index (Triage Previous / Next)
+  const currentIndex = leads && lead ? leads.findIndex(l => l.id === lead.id) : -1;
+  const hasPrev = currentIndex > 0;
+  const hasNext = currentIndex !== -1 && currentIndex < (leads?.length || 0) - 1;
+
+  const handlePrevLead = () => {
+    if (hasPrev && onNavigateLead) {
+      onNavigateLead(leads[currentIndex - 1]);
+    }
+  };
+
+  const handleNextLead = () => {
+    if (hasNext && onNavigateLead) {
+      onNavigateLead(leads[currentIndex + 1]);
+    }
+  };
+
+  // Keyboard navigation shortcuts: ↑/k (prev), ↓/j (next), Esc (close)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
+      if (e.key === 'ArrowUp' || e.key === 'k') {
+        e.preventDefault();
+        handlePrevLead();
+      } else if (e.key === 'ArrowDown' || e.key === 'j') {
+        e.preventDefault();
+        handleNextLead();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [hasPrev, hasNext, currentIndex, leads]);
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [ownerLoading, setOwnerLoading] = useState(false);
@@ -624,11 +673,40 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onOpenAudit }
             )}
           </div>
         </div>
-        <CloseButton 
-          size="md"
-          onClick={onClose} 
-          aria-label="Close Dossier"
-        />
+        <div className="flex items-center gap-1.5 shrink-0">
+          {leads && leads.length > 1 && (
+            <div className="flex items-center gap-1 bg-background-tertiary-default/80 p-0.5 rounded-lg border border-separator-border">
+              <IconButton
+                size="small"
+                variant="ghost"
+                icon={RiArrowLeftSLine}
+                onClick={handlePrevLead}
+                disabled={!hasPrev}
+                title="Previous lead (ArrowUp / k)"
+                aria-label="Previous lead"
+                className="size-7 text-text-secondary hover:text-text-primary disabled:opacity-30"
+              />
+              <span className="text-[10px] font-mono text-text-tertiary px-1 select-none whitespace-nowrap">
+                {currentIndex >= 0 ? `${currentIndex + 1}/${leads.length}` : ''}
+              </span>
+              <IconButton
+                size="small"
+                variant="ghost"
+                icon={RiArrowRightSLine}
+                onClick={handleNextLead}
+                disabled={!hasNext}
+                title="Next lead (ArrowDown / j)"
+                aria-label="Next lead"
+                className="size-7 text-text-secondary hover:text-text-primary disabled:opacity-30"
+              />
+            </div>
+          )}
+          <CloseButton 
+            size="md"
+            onClick={onClose} 
+            aria-label="Close Dossier"
+          />
+        </div>
       </div>
 
       {/* Tabs Bar using BoardUI PillTabList */}
@@ -710,6 +788,95 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onOpenAudit }
 
       {/* Tab Content Body */}
       <div className="flex-1 overflow-y-auto p-5 space-y-5">
+        {/* Executive Intelligence Snapshot Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {/* 1. Web Presence */}
+          <div className="p-3 rounded-xl bg-background-secondary-default border border-separator-border flex flex-col justify-between">
+            <span className="text-[10px] uppercase font-mono text-text-tertiary flex items-center justify-between">
+              Web Presence
+              <RiGlobalLine className="size-3 text-text-tertiary" />
+            </span>
+            <div className="mt-1.5">
+              {currentLead.has_no_website === 1 || !currentLead.website ? (
+                <span className="text-xs font-bold text-emerald-500 flex items-center gap-1">
+                  <CheckCircle2 className="size-3" /> No Website
+                </span>
+              ) : (
+                <a 
+                  href={currentLead.website} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-xs font-semibold text-accent-500 hover:underline truncate block"
+                  title={currentLead.website}
+                >
+                  {currentLead.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* 2. Decision Maker */}
+          <div className="p-3 rounded-xl bg-background-secondary-default border border-separator-border flex flex-col justify-between">
+            <span className="text-[10px] uppercase font-mono text-text-tertiary flex items-center justify-between">
+              Decision Maker
+              <RiShieldUserLine className="size-3 text-text-tertiary" />
+            </span>
+            <div className="mt-1.5">
+              {contact?.contact_name || currentLead.owner_name ? (
+                <span className="text-xs font-bold text-text-primary truncate block" title={contact?.contact_name || currentLead.owner_name}>
+                  {contact?.contact_name || currentLead.owner_name}
+                </span>
+              ) : (
+                <span className="text-xs text-text-tertiary italic">
+                  Not discovered
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* 3. Primary Contact Channel */}
+          <div className="p-3 rounded-xl bg-background-secondary-default border border-separator-border flex flex-col justify-between">
+            <span className="text-[10px] uppercase font-mono text-text-tertiary flex items-center justify-between">
+              Primary Contact
+              <RiPhoneLine className="size-3 text-text-tertiary" />
+            </span>
+            <div className="mt-1.5">
+              {(contact?.whatsapp || currentLead.whatsapp) ? (
+                <span className="text-xs font-bold text-emerald-500 flex items-center gap-1">
+                  <RiWhatsappLine className="size-3" /> WhatsApp
+                </span>
+              ) : currentLead.phone ? (
+                <span className="text-xs font-semibold font-mono text-text-primary truncate block">
+                  {currentLead.phone}
+                </span>
+              ) : contact?.email ? (
+                <span className="text-xs font-semibold text-blue-400 truncate block">
+                  {contact.email}
+                </span>
+              ) : (
+                <span className="text-xs text-text-tertiary italic">No contact</span>
+              )}
+            </div>
+          </div>
+
+          {/* 4. Market Standing */}
+          <div className="p-3 rounded-xl bg-background-secondary-default border border-separator-border flex flex-col justify-between">
+            <span className="text-[10px] uppercase font-mono text-text-tertiary flex items-center justify-between">
+              Reputation
+              <RiStarFill className="size-3 text-amber-500" />
+            </span>
+            <div className="mt-1.5 flex items-center gap-1">
+              {currentLead.rating ? (
+                <>
+                  <span className="text-xs font-bold font-mono text-text-primary">★ {currentLead.rating}</span>
+                  <span className="text-[10px] text-text-tertiary">({currentLead.reviews_count || 0})</span>
+                </>
+              ) : (
+                <span className="text-xs text-text-tertiary italic">No reviews</span>
+              )}
+            </div>
+          </div>
+        </div>
         {/* TAB 1: WEBSITE AUDIT (FOR LEADS WITH WEBSITES) */}
         {activeTab === 'audit' && (
           <div className="space-y-4">
@@ -1921,6 +2088,25 @@ export default function LeadDrawer({ lead, onClose, onRefreshLead, onOpenAudit }
         </div>
 
         <div className="flex items-center gap-2">
+          {onArchiveLead && (
+            <Button
+              size="small"
+              variant="ghost"
+              leadingIcon={RiArchiveLine}
+              onClick={() => {
+                if (window.confirm(`Archive ${currentLead.business_name}?`)) {
+                  onArchiveLead(currentLead.id);
+                  if (hasNext) handleNextLead();
+                  else onClose();
+                }
+              }}
+              title="Archive this lead and advance to next"
+              className="text-text-secondary hover:text-status-rose-text hover:bg-status-rose-background/20"
+            >
+              Archive
+            </Button>
+          )}
+
           <Button
             size="small"
             variant="primary"
