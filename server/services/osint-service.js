@@ -1108,13 +1108,15 @@ class OsintService {
 
     result.emails = this.extractEmails(combinedText);
 
-    // Clean raw HTML out of combinedText and normalize fancy/fullwidth unicode before phone matching
+    // Clean raw HTML out of combinedText and strip URLs to prevent CDN hashes / image IDs from being matched as phone numbers
     const cleanText = this.normalizeFancyText(combinedText
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
       .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ')
-      .replace(/<[^>]+>/g, ' '));
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/https?:\/\/[^\s"'<>]+/gi, ' '));
 
-    const phoneRegex = /(?:\+?1[-.\s]?)?\(?[2-9]\d{2}\)?[-.\s]?[2-9]\d{2}[-.\s]?\d{4}\b/g;
+    // Match phone numbers even if adjacent to emojis or punctuation (e.g. 408-469-1693☎️)
+    const phoneRegex = /(?:\+?1[-.\s]?)?\(?[2-9]\d{2}\)?[-.\s]?[2-9]\d{2}[-.\s]?\d{4}(?!\d)/g;
     const phoneMatches = cleanText.match(phoneRegex) || [];
     const validPhones = phoneMatches.map(p => p.trim()).filter(p => {
       const digits = p.replace(/\D/g, '');
@@ -1348,7 +1350,11 @@ class OsintService {
 
           if (inspected10Digits.length > 0) {
             const hasMatch = inspected10Digits.some(d => d === leadDigits);
-            if (!hasMatch) {
+            const hasMatchingEmail = inspected.emails && inspected.emails.some(em => 
+              (lead.email && em.toLowerCase() === lead.email.toLowerCase()) ||
+              (collectedEmails && collectedEmails.has(em.toLowerCase()))
+            );
+            if (!hasMatch && !hasMatchingEmail) {
               phoneContradiction = true;
             }
           }

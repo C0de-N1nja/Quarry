@@ -260,17 +260,27 @@ export default function LeadDossierPage({
     parsedOsint = null;
   }
 
-  // Safe parse Social Profiles
-  let parsedSocial = [];
-  try {
-    if (currentLead.social_profiles) {
-      parsedSocial = typeof currentLead.social_profiles === 'string'
-        ? JSON.parse(currentLead.social_profiles)
-        : currentLead.social_profiles;
+  // Safe parse Social Profiles into an array of { platform, url }
+  const parsedSocial = (() => {
+    let raw = currentLead.social_profiles;
+    if (!raw && contact?.social_links) raw = contact.social_links;
+    let obj = {};
+    if (typeof raw === 'string') {
+      try { obj = JSON.parse(raw); } catch (_) { obj = {}; }
+    } else if (typeof raw === 'object' && raw !== null) {
+      obj = raw;
     }
-  } catch (e) {
-    parsedSocial = [];
-  }
+
+    // Merge explicit lead columns if present
+    if (currentLead.facebook_url && !obj.facebook) obj.facebook = currentLead.facebook_url;
+    if (currentLead.instagram_url && !obj.instagram) obj.instagram = currentLead.instagram_url;
+
+    if (Array.isArray(obj)) return obj;
+
+    return Object.entries(obj)
+      .filter(([k, v]) => v && typeof v === 'string' && !k.startsWith('_'))
+      .map(([platform, url]) => ({ platform, url }));
+  })();
 
   // Clean Hostname Extractor
   const getCleanDomain = (url) => {
