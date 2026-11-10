@@ -686,9 +686,10 @@ export default function OsintRunModal({
                       <span className="text-[10px] text-text-tertiary block mt-0.5 font-sans">
                         {item.status === 'queued' ? 'Queued for social scan...' :
                          item.status === 'running' ? 'Scanning profiles & verifying links...' :
+                         item.error ? item.error :
                          item.decision === 'no_website' ? 'Verified zero standalone website (authentic prospect)' :
                          item.decision === 'uncertain' ? 'Ambiguous link; manual review required' :
-                         item.error || 'Pending'}
+                         'Pending'}
                       </span>
                     )}
                   </div>

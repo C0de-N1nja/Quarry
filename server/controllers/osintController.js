@@ -136,9 +136,8 @@ class OsintController {
         return res.status(400).json({ success: false, error: 'No matching leads found for OSINT run' });
       }
 
-      // Utilize full hardware CPU cores (up to 12 parallel workers matching CPU core capacity)
-      const cpuCount = os.cpus() ? os.cpus().length : 4;
-      const concurrency = parseInt(process.env.OSINT_CONCURRENCY, 10) || Math.max(2, Math.min(cpuCount, 5));
+      // Conservative parallel workers (default: 3) to prevent search engine rate limits and CPU contention
+      const concurrency = parseInt(process.env.OSINT_CONCURRENCY, 10) || 3;
 
       const jobId = 'osint_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
       osintTelemetryService.initJob(jobId, targets, concurrency);
@@ -164,9 +163,9 @@ class OsintController {
               // Immediately register active worker thread
               osintTelemetryService.updateLeadStep(jobId, lead.id, 'finding_profiles', 'Active worker thread assigned...');
 
-              // 18s timeout per lead to guarantee no hung sockets
+              // 45s timeout per lead to guarantee multi-engine search, profile bio inspection, and DNS verification complete
               const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Lead processing timed out after 10s')), 10000)
+                setTimeout(() => reject(new Error('Lead processing timed out after 45s')), 45000)
               );
 
               const resultPromise = osintService.enrichLead(lead, (step, message) => {
