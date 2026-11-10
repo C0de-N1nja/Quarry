@@ -1711,18 +1711,31 @@ export default function LeadDossierPage({
               />
             </section>
 
-            {/* CARD 3: LOCATION (Compact card with Open Google Maps button) */}
+            {/* CARD 3: LOCATION (Google Maps Embed + Commercial Address) */}
             <section className="rounded-2xl border border-separator-border bg-background-primary-default p-4 sm:p-5 shadow-xs space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-xs font-mono uppercase tracking-wider text-text-tertiary flex items-center gap-1.5">
                   <RiMapPinLine className="size-3.5 text-text-secondary" />
-                  Location
+                  Location & Google Maps
                 </h2>
                 {currentLead.city && (
                   <span className="text-[11px] text-text-secondary font-medium">
                     {currentLead.city}
                   </span>
                 )}
+              </div>
+
+              {/* Embedded Interactive Google Map */}
+              <div className="relative w-full h-36 rounded-xl overflow-hidden border border-separator-border bg-background-secondary-default shadow-xs">
+                <iframe
+                  title="Google Maps Location"
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(
+                    currentLead.address || `${currentLead.business_name}, ${currentLead.city || 'Austin'}`
+                  )}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
+                  className="w-full h-full border-0 filter contrast-[0.95] dark:invert-[0.9] dark:hue-rotate-180"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
               </div>
 
               <div className="p-3 rounded-xl bg-background-secondary-default border border-separator-border space-y-2">
