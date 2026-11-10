@@ -93,20 +93,21 @@ class Lead {
 
     // Notes & Tag Filters
     if (noteFilter === 'has_notes') {
-      query += " AND (l.notes IS NOT NULL AND TRIM(l.notes) != '')";
+      query += " AND ((l.notes IS NOT NULL AND TRIM(l.notes) != '') OR (l.tags IS NOT NULL AND TRIM(l.tags) != ''))";
     } else if (noteFilter === 'no_notes') {
-      query += " AND (l.notes IS NULL OR TRIM(l.notes) = '')";
+      query += " AND (l.notes IS NULL OR TRIM(l.notes) = '') AND (l.tags IS NULL OR TRIM(l.tags) = '')";
     } else if (noteFilter === 'high_intent') {
-      query += " AND l.notes LIKE '%High Intent%'";
+      query += " AND (l.notes LIKE '%High Intent%' OR l.tags LIKE '%High Intent%')";
     } else if (noteFilter === 'called_owner') {
-      query += " AND l.notes LIKE '%Called Owner%'";
+      query += " AND (l.notes LIKE '%Called Owner%' OR l.tags LIKE '%Called Owner%')";
     } else if (noteFilter === 'needs_redesign') {
-      query += " AND l.notes LIKE '%Needs Redesign%'";
+      query += " AND (l.notes LIKE '%Needs Redesign%' OR l.tags LIKE '%Needs Redesign%')";
     } else if (noteFilter === 'follow_up') {
-      query += " AND l.notes LIKE '%Follow Up%'";
+      query += " AND (l.notes LIKE '%Follow Up%' OR l.tags LIKE '%Follow Up%')";
     } else if (noteFilter && noteFilter.startsWith('tag:')) {
-      query += " AND l.notes LIKE ?";
-      params.push(`%${noteFilter.slice(4)}%`);
+      query += " AND (l.notes LIKE ? OR l.tags LIKE ?)";
+      const tagVal = `%${noteFilter.slice(4)}%`;
+      params.push(tagVal, tagVal);
     }
 
     // Website & Technical Audit Filters
@@ -223,20 +224,21 @@ class Lead {
 
     // Notes & Tag Filters
     if (noteFilter === 'has_notes') {
-      query += " AND (l.notes IS NOT NULL AND TRIM(l.notes) != '')";
+      query += " AND ((l.notes IS NOT NULL AND TRIM(l.notes) != '') OR (l.tags IS NOT NULL AND TRIM(l.tags) != ''))";
     } else if (noteFilter === 'no_notes') {
-      query += " AND (l.notes IS NULL OR TRIM(l.notes) = '')";
+      query += " AND (l.notes IS NULL OR TRIM(l.notes) = '') AND (l.tags IS NULL OR TRIM(l.tags) = '')";
     } else if (noteFilter === 'high_intent') {
-      query += " AND l.notes LIKE '%High Intent%'";
+      query += " AND (l.notes LIKE '%High Intent%' OR l.tags LIKE '%High Intent%')";
     } else if (noteFilter === 'called_owner') {
-      query += " AND l.notes LIKE '%Called Owner%'";
+      query += " AND (l.notes LIKE '%Called Owner%' OR l.tags LIKE '%Called Owner%')";
     } else if (noteFilter === 'needs_redesign') {
-      query += " AND l.notes LIKE '%Needs Redesign%'";
+      query += " AND (l.notes LIKE '%Needs Redesign%' OR l.tags LIKE '%Needs Redesign%')";
     } else if (noteFilter === 'follow_up') {
-      query += " AND l.notes LIKE '%Follow Up%'";
+      query += " AND (l.notes LIKE '%Follow Up%' OR l.tags LIKE '%Follow Up%')";
     } else if (noteFilter && noteFilter.startsWith('tag:')) {
-      query += " AND l.notes LIKE ?";
-      params.push(`%${noteFilter.slice(4)}%`);
+      query += " AND (l.notes LIKE ? OR l.tags LIKE ?)";
+      const tagVal = `%${noteFilter.slice(4)}%`;
+      params.push(tagVal, tagVal);
     }
 
     // Website & Technical Audit Filters
@@ -544,7 +546,7 @@ class Lead {
       place_id, google_category, search_keyword, business_status,
       country, timezone, facebook_url, instagram_url,
       latitude, longitude, lat, lng,
-      social_profiles, osint_evidence, notes
+      social_profiles, osint_evidence, notes, tags
     } = fields;
 
     // Check if lead currently has or is receiving an authentic standalone website
@@ -611,6 +613,7 @@ class Lead {
           social_profiles = COALESCE(?, social_profiles),
           osint_evidence = COALESCE(?, osint_evidence),
           notes = COALESCE(?, notes),
+          tags = COALESCE(?, tags),
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).run(
@@ -624,6 +627,7 @@ class Lead {
       social_profiles ? (typeof social_profiles==='string'?social_profiles:JSON.stringify(social_profiles)):null,
       osint_evidence ? (typeof osint_evidence==='string'?osint_evidence:JSON.stringify(osint_evidence)):null,
       notes !== undefined ? notes : null,
+      tags !== undefined ? (Array.isArray(tags) ? tags.join(',') : tags) : null,
       id
     );
 

@@ -63,6 +63,7 @@ const leadColumns = [
   'audit_status TEXT',
   'audit_summary TEXT',
   'notes TEXT',
+  'tags TEXT',
   'contacted_at DATETIME',
   'follow_up_at DATE',
   'follow_up_note TEXT'

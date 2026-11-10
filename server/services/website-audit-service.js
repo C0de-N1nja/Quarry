@@ -241,10 +241,10 @@ class WebsiteAuditService {
     const loadTimeSec = (loadTimeMs / 1000).toFixed(1);
 
     if (loadTimeMs > 3000) {
-      flawsSummary.push(`Mobile load speed is ${loadTimeSec}s (exceeds Google's 3.0s mobile abandonment threshold)`);
+      flawsSummary.push(`Mobile load speed is ${loadTimeSec}s (exceeds Google 3.0s guideline)`);
     }
     if (errorCount > 0) {
-      flawsSummary.push(`${errorCount} ADA / WCAG 2.1 accessibility violation(s) found (Title III lawsuit exposure)`);
+      flawsSummary.push(`${errorCount} accessibility issue(s) detected (contrast, labels, or structure)`);
     }
     if (!metaDescription) {
       flawsSummary.push('Missing meta description tag in Google search engine snippets');
