@@ -22,7 +22,14 @@ import {
   RiBookmarkLine,
   RiBookmarkFill,
   RiCalendarCheckLine,
-  RiPrinterLine
+  RiPrinterLine,
+  RiFacebookCircleFill,
+  RiInstagramLine,
+  RiLinkedinBoxFill,
+  RiTwitterXLine,
+  RiTiktokLine,
+  RiYoutubeFill,
+  RiLinksLine
 } from '@remixicon/react';
 import ClientAuditReportModal from '../audit/ClientAuditReportModal';
 
@@ -59,6 +66,52 @@ function getAvatarColor(name = '') {
     hash |= 0;
   }
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+/**
+ * Extracts and maps all discovered social media profiles for lead table display
+ */
+function extractSocialProfiles(lead) {
+  if (!lead) return [];
+  let raw = lead.social_profiles || lead.contact_social_links;
+  let obj = {};
+  if (typeof raw === 'string') {
+    try { obj = JSON.parse(raw); } catch (_) { obj = {}; }
+  } else if (typeof raw === 'object' && raw !== null) {
+    obj = raw;
+  }
+
+  // Merge direct lead columns if present
+  if (lead.facebook_url && !obj.facebook) obj.facebook = lead.facebook_url;
+  if (lead.instagram_url && !obj.instagram) obj.instagram = lead.instagram_url;
+
+  const result = [];
+  const entries = Object.entries(obj).filter(([k, v]) => v && typeof v === 'string' && !k.startsWith('_'));
+
+  for (const [platform, url] of entries) {
+    const p = platform.toLowerCase();
+    if (p === 'facebook') {
+      result.push({ platform: 'Facebook', url, icon: RiFacebookCircleFill, color: 'text-blue-500 hover:bg-blue-500/10 border-blue-500/30' });
+    } else if (p === 'instagram') {
+      result.push({ platform: 'Instagram', url, icon: RiInstagramLine, color: 'text-rose-500 hover:bg-rose-500/10 border-rose-500/30' });
+    } else if (p === 'linkedin') {
+      result.push({ platform: 'LinkedIn', url, icon: RiLinkedinBoxFill, color: 'text-sky-600 hover:bg-sky-600/10 border-sky-600/30' });
+    } else if (p === 'twitter' || p === 'x') {
+      result.push({ platform: 'X', url, icon: RiTwitterXLine, color: 'text-slate-600 dark:text-slate-300 hover:bg-slate-500/10 border-slate-500/30' });
+    } else if (p === 'tiktok') {
+      result.push({ platform: 'TikTok', url, icon: RiTiktokLine, color: 'text-pink-500 hover:bg-pink-500/10 border-pink-500/30' });
+    } else if (p === 'youtube') {
+      result.push({ platform: 'YouTube', url, icon: RiYoutubeFill, color: 'text-red-500 hover:bg-red-500/10 border-red-500/30' });
+    } else if (p === 'whatsapp' || p === 'wa') {
+      result.push({ platform: 'WhatsApp', url, icon: RiWhatsappLine, color: 'text-emerald-500 hover:bg-emerald-500/10 border-emerald-500/30' });
+    } else if (p === 'linktree' || p === 'bio') {
+      result.push({ platform: 'Linktree', url, icon: RiLinksLine, color: 'text-emerald-600 hover:bg-emerald-600/10 border-emerald-600/30' });
+    } else {
+      result.push({ platform: p, url, icon: RiGlobalLine, color: 'text-text-secondary hover:bg-background-secondary-hover border-separator-border' });
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -918,9 +971,9 @@ export default function BoardLeadTable({
                 <span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">Company</span>
               </TableColumn>
 
-              {/* Best Contact Column */}
-              <TableColumn id="contact" className="w-[300px] px-4 py-3 sticky top-0 z-20 bg-background-primary-default">
-                <span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">Best Contact</span>
+              {/* Contacts Column */}
+              <TableColumn id="contact" className="w-[320px] px-4 py-3 sticky top-0 z-20 bg-background-primary-default">
+                <span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">Contacts</span>
               </TableColumn>
 
               {/* Stage Column */}
@@ -976,39 +1029,11 @@ export default function BoardLeadTable({
                 const isOptedOut = lead.opted_out === 1 || lead.status === 'opted_out';
                 const savedNote = lead.notes || (typeof window !== 'undefined' ? localStorage.getItem(`quarry_notes_${lead.id}`) : '');
 
-                // Best contact resolution: Email > WhatsApp > Phone
+                // Comprehensive Contacts & Discovered Socials
                 const hasEmail = Boolean(lead.email && lead.email.trim() !== '');
                 const hasWhatsApp = Boolean(lead.whatsapp && lead.whatsapp.trim() !== '');
                 const hasPhone = Boolean(lead.phone && lead.phone.trim() !== '');
-
-                let bestContact = null;
-                const otherContacts = [];
-
-                if (hasEmail) {
-                  bestContact = { 
-                    type: 'email', 
-                    value: lead.email, 
-                    icon: RiMailLine,
-                    iconColor: 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                  };
-                  if (hasWhatsApp) otherContacts.push({ type: 'whatsapp', value: lead.whatsapp, icon: RiWhatsappLine, iconColor: 'text-emerald-500 hover:bg-emerald-500/10' });
-                  if (hasPhone) otherContacts.push({ type: 'phone', value: lead.phone, icon: RiPhoneLine, iconColor: 'text-slate-500 hover:bg-slate-500/10' });
-                } else if (hasWhatsApp) {
-                  bestContact = { 
-                    type: 'whatsapp', 
-                    value: lead.whatsapp || lead.phone, 
-                    icon: RiWhatsappLine,
-                    iconColor: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                  };
-                  if (hasPhone && lead.phone !== lead.whatsapp) otherContacts.push({ type: 'phone', value: lead.phone, icon: RiPhoneLine, iconColor: 'text-slate-500 hover:bg-slate-500/10' });
-                } else if (hasPhone) {
-                  bestContact = { 
-                    type: 'phone', 
-                    value: lead.phone, 
-                    icon: RiPhoneLine,
-                    iconColor: 'bg-slate-500/10 text-slate-600 dark:text-slate-400'
-                  };
-                }
+                const socialProfilesList = extractSocialProfiles(lead);
 
                 // Stage chip resolution with BoardUI Chip & StatusDot
                 const stage = getStageBadge(lead, isOptedOut);
@@ -1023,7 +1048,7 @@ export default function BoardLeadTable({
                       onOpenLeadDrawer && onOpenLeadDrawer(lead);
                     }}
                     className={cx(
-                      "h-[60px] cursor-pointer transition-colors duration-150 border-s-[3px]",
+                      "min-h-[60px] h-auto cursor-pointer transition-colors duration-150 border-s-[3px]",
                       "hover:bg-background-secondary-hover",
                       isSelected
                         ? "bg-background-tertiary-default/80 border-s-accent-500"
@@ -1114,42 +1139,75 @@ export default function BoardLeadTable({
                       </div>
                     </TableCell>
 
-                    {/* Best Contact Column (BoardUI contact channels) */}
-                    <TableCell className="w-[300px] px-4 py-2" onClick={() => onSelectLead && onSelectLead(lead)}>
-                      <div className="flex items-center gap-2 truncate">
-                        {bestContact ? (
-                          <>
-                            <div className="flex items-center gap-1.5 min-w-0 max-w-[210px] text-body-medium text-text-primary">
-                              <span className={cx(
-                                "flex size-5 items-center justify-center rounded-md shrink-0",
-                                bestContact.iconColor
-                              )}>
-                                <bestContact.icon className="size-3.5" aria-hidden="true" />
-                              </span>
-                              <span className="truncate font-mono text-[11px] select-all font-medium">
-                                {bestContact.value}
-                              </span>
-                            </div>
-                            {otherContacts.length > 0 && (
-                              <div className="flex items-center gap-1 shrink-0 ps-1.5 border-s border-separator-border/60">
-                                {otherContacts.map((c, i) => (
-                                  <span
-                                    key={i}
-                                    className={cx(
-                                      "flex size-5 items-center justify-center rounded-md transition-colors",
-                                      c.iconColor
-                                    )}
-                                    title={`${c.type}: ${c.value}`}
-                                    aria-label={`${c.type} available`}
-                                  >
-                                    <c.icon className="size-3" />
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <span className="text-caption-1-medium text-text-tertiary">No contact intel</span>
+                    {/* Contacts Column (Direct channels + Discovered Social Media) */}
+                    <TableCell className="w-[320px] px-4 py-2" onClick={() => onSelectLead && onSelectLead(lead)}>
+                      <div className="flex flex-col gap-1 min-w-0 py-0.5">
+                        {/* Direct contact channels (Phone, Email, WhatsApp) */}
+                        <div className="flex items-center gap-2 flex-wrap min-w-0">
+                          {hasPhone && (
+                            <a
+                              href={`tel:${lead.phone}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-1 text-[11px] font-mono font-medium text-text-primary hover:text-accent-500 transition-colors shrink-0"
+                              title={`Phone: ${lead.phone}`}
+                            >
+                              <RiPhoneLine className="size-3 text-text-tertiary shrink-0" />
+                              <span>{lead.phone}</span>
+                            </a>
+                          )}
+
+                          {hasEmail && (
+                            <a
+                              href={`mailto:${lead.email}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-1 text-[11px] font-sans font-medium text-blue-600 dark:text-blue-400 hover:underline transition-colors truncate max-w-[170px]"
+                              title={`Email: ${lead.email}`}
+                            >
+                              <RiMailLine className="size-3 shrink-0" />
+                              <span className="truncate">{lead.email}</span>
+                            </a>
+                          )}
+
+                          {hasWhatsApp && lead.whatsapp !== lead.phone && (
+                            <a
+                              href={`https://wa.me/${lead.whatsapp.replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-0.5 text-[11px] font-mono text-emerald-600 dark:text-emerald-400 hover:underline shrink-0"
+                              title={`WhatsApp: ${lead.whatsapp}`}
+                            >
+                              <RiWhatsappLine className="size-3 shrink-0" />
+                            </a>
+                          )}
+
+                          {!hasPhone && !hasEmail && socialProfilesList.length === 0 && (
+                            <span className="text-caption-1-medium text-text-tertiary">No contact intel</span>
+                          )}
+                        </div>
+
+                        {/* All Discovered Social Media Profiles */}
+                        {socialProfilesList.length > 0 && (
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {socialProfilesList.map((sp, idx) => (
+                              <a
+                                key={idx}
+                                href={sp.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className={cx(
+                                  "inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] font-medium transition-all shadow-2xs cursor-pointer",
+                                  "bg-background-secondary-default hover:scale-105",
+                                  sp.color
+                                )}
+                                title={`Open ${sp.platform}: ${sp.url}`}
+                              >
+                                <sp.icon className="size-2.5 shrink-0" />
+                                <span>{sp.platform}</span>
+                              </a>
+                            ))}
+                          </div>
                         )}
                       </div>
                     </TableCell>

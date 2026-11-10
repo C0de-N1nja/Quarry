@@ -18,7 +18,8 @@ class Lead {
         c.holehe_results,
         c.whatsapp,
         c.avatar_url,
-        c.gravatar_data
+        c.gravatar_data,
+        c.social_links AS contact_social_links
       FROM leads l
       LEFT JOIN contacts c ON l.id = c.lead_id
       WHERE 1=1
