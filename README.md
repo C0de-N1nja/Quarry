@@ -62,7 +62,7 @@ npm run install:all
 ```bash
 cp .env.example .env
 ```
-*(Quarry works out-of-the-box with local SQLite. Add optional API keys for AI Auto-Pilot pitch generation.)*
+*(Quarry works out-of-the-box with local SQLite. Standard location map embeds work automatically with zero configuration. For production deployments with Google Maps Embed API, add `VITE_GOOGLE_MAPS_KEY` and restrict it by HTTP referrer in Google Cloud Console for zero-cost unlimited embeds.)*
 
 ### 4. Start the platform
 ```bash
