@@ -27,9 +27,12 @@ class OsintController {
       const result = await osintService.enrichLead(lead, null, { forceRefresh });
 
       const updatedLead = Lead.findById(leadId);
+      const Contact = require('../models/Contact');
+      const contact = Contact.findByLeadId(leadId);
       res.json({
         success: true,
         lead: updatedLead,
+        contact,
         decision: result.decision,
         contacts: result.contacts,
         evidence: result.evidence

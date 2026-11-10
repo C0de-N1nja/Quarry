@@ -635,7 +635,7 @@ export default function LeadDossierPage({
     }, 100);
 
     try {
-      const res = await fetch(`/api/osint/${currentLead.id}`, {
+      const res = await fetch(`/api/osint/${currentLead.id}?force=true`, {
         method: 'POST',
         signal: controller.signal
       });
