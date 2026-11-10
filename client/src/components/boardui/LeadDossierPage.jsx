@@ -1835,11 +1835,12 @@ export default function LeadDossierPage({
               </div>
             </section>
 
-            {/* CARD 3: ARCHIVE LEAD (Subtle red link at bottom) */}
+            {/* CARD 3: ARCHIVE LEAD (BoardUI Button) */}
             {onArchiveLead && (
-              <div className="pt-1 text-center">
-                <button
-                  type="button"
+              <div className="pt-1">
+                <Button
+                  variant="secondary"
+                  leadingIcon={RiArchiveLine}
                   onClick={() => {
                     if (window.confirm(`Are you sure you want to archive "${currentLead.business_name}"?`)) {
                       onArchiveLead(currentLead.id);
@@ -1847,11 +1848,10 @@ export default function LeadDossierPage({
                       else onBack();
                     }
                   }}
-                  className="text-xs text-rose-500/80 hover:text-rose-400 hover:underline inline-flex items-center gap-1.5 cursor-pointer transition-colors py-1.5"
+                  className="w-full justify-center text-rose-500 border-rose-500/30 hover:bg-rose-500/10 hover:border-rose-500/60 font-semibold transition-colors"
                 >
-                  <RiArchiveLine className="size-3.5" />
-                  <span>Archive Lead</span>
-                </button>
+                  Archive Lead
+                </Button>
               </div>
             )}
 
