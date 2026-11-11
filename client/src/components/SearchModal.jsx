@@ -653,7 +653,8 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
             variant="blue"
             icon={RiMapPin2Line}
             isSelected={activeTab === 'maps'}
-            onSelect={() => { setActiveTab('maps'); setError(null); }}
+            disabled={loading}
+            onSelect={() => { if (!loading) { setActiveTab('maps'); setError(null); } }}
           >
             Maps Radar
           </PillTab>
@@ -661,7 +662,8 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
             variant="blue"
             icon={RiSearchLine}
             isSelected={activeTab === 'search'}
-            onSelect={() => { setActiveTab('search'); setError(null); }}
+            disabled={loading}
+            onSelect={() => { if (!loading) { setActiveTab('search'); setError(null); } }}
           >
             Crawler
           </PillTab>
@@ -669,7 +671,8 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
             variant="blue"
             icon={RiUploadCloud2Line}
             isSelected={activeTab === 'csv'}
-            onSelect={() => { setActiveTab('csv'); setError(null); }}
+            disabled={loading}
+            onSelect={() => { if (!loading) { setActiveTab('csv'); setError(null); } }}
           >
             CSV Import
           </PillTab>
@@ -677,7 +680,8 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
             variant="blue"
             icon={RiAddLine}
             isSelected={activeTab === 'manual'}
-            onSelect={() => { setActiveTab('manual'); setError(null); }}
+            disabled={loading}
+            onSelect={() => { if (!loading) { setActiveTab('manual'); setError(null); } }}
           >
             Manual
           </PillTab>
@@ -695,7 +699,8 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
 
         {/* Live Progress Telemetry HUD for Google Maps Radar */}
         {loading && activeTab === 'maps' && (
-          <div className="mx-6 mt-4 p-4 rounded-2xl bg-background-secondary-default border border-border-focus-ring/40 shadow-xl animate-in fade-in zoom-in-95 duration-200 space-y-3.5">
+          <div className="p-6">
+            <div className="p-5 rounded-2xl bg-background-secondary-default border border-border-focus-ring/40 shadow-xl animate-in fade-in zoom-in-95 duration-200 space-y-4">
             {/* Top Bar: Status, Workers, Speed, and Elapsed Clock */}
             <div className="flex items-center justify-between pb-3 border-b border-separator-border">
               <div className="flex items-center gap-2">
@@ -870,6 +875,7 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
                 </div>
               </div>
             )}
+            </div>
           </div>
         )}
 
@@ -948,7 +954,7 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
         )}
 
         {/* Tab 0: Google Maps Lead Radar Form */}
-        {activeTab === 'maps' && (
+        {activeTab === 'maps' && !loading && (
           <form onSubmit={handleMapsSearch} className="p-6 space-y-4">
             <div className="p-3.5 rounded-xl bg-status-blue-background/30 border border-status-blue-background/60 flex items-start gap-2.5 text-caption-1-regular text-text-secondary">
               <RiMapPinLine className="size-4 text-status-blue-text shrink-0 mt-0.5" />
@@ -1202,7 +1208,7 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
         )}
 
         {/* Tab 1: Web Search Crawler Form */}
-        {activeTab === 'search' && (
+        {activeTab === 'search' && !loading && (
           <form onSubmit={handleCrawlerSearch} className="p-6 space-y-4">
             {/* Trade / Niche Selection (Dropdown + Custom Input) */}
             <div className="space-y-2">
