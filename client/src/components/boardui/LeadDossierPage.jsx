@@ -311,7 +311,35 @@ export default function LeadDossierPage({
   };
 
   const verifiedOwner = getVerifiedOwnerName();
-  const isNoWebsite = currentLead.has_no_website === 1 || !currentLead.website;
+
+  // 4-Tier Website Classification
+  const classifyUrl = (url) => {
+    if (!url) return { type: 'no_website', platformName: null, isNoWebsite: true };
+    const lower = url.toLowerCase();
+    if (lower.includes('google.com/maps') || lower.includes('maps.app.goo.gl') || lower.includes('business.site')) {
+      return { type: 'maps_listing', platformName: 'Google Maps', isNoWebsite: true };
+    }
+    if (lower.includes('facebook.com') || lower.includes('fb.com')) return { type: 'social_profile', platformName: 'Facebook', isNoWebsite: true };
+    if (lower.includes('instagram.com')) return { type: 'social_profile', platformName: 'Instagram', isNoWebsite: true };
+    if (lower.includes('linkedin.com')) return { type: 'social_profile', platformName: 'LinkedIn', isNoWebsite: true };
+    if (lower.includes('tiktok.com')) return { type: 'social_profile', platformName: 'TikTok', isNoWebsite: true };
+    if (lower.includes('linktr.ee')) return { type: 'social_profile', platformName: 'Linktree', isNoWebsite: true };
+
+    const dirs = ['champs.com', 'yelp.com', 'yellowpages.com', 'angi.com', 'homeadvisor.com', 'thumbtack.com', 'bbb.org', 'expertise.com', 'houzz.com', 'porch.com', 'manta.com', 'buildzoom.com', 'chamberofcommerce.com', 'superpages.com', 'citysearch.com', 'nextdoor.com', 'trustpilot.com', 'bark.com', 'birdeye.com', 'alignable.com', '2findlocal.com'];
+    for (const d of dirs) {
+      if (lower.includes(d)) {
+        const name = d.includes('champs.com') ? d.replace('.com', '').toUpperCase() : d.replace(/\.com|\.org/g, '').charAt(0).toUpperCase() + d.replace(/\.com|\.org/g, '').slice(1);
+        return { type: 'directory_listing', platformName: name, isNoWebsite: true };
+      }
+    }
+    if (/\/(?:contractors|contractor|find-pros|companylist|pro|pros|members|biz)\//i.test(lower)) {
+      return { type: 'directory_listing', platformName: 'Contractor Directory', isNoWebsite: true };
+    }
+    return { type: 'official_website', platformName: null, isNoWebsite: false };
+  };
+
+  const webClassification = classifyUrl(currentLead.website);
+  const isNoWebsite = currentLead.has_no_website === 1 || !currentLead.website || webClassification.isNoWebsite;
 
   // Short Header Angle Badge
   const angleShortBadge = (() => {
@@ -1200,7 +1228,7 @@ export default function LeadDossierPage({
 
                 {/* Consolidated Action Buttons: Re-test (secondary) or Run Speed Check (primary) */}
                 <div className="flex items-center gap-2 flex-wrap">
-                  {Boolean(currentLead.website) && (
+                  {Boolean(currentLead.website) && !isNoWebsite && (
                     <Button
                       size="small"
                       variant={hasAudit ? "secondary" : "primary"}
@@ -1225,7 +1253,7 @@ export default function LeadDossierPage({
                     Download 1-page PDF
                   </Button>
 
-                  {hasAudit && onOpenAudit && (
+                  {hasAudit && onOpenAudit && !isNoWebsite && (
                     <Button
                       size="small"
                       variant="ghost"
@@ -1263,21 +1291,48 @@ export default function LeadDossierPage({
                 </div>
               )}
 
-              {/* Card Body: No Website vs 4 Colored Metric Scorecards & Top Findings */}
+              {/* Card Body: No Official Website vs 4 Colored Metric Scorecards & Top Findings */}
               {isNoWebsite ? (
                 <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="space-y-1">
+                  <div className="space-y-1.5 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <Chip variant="bold" color="emerald" size="sm">
                         Verified Google Business
                       </Chip>
+                      {webClassification.type === 'directory_listing' ? (
+                        <Chip variant="subtle" color="amber" size="sm">
+                          Directory Listing: {webClassification.platformName}
+                        </Chip>
+                      ) : webClassification.type === 'social_profile' ? (
+                        <Chip variant="subtle" color="blue" size="sm">
+                          Social Profile: {webClassification.platformName}
+                        </Chip>
+                      ) : null}
                       <span className="text-xs font-semibold text-emerald-400">
-                        Opportunity: Needs a Modern Website
+                        Opportunity: Needs an Official Website
                       </span>
                     </div>
                     <p className="text-xs text-text-secondary leading-relaxed">
-                      This business is active with real customer reviews on Google, but does not have an official website. Perfect prospect for web design or marketing services.
+                      {webClassification.type === 'directory_listing'
+                        ? `This business is listed on a third-party directory (${webClassification.platformName}), but has no official website of their own. Great opportunity to pitch an official custom website!`
+                        : webClassification.type === 'social_profile'
+                        ? `This business relies on a ${webClassification.platformName} profile, but lacks an official website. Perfect target for a web design pitch!`
+                        : `This business is active on Google Maps with real customer reviews, but does not have an official website.`}
                     </p>
+                    {Boolean(currentLead.website) && (
+                      <div className="flex items-center gap-2 pt-0.5 text-[11px] font-mono text-text-tertiary flex-wrap">
+                        <span>Third-party listing:</span>
+                        <a
+                          href={currentLead.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-accent-500 hover:underline truncate max-w-sm inline-flex items-center gap-1"
+                        >
+                          <span className="truncate">{currentLead.website}</span>
+                          <RiExternalLinkLine className="size-3 shrink-0" />
+                        </a>
+                      </div>
+                    )}
                   </div>
                   <Button
                     size="small"

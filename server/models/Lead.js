@@ -1,5 +1,5 @@
 const db = require('../db/database');
-const { isSocialOrAggregator, extractSocialUrls } = require('../services/social-domains');
+const { isSocialOrAggregator, extractSocialUrls, classifyWebsiteUrl } = require('../services/social-domains');
 const phoneService = require('../services/phone-service');
 
 /**
@@ -32,7 +32,7 @@ class Lead {
     }
 
     if (status === 'no_website') {
-      query += " AND ((l.has_no_website = 1 OR l.website IS NULL OR l.website = '') AND (l.website IS NULL OR l.website = '' OR lower(l.website) LIKE '%facebook.com%' OR lower(l.website) LIKE '%instagram.com%' OR lower(l.website) LIKE '%linkedin.com%' OR lower(l.website) LIKE '%linktr.ee%'))";
+      query += " AND (l.has_no_website = 1 OR l.website IS NULL OR l.website = '' OR l.website_status IN ('no_website', 'social_only', 'directory_only'))";
     } else if (status === 'follow_up' || status === 'followup_due') {
       query += " AND l.follow_up_at IS NOT NULL AND date(l.follow_up_at) <= date('now', 'localtime') AND (l.status IS NULL OR l.status NOT IN ('replied', 'won', 'archived'))";
     } else if (status && status !== 'all') {
@@ -55,7 +55,7 @@ class Lead {
     }
 
     if (tier === 'gold') {
-      query += " AND ((l.has_no_website = 1 OR l.website IS NULL OR l.website = '') AND (l.website IS NULL OR l.website = '' OR lower(l.website) LIKE '%facebook.com%' OR lower(l.website) LIKE '%instagram.com%' OR lower(l.website) LIKE '%linkedin.com%' OR lower(l.website) LIKE '%linktr.ee%')) AND (l.rating >= 4.5 AND l.reviews_count >= 10 AND l.phone IS NOT NULL)";
+      query += " AND (l.has_no_website = 1 OR l.website IS NULL OR l.website = '' OR l.website_status IN ('no_website', 'social_only', 'directory_only')) AND (l.rating >= 4.5 AND l.reviews_count >= 10 AND l.phone IS NOT NULL)";
     }
 
     // Google Star Rating Filter
@@ -163,7 +163,7 @@ class Lead {
     }
 
     if (status === 'no_website') {
-      query += " AND ((l.has_no_website = 1 OR l.website IS NULL OR l.website = '') AND (l.website IS NULL OR l.website = '' OR lower(l.website) LIKE '%facebook.com%' OR lower(l.website) LIKE '%instagram.com%' OR lower(l.website) LIKE '%linkedin.com%' OR lower(l.website) LIKE '%linktr.ee%'))";
+      query += " AND (l.has_no_website = 1 OR l.website IS NULL OR l.website = '' OR l.website_status IN ('no_website', 'social_only', 'directory_only'))";
     } else if (status === 'follow_up' || status === 'followup_due') {
       query += " AND l.follow_up_at IS NOT NULL AND date(l.follow_up_at) <= date('now', 'localtime') AND (l.status IS NULL OR l.status NOT IN ('replied', 'won', 'archived'))";
     } else if (status && status !== 'all') {
@@ -186,7 +186,7 @@ class Lead {
     }
 
     if (tier === 'gold') {
-      query += " AND ((l.has_no_website = 1 OR l.website IS NULL OR l.website = '') AND (l.website IS NULL OR l.website = '' OR lower(l.website) LIKE '%facebook.com%' OR lower(l.website) LIKE '%instagram.com%' OR lower(l.website) LIKE '%linkedin.com%' OR lower(l.website) LIKE '%linktr.ee%')) AND (l.rating >= 4.5 AND l.reviews_count >= 10 AND l.phone IS NOT NULL)";
+      query += " AND (l.has_no_website = 1 OR l.website IS NULL OR l.website = '' OR l.website_status IN ('no_website', 'social_only', 'directory_only')) AND (l.rating >= 4.5 AND l.reviews_count >= 10 AND l.phone IS NOT NULL)";
     }
 
     // Google Star Rating Filter
@@ -446,7 +446,8 @@ class Lead {
         }
 
         if (!existing) {
-          const isSocialOrNone = !item.website || isSocialOrAggregator(item.website);
+          const classification = classifyWebsiteUrl(item.website);
+          const isSocialOrNone = classification.isNoWebsite;
 
           const payload = {
             business_name: item.business_name,
@@ -463,7 +464,7 @@ class Lead {
             has_no_website: isSocialOrNone ? (item.has_no_website !== undefined ? item.has_no_website : 1) : 0,
             website_status: !isSocialOrNone 
               ? (item.website_status && item.website_status !== 'no_website' ? item.website_status : 'active')
-              : (item.website_status || (!item.website ? 'no_website' : 'social_only')),
+              : (item.website_status || (!item.website ? 'no_website' : (classification.type === 'directory_listing' ? 'directory_only' : 'social_only'))),
             showcase_niche: isSocialOrNone ? (item.showcase_niche || null) : null,
             place_id: item.place_id || null,
             google_category: item.google_category || null,
@@ -801,12 +802,12 @@ class Lead {
     const replied = db.prepare("SELECT COUNT(*) as count FROM leads WHERE status = 'replied' AND (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived')").get().count;
     const won = db.prepare("SELECT COUNT(*) as count FROM leads WHERE status = 'won' AND (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived')").get().count;
     const decisionMakers = db.prepare("SELECT COUNT(*) as count FROM contacts c JOIN leads l ON c.lead_id = l.id WHERE c.email_type = 'decision_maker' AND (l.is_test = 0 OR l.is_test IS NULL)").get().count;
-    const noWebsite = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND (has_no_website = 1 OR website IS NULL OR website = '') AND (website IS NULL OR website = '' OR lower(website) LIKE '%facebook.com%' OR lower(website) LIKE '%instagram.com%' OR lower(website) LIKE '%linkedin.com%' OR lower(website) LIKE '%linktr.ee%')").get().count;
-    const withWebsites = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND website IS NOT NULL AND website != '' AND lower(website) NOT LIKE '%facebook.com%' AND lower(website) NOT LIKE '%instagram.com%' AND lower(website) NOT LIKE '%linkedin.com%' AND lower(website) NOT LIKE '%linktr.ee%'").get().count;
+    const noWebsite = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND (has_no_website = 1 OR website IS NULL OR website = '' OR website_status IN ('no_website', 'social_only', 'directory_only'))").get().count;
+    const withWebsites = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND (has_no_website = 0 OR has_no_website IS NULL) AND website IS NOT NULL AND website != '' AND (website_status IS NULL OR website_status NOT IN ('no_website', 'social_only', 'directory_only'))").get().count;
     
     // Website verification status breakdown
-    const verifiedNoWebsite = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND website_status = 'no_website' AND (website IS NULL OR website = '' OR lower(website) LIKE '%facebook.com%' OR lower(website) LIKE '%instagram.com%' OR lower(website) LIKE '%linkedin.com%' OR lower(website) LIKE '%linktr.ee%')").get().count;
-    const verifiedHasWebsite = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND (website_status IN ('has_website', 'active') OR (website IS NOT NULL AND website != '' AND lower(website) NOT LIKE '%facebook.com%' AND lower(website) NOT LIKE '%instagram.com%' AND lower(website) NOT LIKE '%linkedin.com%' AND lower(website) NOT LIKE '%linktr.ee%'))").get().count;
+    const verifiedNoWebsite = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND (website_status IN ('no_website', 'social_only', 'directory_only') OR has_no_website = 1)").get().count;
+    const verifiedHasWebsite = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND website_status IN ('has_website', 'active') AND (has_no_website = 0 OR has_no_website IS NULL)").get().count;
     const uncertainCount = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND website_status = 'uncertain'").get().count;
 
     // Contact Channel distribution (email vs whatsapp vs social media vs phone)
