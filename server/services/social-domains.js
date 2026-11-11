@@ -1,5 +1,6 @@
 /**
  * Shared Social, Directory Aggregator, and Maps Domain Classifier
+ * Country-aware scoping across US, GB, AU, CA, AE, and Global.
  * Unified across Lead.js, maps-scraper-service.js, no-website-verifier.js,
  * and website-audit-service.js
  */
@@ -19,39 +20,10 @@ const SOCIAL_DOMAINS = [
   'youtube.com'
 ];
 
-const DIRECTORY_DOMAINS = [
-  'hvacchamps.com',
-  'plumberchamps.com',
-  'roofingchamps.com',
-  'electricianchamps.com',
-  'contractorchamps.com',
+const GLOBAL_DIRECTORY_DOMAINS = [
   'yelp.com',
   'yellowpages.com',
-  'mapquest.com',
-  'bbb.org',
-  'angi.com',
-  'homeadvisor.com',
-  'thumbtack.com',
-  'manta.com',
   'tripadvisor.com',
-  'expertise.com',
-  'houzz.com',
-  'porch.com',
-  'buildzoom.com',
-  'networx.com',
-  'chamberofcommerce.com',
-  'superpages.com',
-  'citysearch.com',
-  'dexknows.com',
-  'local.com',
-  'merchantcircle.com',
-  'hotfrog.com',
-  'ezlocal.com',
-  'brownbook.net',
-  'cylex.us.com',
-  'cylex-usa.com',
-  'uscity.net',
-  'localdatabase.com',
   'trustpilot.com',
   'bark.com',
   'birdeye.com',
@@ -62,18 +34,14 @@ const DIRECTORY_DOMAINS = [
   'directorylib.com',
   'foursquare.com',
   'alignable.com',
-  'b2byellowpages.com',
-  'kudzu.com',
-  'topratedlocal.com',
   'threebestrated.com',
-  'bestprosintown.com',
   'find-us-here.com',
-  'contractorhub.com',
-  'contractorconnection.com',
-  'contractors.com',
-  'servicemagic.com',
-  'servicepros.com',
-  'proreferral.com',
+  'hotfrog.com',
+  'brownbook.net',
+  'localdatabase.com',
+  'mapquest.com',
+  'expertise.com',
+  'houzz.com',
   'yahoo.com',
   'bing.com',
   'duckduckgo.com',
@@ -86,6 +54,113 @@ const DIRECTORY_DOMAINS = [
   'github.com',
   'gitlab.com'
 ];
+
+const COUNTRY_DIRECTORY_DOMAINS = {
+  US: [
+    'angi.com',
+    'homeadvisor.com',
+    'thumbtack.com',
+    'bbb.org',
+    'hvacchamps.com',
+    'plumberchamps.com',
+    'roofingchamps.com',
+    'electricianchamps.com',
+    'contractorchamps.com',
+    'manta.com',
+    'porch.com',
+    'buildzoom.com',
+    'networx.com',
+    'superpages.com',
+    'dexknows.com',
+    'citysearch.com',
+    'kudzu.com',
+    'proreferral.com',
+    'contractorhub.com',
+    'contractorconnection.com',
+    'contractors.com',
+    'servicemagic.com',
+    'servicepros.com',
+    'bestprosintown.com',
+    'topratedlocal.com',
+    'uscity.net',
+    'chamberofcommerce.com',
+    'cylex-usa.com',
+    'cylex.us.com',
+    'b2byellowpages.com',
+    'local.com',
+    'merchantcircle.com',
+    'ezlocal.com'
+  ],
+  GB: [
+    'yell.com',
+    'checkatrade.com',
+    'trustatrader.com',
+    'mybuilder.com',
+    'thomsonlocal.com',
+    'ratedpeople.com',
+    'scoot.co.uk',
+    'touchlocal.com',
+    'approvedtrader.co.uk',
+    'trustmark.org.uk',
+    'freeindex.co.uk',
+    'cylex-uk.co.uk',
+    '192.com',
+    'tradechecker.co.uk',
+    'findatrade.com',
+    'localheroes.com',
+    'gumtree.com',
+    'uksmallbusinessdirectory.co.uk',
+    'thetradesmen.co.uk',
+    'tradesmangun.co.uk'
+  ],
+  AU: [
+    'hipages.com.au',
+    'yellowpages.com.au',
+    'truelocal.com.au',
+    'oneflare.com.au',
+    'serviceseeking.com.au',
+    'tradiefinder.com.au',
+    'womo.com.au',
+    'startlocal.com.au',
+    'dlook.com.au',
+    'localsearch.com.au',
+    'aussieweb.com.au',
+    'hotfrog.com.au',
+    'purelocal.com.au',
+    'tradiesdirectory.com.au'
+  ],
+  CA: [
+    'homestars.com',
+    'yellowpages.ca',
+    '411.ca',
+    'trustedpros.ca',
+    'canpages.ca',
+    'profilecanada.com',
+    'n49.com',
+    'hotfrog.ca',
+    'cylex-canada.com',
+    'tradeconnection.ca',
+    'canadianbusinessdirectory.ca'
+  ],
+  AE: [
+    'yellowpages.ae',
+    'dubaibizdirectory.com',
+    'localsearch.ae',
+    'uaecontact.com',
+    'reachuae.com',
+    'connect.ae',
+    'atninfo.com',
+    'etisalatyellowpages.ae',
+    'angloinfo.com',
+    'dubaisouthdirectory.com'
+  ]
+};
+
+// Flattened list for backwards compatibility
+const DIRECTORY_DOMAINS = Array.from(new Set([
+  ...GLOBAL_DIRECTORY_DOMAINS,
+  ...Object.values(COUNTRY_DIRECTORY_DOMAINS).flat()
+]));
 
 const MAPS_DOMAINS = [
   'google.com/maps',
@@ -103,13 +178,28 @@ const SOCIAL_AND_AGGREGATOR_DOMAINS = [
 ];
 
 /**
+ * Get active directory domains for a given country code (e.g. 'GB', 'AU', 'US').
+ * If country is unknown or null, returns all directory domains.
+ */
+function getDirectoryDomainsForCountry(countryCode) {
+  if (!countryCode) return DIRECTORY_DOMAINS;
+  const upper = String(countryCode).trim().toUpperCase();
+  const regional = COUNTRY_DIRECTORY_DOMAINS[upper];
+  if (!regional) return DIRECTORY_DOMAINS;
+  return Array.from(new Set([...GLOBAL_DIRECTORY_DOMAINS, ...regional]));
+}
+
+/**
  * Classify any website URL into 4 distinct types:
  * 1. 'official_website' - Dedicated, private company domain (e.g. lonestarcooling.com)
- * 2. 'directory_listing' - Third-party directory or contractor aggregator (e.g. hvacchamps.com/contractors/austin-tx, yelp.com)
+ * 2. 'directory_listing' - Third-party directory or contractor aggregator
  * 3. 'social_profile' - Social network page (e.g. facebook.com, instagram.com)
  * 4. 'maps_listing' - Google Maps link or Google business.site
+ *
+ * @param {string} url - The URL to classify
+ * @param {string} [countryCode] - Optional ISO country code (e.g. 'US', 'GB', 'AU') to scope directory matching
  */
-function classifyWebsiteUrl(url) {
+function classifyWebsiteUrl(url, countryCode = null) {
   if (!url || typeof url !== 'string' || !url.trim()) {
     return {
       type: 'no_website',
@@ -147,10 +237,11 @@ function classifyWebsiteUrl(url) {
     }
   }
 
-  // 3. Third-Party Directories & Contractor Aggregators
-  for (const d of DIRECTORY_DOMAINS) {
+  // 3. Third-Party Directories & Contractor Aggregators (Scoped to country if provided)
+  const activeDirectories = getDirectoryDomainsForCountry(countryCode);
+  for (const d of activeDirectories) {
     if (clean.includes(d)) {
-      let name = d.replace(/\.com|\.org|\.net/g, '');
+      let name = d.replace(/\.com|\.org|\.net|\.co\.uk|\.com\.au|\.ca|\.ae/g, '');
       if (d.includes('champs.com')) {
         name = d.replace('.com', '').toUpperCase();
       } else {
@@ -166,9 +257,9 @@ function classifyWebsiteUrl(url) {
     }
   }
 
-  // Pattern heuristics: contractor directory paths (e.g. /contractors/austin-tx)
-  if (/\/(?:contractors|contractor|find-pros|companylist|pro|pros|members|biz)\//i.test(clean) &&
-      /(?:champs|directory|finder|guide|listings|network|portal|ranking|yellowpages)/i.test(clean)) {
+  // Pattern heuristics: contractor directory paths (e.g. /contractors/austin-tx, /trades/london)
+  if (/\/(?:contractors|contractor|find-pros|companylist|pro|pros|members|biz|trades|tradies)\//i.test(clean) &&
+      /(?:champs|directory|finder|guide|listings|network|portal|ranking|yellowpages|yell|trader)/i.test(clean)) {
     return {
       type: 'directory_listing',
       isOfficialWebsite: false,
@@ -188,9 +279,9 @@ function classifyWebsiteUrl(url) {
   };
 }
 
-function isSocialOrAggregator(url) {
+function isSocialOrAggregator(url, countryCode = null) {
   if (!url) return true;
-  const classification = classifyWebsiteUrl(url);
+  const classification = classifyWebsiteUrl(url, countryCode);
   return classification.isNoWebsite;
 }
 
@@ -210,9 +301,12 @@ function extractSocialUrls(url) {
 
 module.exports = {
   SOCIAL_DOMAINS,
+  GLOBAL_DIRECTORY_DOMAINS,
+  COUNTRY_DIRECTORY_DOMAINS,
   DIRECTORY_DOMAINS,
   MAPS_DOMAINS,
   SOCIAL_AND_AGGREGATOR_DOMAINS,
+  getDirectoryDomainsForCountry,
   classifyWebsiteUrl,
   isSocialOrAggregator,
   extractSocialUrls

@@ -73,7 +73,12 @@ const METRO_SUB_REGIONS = {
   'los angeles': ['Long Beach', 'Pasadena', 'Glendale', 'Santa Monica', 'Burbank', 'Torrance', 'Inglewood', 'Compton', 'Van Nuys', 'Downey', 'West Hollywood', 'Beverly Hills', 'Norwalk', 'Pomona', 'El Monte', 'North Hollywood'],
   'chicago': ['Naperville', 'Aurora', 'Joliet', 'Evanston', 'Schaumburg', 'Cicero', 'Skokie', 'Elgin', 'Arlington Heights', 'Bolingbrook', 'Oak Lawn', 'Des Plaines', 'Berwyn', 'Orland Park', 'Tinley Park', 'Oak Park'],
   'atlanta': ['Alpharetta', 'Marietta', 'Roswell', 'Sandy Springs', 'Decatur', 'Smyrna', 'Dunwoody', 'Johns Creek', 'Duluth', 'Kennesaw', 'Lawrenceville', 'Norcross', 'Cumming', 'Buford', 'Tucker'],
-  'phoenix': ['Scottsdale', 'Mesa', 'Chandler', 'Gilbert', 'Glendale', 'Tempe', 'Peoria', 'Surprise', 'Avondale', 'Buckeye', 'Goodyear', 'Queen Creek']
+  'phoenix': ['Scottsdale', 'Mesa', 'Chandler', 'Gilbert', 'Glendale', 'Tempe', 'Peoria', 'Surprise', 'Avondale', 'Buckeye', 'Goodyear', 'Queen Creek'],
+  'london': ['Central London', 'North London', 'South London', 'East London', 'West London', 'Camden', 'Greenwich', 'Kensington', 'Islington', 'Hackney', 'Croydon', 'Richmond', 'Wimbledon', 'Ealing'],
+  'sydney': ['Central Sydney', 'North Sydney', 'Parramatta', 'Bondi', 'Manly', 'Chatswood', 'Surry Hills', 'Newtown', 'Cronulla', 'Ryde', 'Blacktown', 'Penrith'],
+  'melbourne': ['Melbourne CBD', 'South Yarra', 'St Kilda', 'Richmond', 'Brunswick', 'Fitzroy', 'Carlton', 'Footscray', 'Box Hill', 'Dandenong'],
+  'toronto': ['Downtown Toronto', 'North York', 'Scarborough', 'Etobicoke', 'York', 'East York', 'Mississauga', 'Brampton', 'Vaughan', 'Markham'],
+  'dubai': ['Downtown Dubai', 'Dubai Marina', 'Business Bay', 'Deira', 'Bur Dubai', 'Jumeirah', 'Al Barsha', 'JLT', 'Palm Jumeirah', 'Mirdif', 'Al Quoz']
 };
 
 const CANONICAL_COUNTRIES = {
@@ -323,10 +328,19 @@ function loadMetroAreas() {
   return _metroCache;
 }
 
-function generateSearchQueries(keyword, city, limit = 100) {
+function generateSearchQueries(keyword, city, limit = 100, countryCode = 'US') {
   const rawKw = (keyword || '').trim();
-  const c = (city || '').trim();
+  let c = (city || '').trim();
   const baseKw = cleanBaseKeyword(rawKw);
+
+  // International location anchoring: if country is provided and not already in city string
+  const normCountry = (countryCode === 'UK' ? 'GB' : (countryCode || 'US')).toUpperCase();
+  const countryNames = { GB: 'UK', AU: 'Australia', CA: 'Canada', AE: 'UAE' };
+  const countrySuffix = countryNames[normCountry];
+  if (countrySuffix && !c.toLowerCase().includes(countrySuffix.toLowerCase()) && !c.toLowerCase().includes(normCountry.toLowerCase())) {
+    c = `${c}, ${countrySuffix}`;
+  }
+
   const cityLower = c.toLowerCase();
   const metroKey = c.split(',')[0].trim().toLowerCase();
   const metroAreas = loadMetroAreas()[metroKey];
@@ -449,15 +463,16 @@ class MapsScraperService {
    * Combines high-speed native Go Google Maps engine with clean directory fallback,
    * deduplicates by composite business identity, and merges authentic records.
    */
-  async searchMapsLeads(keywordIn, cityIn, limit = 100, jobId = null) {
+  async searchMapsLeads(keywordIn, cityIn, limit = 100, jobId = null, countryIn = 'US') {
     const keyword = (keywordIn || '').trim();
     const city = (cityIn || '').trim();
     if (!keyword || !city) {
       throw new Error('Both keyword (niche) and city are required');
     }
 
+    const targetCountry = (countryIn === 'UK' ? 'GB' : (countryIn || 'US')).toUpperCase();
     const activeJobId = jobId || `job_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-    telemetryService.initJob(activeJobId, { keyword, city, limit });
+    telemetryService.initJob(activeJobId, { keyword, city, limit, country: targetCountry });
 
     const searchQuery = `${keyword} in ${city}`.trim();
     const allHarvestedLeads = [];
@@ -471,7 +486,7 @@ class MapsScraperService {
       // Primary Tool: High-Speed Native Go Google Maps Scraper (Multi-goroutine browser engine)
       if (this.isBinaryAvailable()) {
         try {
-          const binLeads = await this.scrapeWithNativeBinary(keyword, city, limit, activeJobId);
+          const binLeads = await this.scrapeWithNativeBinary(keyword, city, limit, activeJobId, targetCountry);
           if (Array.isArray(binLeads)) {
             allHarvestedLeads.push(...binLeads);
             if (binLeads.skippedClosed) skippedClosed += binLeads.skippedClosed;
@@ -610,7 +625,7 @@ class MapsScraperService {
    * Executes local gosom/google_maps_scraper binary with spawn (no shell interpolation),
    * proper timeout process termination, and memory-efficient readline streaming.
    */
-  async scrapeWithNativeBinary(keyword, city, limit = 100, jobId = null) {
+  async scrapeWithNativeBinary(keyword, city, limit = 100, jobId = null, countryCode = 'US') {
     const tempId = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const tempQueryFile = path.join('/tmp', `maps_query_${tempId}.txt`);
     const tempResultsFile = path.join('/tmp', `maps_out_${tempId}.json`);
@@ -626,7 +641,7 @@ class MapsScraperService {
     }
 
     try {
-      const queries = generateSearchQueries(keyword, city, limit);
+      const queries = generateSearchQueries(keyword, city, limit, countryCode);
       fs.writeFileSync(tempQueryFile, queries.join('\n') + '\n', 'utf8');
 
       const depth = parseInt(process.env.MAPS_DEPTH, 10) || (limit <= 250 ? 5 : (limit <= 1000 ? 8 : 10));
@@ -735,8 +750,8 @@ class MapsScraperService {
 
       // Infer country and timezone once from search location (do not guess per lead)
       const tzInfo = timezoneService.detectTimezone({ city, address: city });
-      const inferredCountry = tzInfo.country || 'US';
-      const inferredTimezone = tzInfo.timezone || 'America/Chicago';
+      const inferredCountry = (countryCode && countryCode !== 'US' ? countryCode : tzInfo.country) || countryCode || 'US';
+      const inferredTimezone = tzInfo.timezone || (inferredCountry === 'GB' || inferredCountry === 'UK' ? 'Europe/London' : inferredCountry === 'AU' ? 'Australia/Sydney' : inferredCountry === 'AE' ? 'Asia/Dubai' : 'America/Chicago');
       const searchLoc = parseSearchLocation(city, inferredCountry);
 
       const candidatePlaces = [];
@@ -861,7 +876,7 @@ class MapsScraperService {
         seenNames.add(dedupeKey);
 
         const rawWeb = (place.web_site || '').trim();
-        const isSocialOrNone = !rawWeb || isSocialOrAggregator(rawWeb);
+        const isSocialOrNone = !rawWeb || isSocialOrAggregator(rawWeb, inferredCountry);
         const socialUrls = extractSocialUrls(rawWeb);
 
         // Extract genuine rating and reviews; default to null rather than fabricated 4.8 / 50

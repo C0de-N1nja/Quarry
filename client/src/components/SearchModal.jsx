@@ -24,6 +24,14 @@ import { PillTabList, PillTab } from '@/components/base/tabs/pill-tab';
 import { Chip } from '@/components/base/badges/chip';
 import { StatusDot } from '@/components/base/badges/status-dot';
 
+export const SUPPORTED_COUNTRIES = [
+  { code: 'US', name: 'United States', dial: '+1', currency: '$', example: 'e.g. Austin, TX or Miami, FL' },
+  { code: 'GB', name: 'United Kingdom', dial: '+44', currency: '£', example: 'e.g. London, Manchester, Bristol' },
+  { code: 'AU', name: 'Australia', dial: '+61', currency: 'A$', example: 'e.g. Sydney, Melbourne, Brisbane' },
+  { code: 'CA', name: 'Canada', dial: '+1', currency: 'C$', example: 'e.g. Toronto, Vancouver, Calgary' },
+  { code: 'AE', name: 'United Arab Emirates', dial: '+971', currency: 'AED', example: 'e.g. Dubai, Abu Dhabi, Sharjah' }
+];
+
 function playChime() {
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -117,6 +125,13 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
       stopTelemetry();
     };
   }, []);
+
+  // Global Country Scoping
+  const [selectedCountry, setSelectedCountry] = useState(() => localStorage.getItem('quarry_selected_country') || 'US');
+  const handleCountryChange = (newCountry) => {
+    setSelectedCountry(newCountry);
+    localStorage.setItem('quarry_selected_country', newCountry);
+  };
 
   // Maps Radar form
   const [mapsKeyword, setMapsKeyword] = useState('');
@@ -221,7 +236,7 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
       const res = await fetch('/api/search/maps', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keyword: mapsKeyword, location: mapsLocation, limit: effectiveLimit, jobId })
+        body: JSON.stringify({ keyword: mapsKeyword, location: mapsLocation, limit: effectiveLimit, jobId, country: selectedCountry })
       });
       if (!res.ok) {
         const text = await res.text();
@@ -285,7 +300,7 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
       const res = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keyword, location, limit: effectiveLimit })
+        body: JSON.stringify({ keyword, location, limit: effectiveLimit, country: selectedCountry })
       });
       if (!res.ok) {
         const text = await res.text();
@@ -755,14 +770,35 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-caption-1-semibold text-text-primary mb-1.5 flex items-center gap-1.5">
+                  <RiGlobalLine className="size-3.5 text-text-secondary" />
+                  <span>Target Country</span>
+                </label>
+                <div className="relative flex items-center">
+                  <select
+                    value={selectedCountry}
+                    onChange={(e) => handleCountryChange(e.target.value)}
+                    className="w-full appearance-none px-3 pr-8 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary cursor-pointer font-medium"
+                  >
+                    {SUPPORTED_COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.name} ({c.dial})
+                      </option>
+                    ))}
+                  </select>
+                  <RiArrowDownSLine className="pointer-events-none absolute right-2.5 size-4 text-text-tertiary" />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-caption-1-semibold text-text-primary mb-1.5">Target City / State</label>
                 <input
                   type="text"
                   value={mapsLocation}
                   onChange={(e) => setMapsLocation(e.target.value)}
-                  placeholder="e.g. Austin, TX or Miami, FL"
+                  placeholder={SUPPORTED_COUNTRIES.find((c) => c.code === selectedCountry)?.example || 'e.g. Austin, TX'}
                   required
                   className="w-full px-3 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary placeholder:text-text-tertiary"
                 />
@@ -868,14 +904,35 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-caption-1-semibold text-text-primary mb-1.5 flex items-center gap-1.5">
+                  <RiGlobalLine className="size-3.5 text-text-secondary" />
+                  <span>Target Country</span>
+                </label>
+                <div className="relative flex items-center">
+                  <select
+                    value={selectedCountry}
+                    onChange={(e) => handleCountryChange(e.target.value)}
+                    className="w-full appearance-none px-3 pr-8 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary cursor-pointer font-medium"
+                  >
+                    {SUPPORTED_COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.name} ({c.dial})
+                      </option>
+                    ))}
+                  </select>
+                  <RiArrowDownSLine className="pointer-events-none absolute right-2.5 size-4 text-text-tertiary" />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-caption-1-semibold text-text-primary mb-1.5">Target City / Location</label>
                 <input
                   type="text"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  placeholder="e.g. Austin TX, Miami, London"
+                  placeholder={SUPPORTED_COUNTRIES.find((c) => c.code === selectedCountry)?.example || 'e.g. Austin, TX'}
                   required
                   className="w-full px-3 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary placeholder:text-text-tertiary"
                 />

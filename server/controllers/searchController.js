@@ -8,12 +8,12 @@ const notificationService = require('../services/notification-service');
 class SearchController {
   async searchProspects(req, res) {
     try {
-      const { keyword, location, limit = 15 } = req.body;
+      const { keyword, location, limit = 15, country = 'US' } = req.body;
       if (!keyword || !location) {
         return res.status(400).json({ success: false, error: 'Both keyword and location are required' });
       }
 
-      const discovered = await crawlerService.searchProspects(keyword, location, parseInt(limit, 10));
+      const discovered = await crawlerService.searchProspects(keyword, location, parseInt(limit, 10), country);
       const result = Lead.insertBatch(discovered);
 
       try {
@@ -67,13 +67,13 @@ class SearchController {
 
   async searchMaps(req, res) {
     try {
-      const { keyword, location, limit = 20, jobId } = req.body;
+      const { keyword, location, limit = 20, jobId, country = 'US' } = req.body;
       if (!keyword || !location) {
         return res.status(400).json({ success: false, error: 'Both keyword (niche) and location (city) are required' });
       }
 
       const mapsScraperService = require('../services/maps-scraper-service');
-      const result = await mapsScraperService.searchMapsLeads(keyword, location, parseInt(limit, 10), jobId);
+      const result = await mapsScraperService.searchMapsLeads(keyword, location, parseInt(limit, 10), jobId, country);
       res.json(result);
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
