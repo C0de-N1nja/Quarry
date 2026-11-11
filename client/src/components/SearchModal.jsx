@@ -429,7 +429,7 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
         const pRes = await fetch(`/api/search/maps/telemetry/${jobId}`);
         if (pRes.ok) {
           const pData = await pRes.json();
-          if (pData.success) {
+          if (pData?.success) {
             setTelemetry(prev => ({ ...(prev || {}), ...pData }));
           }
         }
@@ -454,7 +454,7 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
         throw new Error(errMsg);
       }
       const data = await res.json();
-      if (!data.success) throw new Error(data.error);
+      if (!data || !data.success) throw new Error(data?.error || 'No response data from scraper');
 
       if (timerRef.current) clearInterval(timerRef.current);
       stopTelemetry();
@@ -467,8 +467,13 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
         `Harvested ${data.found} verified places (${data.inserted} fresh leads saved) in ${formatted}!`
       );
 
+      setError(null);
       setSuccessMsg(`Google Maps Scraper extracted ${data.found} verified places and inserted ${data.inserted} fresh leads in ${formatted}!`);
-      if (onLeadCreated) onLeadCreated({ found: data.found, inserted: data.inserted, time: formatted, keyword: mapsKeyword });
+      try {
+        if (onLeadCreated) onLeadCreated({ found: data.found, inserted: data.inserted, time: formatted, keyword: mapsKeyword });
+      } catch (cbErr) {
+        console.warn('[SearchModal] onLeadCreated callback error:', cbErr);
+      }
     } catch (err) {
       if (timerRef.current) clearInterval(timerRef.current);
       stopTelemetry();
@@ -530,8 +535,13 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
         `Discovered ${data.found} prospects (${data.inserted} new leads saved) in ${formatted}!`
       );
 
+      setError(null);
       setSuccessMsg(`Discovered ${data.found} prospects and inserted ${data.inserted} new leads in ${formatted}!`);
-      if (onLeadCreated) onLeadCreated({ found: data.found, inserted: data.inserted, time: formatted, keyword });
+      try {
+        if (onLeadCreated) onLeadCreated({ found: data.found, inserted: data.inserted, time: formatted, keyword });
+      } catch (cbErr) {
+        console.warn('[SearchModal] onLeadCreated callback error:', cbErr);
+      }
     } catch (err) {
       if (timerRef.current) clearInterval(timerRef.current);
       setError(err.message || 'Failed to complete lead search');

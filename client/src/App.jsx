@@ -64,7 +64,7 @@ export default function App() {
     }
     return localStorage.getItem('viewMode') || 'table';
   });
-  const [toast, setToast] = useState(null); // { message, time, type }
+  const [bannerToast, setBannerToast] = useState(null); // { message, time, type }
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
@@ -159,11 +159,11 @@ export default function App() {
 
   // Auto-dismiss toast notification after 7 seconds
   useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(null), 7000);
+    if (bannerToast) {
+      const timer = setTimeout(() => setBannerToast(null), 7000);
       return () => clearTimeout(timer);
     }
-  }, [toast]);
+  }, [bannerToast]);
 
   // Deep-link to open LeadDrawer if ?leadId is present in URL
   useEffect(() => {
@@ -631,7 +631,7 @@ export default function App() {
               toast.success(`Harvested ${meta.found} places (${meta.inserted} fresh leads)!`, {
                 description: `Keyword: "${meta.keyword || 'Target'}" in ${meta.time || 'few seconds'}`
               });
-              setToast({
+              setBannerToast({
                 message: `Harvested ${meta.found} authentic places (${meta.inserted} new leads) for "${meta.keyword || 'Target'}"!`,
                 time: meta.time,
                 type: 'success'
@@ -676,7 +676,7 @@ export default function App() {
       )}
 
       {/* Floating Real-Time Toast Notification */}
-      {toast && (
+      {bannerToast && (
         <div className="fixed bottom-4 right-4 left-4 sm:left-auto sm:max-w-md z-50 bg-background-primary-default border border-separator-border shadow-2xl rounded-2xl p-4 flex items-start gap-3 animate-in slide-in-from-bottom-5 duration-200">
           <div className="p-2 rounded-xl bg-status-lime-background text-status-lime-text shrink-0">
             <RiCheckLine className="size-5" />
@@ -686,18 +686,18 @@ export default function App() {
               <span className="text-caption-1-semibold text-text-primary uppercase tracking-wider">
                 Harvesting Completed
               </span>
-              {toast.time && (
+              {bannerToast.time && (
                 <Chip variant="subtle" color="lime" className="gap-1 inline-flex items-center font-mono">
                   <RiTimeLine className="size-3" />
-                  <span>{toast.time}</span>
+                  <span>{bannerToast.time}</span>
                 </Chip>
               )}
             </div>
             <p className="text-caption-1-regular text-text-secondary mt-1 leading-snug">
-              {toast.message}
+              {bannerToast.message}
             </p>
           </div>
-          <CloseButton size="sm" onClick={() => setToast(null)} aria-label="Dismiss Notification" />
+          <CloseButton size="sm" onClick={() => setBannerToast(null)} aria-label="Dismiss Notification" />
         </div>
       )}
       {/* Global Universal Command Palette (⌘K) */}
