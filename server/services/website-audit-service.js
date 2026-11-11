@@ -3,6 +3,7 @@ const cheerio = require('cheerio');
 const fs = require('fs');
 const WebsiteAudit = require('../models/WebsiteAudit');
 const Lead = require('../models/Lead');
+const { extractSocialProfilesFromCheerio } = require('./social-domains');
 
 let pa11y = null;
 try {
@@ -99,6 +100,7 @@ class WebsiteAuditService {
 
     // 2. DOM & SEO & Security Analysis via Cheerio
     const $ = cheerio.load(typeof html === 'string' ? html : '');
+    const extractedSocials = extractSocialProfilesFromCheerio($, clean);
 
     const title = $('title').text().trim() || null;
     const metaDescription = $('meta[name="description" i]').attr('content')?.trim() || null;
@@ -376,6 +378,25 @@ Rehan`
           violations_count: pa11yIssues.length,
           flaws_summary: flawsSummary,
           audit_data: auditData
+        });
+
+        // Enrich lead's social profiles in SQLite from website HTML
+        const existing = Lead.findById(leadId);
+        let curSocials = {};
+        if (existing?.social_profiles) {
+          try {
+            curSocials = typeof existing.social_profiles === 'string' ? JSON.parse(existing.social_profiles) : existing.social_profiles;
+          } catch {}
+        }
+        const mergedSocials = { ...curSocials };
+        for (const [k, v] of Object.entries(extractedSocials || {})) {
+          if (v && !mergedSocials[k]) mergedSocials[k] = v;
+        }
+
+        Lead.update(leadId, {
+          facebook_url: existing?.facebook_url || extractedSocials?.facebook || null,
+          instagram_url: existing?.instagram_url || extractedSocials?.instagram || null,
+          social_profiles: mergedSocials
         });
       } catch (saveErr) {
         console.error('[WebsiteAuditService] DB save error:', saveErr.message);

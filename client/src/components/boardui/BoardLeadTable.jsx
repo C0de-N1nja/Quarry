@@ -234,6 +234,7 @@ export default function BoardLeadTable({
   onOpenOsintRun,
   onDeleteLead,
   onArchiveLead,
+  onResolveWebsite,
   onOpenSearch,
   onExportExcel,
   activeFilter = 'all',
@@ -1304,6 +1305,11 @@ export default function BoardLeadTable({
                               <DropdownItem onSelect={() => onRunOsint && onRunOsint(lead.id)} className="px-2.5 py-2 rounded-lg text-body-medium">
                                 <RiShieldCheckLine className="size-4 text-text-secondary" />
                                 <span>Find Owner & Contacts</span>
+                              </DropdownItem>
+
+                              <DropdownItem onSelect={() => onResolveWebsite && onResolveWebsite(lead.id)} className="px-2.5 py-2 rounded-lg text-body-medium">
+                                <RiGlobalLine className="size-4 text-text-secondary" />
+                                <span>{lead.website ? 'Find Social Profiles' : 'Resolve Web & Socials'}</span>
                               </DropdownItem>
 
                               {lead.website && !isNoWebsite && (

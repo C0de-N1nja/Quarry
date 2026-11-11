@@ -118,6 +118,7 @@ export default function LeadDossierPage({
   const [mapError, setMapError] = useState(false);
   const [auditSubTab, setAuditSubTab] = useState('signals'); // 'signals' | 'tech'
   const [signalsFilter, setSignalsFilter] = useState('problems'); // 'problems' | 'all'
+  const [resolvingPresence, setResolvingPresence] = useState(false);
 
   // Fetch settings on mount
   useEffect(() => {
@@ -765,6 +766,33 @@ export default function LeadDossierPage({
     }
   };
 
+  const handleResolvePresence = async () => {
+    if (!currentLead?.id) return;
+    setResolvingPresence(true);
+    try {
+      const res = await fetch(`/api/leads/${currentLead.id}/resolve-website`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success && data.lead) {
+        setDetail(prev => ({ ...prev, lead: data.lead }));
+        if (onRefreshLead) onRefreshLead(currentLead.id);
+        toast.success(
+          data.website
+            ? `Discovered official website: ${data.website}`
+            : (data.socials && Object.keys(data.socials).length > 0
+                ? `Discovered ${Object.keys(data.socials).length} social profile(s)`
+                : 'Web and social presence verified'),
+          { description: data.message || 'Updated prospect profile with live web & social results' }
+        );
+      } else {
+        toast.error(data.error || 'No additional web or social profiles found');
+      }
+    } catch (err) {
+      toast.error('Failed to resolve presence: ' + err.message);
+    } finally {
+      setResolvingPresence(false);
+    }
+  };
+
   useEffect(() => {
     return () => {
       if (scanTimerRef.current) clearInterval(scanTimerRef.current);
@@ -1334,15 +1362,27 @@ export default function LeadDossierPage({
                       </div>
                     )}
                   </div>
-                  <Button
-                    size="small"
-                    variant="secondary"
-                    leadingIcon={RiMapPinLine}
-                    onClick={() => window.open(mapsUrl, '_blank')}
-                    className="shrink-0"
-                  >
-                    View on Google Maps
-                  </Button>
+                  <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                    <Button
+                      size="small"
+                      variant="secondary"
+                      onClick={handleResolvePresence}
+                      disabled={resolvingPresence}
+                      leadingIcon={resolvingPresence ? RiLoader4Line : RiGlobalLine}
+                      className="shrink-0"
+                    >
+                      {resolvingPresence ? 'Checking Web Results...' : 'Check Google Web Results'}
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="secondary"
+                      leadingIcon={RiMapPinLine}
+                      onClick={() => window.open(mapsUrl, '_blank')}
+                      className="shrink-0"
+                    >
+                      View on Google Maps
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -2008,8 +2048,19 @@ export default function LeadDossierPage({
                         </a>
                       ))
                     ) : (
-                      <span className="text-text-tertiary">Not found yet</span>
+                      <span className="text-text-tertiary text-xs">Not found yet</span>
                     )}
+
+                    <Button
+                      size="small"
+                      variant="secondary"
+                      onClick={handleResolvePresence}
+                      disabled={resolvingPresence}
+                      leadingIcon={resolvingPresence ? RiLoader4Line : RiGlobalLine}
+                      className="text-[11px] py-0.5 px-2 h-6 ms-1 shrink-0"
+                    >
+                      {resolvingPresence ? 'Checking...' : (currentLead.website ? 'Find Socials' : 'Resolve Web & Socials')}
+                    </Button>
                   </div>
                 </div>
 

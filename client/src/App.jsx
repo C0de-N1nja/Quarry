@@ -359,18 +359,27 @@ export default function App() {
     }
   };
 
-  // Automatically find official website for lead
+  // Automatically find official website & social profiles for lead
   const handleResolveWebsite = async (leadId) => {
     try {
       const res = await fetch(`/api/leads/${leadId}/resolve-website`, { method: 'POST' });
       const data = await res.json();
       if (data.success) {
+        toast.success(
+          data.website
+            ? `Discovered website: ${data.website}`
+            : (data.socials && Object.keys(data.socials).length > 0
+                ? `Discovered ${Object.keys(data.socials).length} social profile(s)`
+                : 'Web and social presence verified'),
+          { description: data.message || 'Updated prospect profile with live web & social results' }
+        );
         await fetchLeads();
       } else {
-        alert(data.error || 'Could not automatically find website');
+        toast.error(data.error || 'Could not automatically find official website');
       }
     } catch (err) {
       console.error(err);
+      toast.error('Failed to resolve website or socials: ' + err.message);
     }
   };
 

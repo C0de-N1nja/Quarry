@@ -193,34 +193,46 @@ class LeadController {
       const lead = Lead.findById(id);
       if (!lead) return res.status(404).json({ success: false, error: 'Lead not found' });
 
-      if (lead.website) {
-        return res.json({ success: true, website: lead.website, message: 'Website already present' });
-      }
-
-      const foundUrl = await crawlerService.findWebsiteForLead(lead.business_name, lead.phone, lead.city);
-      if (foundUrl) {
-        const updated = Lead.update(id, { website: foundUrl });
-        return res.json({ success: true, website: foundUrl, lead: updated });
-      } else {
-        return res.status(404).json({ success: false, error: 'Could not automatically find official website domain' });
-      }
+      // Comprehensive resolver for leads with or without a website
+      const result = await crawlerService.resolvePresenceForLead(lead);
+      return res.json({
+        success: true,
+        website: result.website,
+        socials: result.socials,
+        website_status: result.website_status,
+        has_no_website: result.has_no_website,
+        lead: result.lead,
+        message: result.message
+      });
     } catch (err) {
+      console.error('[leadController] resolveWebsite error:', err);
       res.status(500).json({ success: false, error: err.message });
     }
   }
 
   async autoResolveAll(req, res) {
     try {
-      const missing = db.prepare("SELECT id, business_name, phone, city FROM leads WHERE website IS NULL OR website = '' LIMIT 15").all();
+      const targetLeads = db.prepare(`
+        SELECT id, business_name, phone, address, city, country, website, social_profiles 
+        FROM leads 
+        WHERE (website IS NULL OR website = '' OR has_no_website = 1)
+           OR (facebook_url IS NULL AND instagram_url IS NULL)
+        ORDER BY id DESC
+        LIMIT 10
+      `).all();
+
       let resolvedCount = 0;
-      for (const lead of missing) {
-        const found = await crawlerService.findWebsiteForLead(lead.business_name, lead.phone, lead.city);
-        if (found) {
-          Lead.update(lead.id, { website: found });
-          resolvedCount++;
+      for (const lead of targetLeads) {
+        try {
+          const resObj = await crawlerService.resolvePresenceForLead(lead);
+          if (resObj && (resObj.website || Object.keys(resObj.socials || {}).length > 0)) {
+            resolvedCount++;
+          }
+        } catch (e) {
+          console.warn(`[leadController] autoResolve error for lead ${lead.id}:`, e.message);
         }
       }
-      res.json({ success: true, attempted: missing.length, resolved: resolvedCount });
+      res.json({ success: true, attempted: targetLeads.length, resolved: resolvedCount });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
     }

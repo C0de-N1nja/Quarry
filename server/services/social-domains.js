@@ -52,7 +52,12 @@ const GLOBAL_DIRECTORY_DOMAINS = [
   'intercom.com',
   'helpjuice.com',
   'github.com',
-  'gitlab.com'
+  'gitlab.com',
+  'showmelocal.com',
+  'tat.net.au',
+  'whereis.com',
+  'cylex-australia.com',
+  'autocareplus.com.au'
 ];
 
 const COUNTRY_DIRECTORY_DOMAINS = {
@@ -299,6 +304,78 @@ function extractSocialUrls(url) {
   return { facebook_url, instagram_url };
 }
 
+function extractSocialProfilesFromCheerio($, originUrl = '') {
+  const socials = {
+    facebook: null,
+    instagram: null,
+    linkedin: null,
+    twitter: null,
+    youtube: null,
+    tiktok: null,
+    linktree: null
+  };
+
+  const ignoredFb = /sharer|share\.php|dialog|plugins|tr\?|help|policies|terms|about/i;
+  const ignoredIg = /\/(?:p|reel|reels|stories|explore|developer|about|legal|accounts)\//i;
+  const ignoredLi = /shareArticle|sharing/i;
+  const ignoredTw = /intent|share/i;
+  const ignoredYt = /watch\?|embed/i;
+
+  $('a[href]').each((_, el) => {
+    let href = $(el).attr('href');
+    if (!href) return;
+    href = href.trim();
+    if (!href.startsWith('http://') && !href.startsWith('https://')) {
+      if (href.startsWith('//')) {
+        href = 'https:' + href;
+      } else {
+        return;
+      }
+    }
+
+    try {
+      const u = new URL(href);
+      const host = u.hostname.toLowerCase().replace(/^www\./, '');
+      const pathname = u.pathname;
+
+      if ((host === 'facebook.com' || host === 'fb.com') && !ignoredFb.test(href)) {
+        if (pathname.length > 2 && !socials.facebook) {
+          socials.facebook = `https://${host}${pathname}`;
+        }
+      } else if (host === 'instagram.com' && !ignoredIg.test(href)) {
+        if (pathname.length > 2 && !socials.instagram) {
+          socials.instagram = `https://${host}${pathname.replace(/\/+$/, '')}`;
+        }
+      } else if (host === 'linkedin.com' && !ignoredLi.test(href)) {
+        if ((pathname.includes('/company/') || pathname.includes('/in/')) && !socials.linkedin) {
+          socials.linkedin = `https://${host}${pathname.replace(/\/+$/, '')}`;
+        }
+      } else if ((host === 'twitter.com' || host === 'x.com') && !ignoredTw.test(href)) {
+        if (pathname.length > 2 && !socials.twitter) {
+          socials.twitter = `https://${host}${pathname.replace(/\/+$/, '')}`;
+        }
+      } else if ((host === 'youtube.com' || host === 'youtu.be') && !ignoredYt.test(href)) {
+        if (pathname.length > 2 && !socials.youtube) {
+          socials.youtube = `https://${host}${pathname.replace(/\/+$/, '')}`;
+        }
+      } else if (host === 'tiktok.com' && pathname.includes('@') && !socials.tiktok) {
+        socials.tiktok = `https://${host}${pathname.replace(/\/+$/, '')}`;
+      } else if ((host === 'linktr.ee' || host === 'bio.link' || host === 'beacons.ai') && !socials.linktree) {
+        socials.linktree = `https://${host}${pathname.replace(/\/+$/, '')}`;
+      }
+    } catch {}
+  });
+
+  return socials;
+}
+
+function extractSocialProfilesFromHtml(html, originUrl = '') {
+  if (!html || typeof html !== 'string') return {};
+  const cheerio = require('cheerio');
+  const $ = cheerio.load(html);
+  return extractSocialProfilesFromCheerio($, originUrl);
+}
+
 module.exports = {
   SOCIAL_DOMAINS,
   GLOBAL_DIRECTORY_DOMAINS,
@@ -309,5 +386,7 @@ module.exports = {
   getDirectoryDomainsForCountry,
   classifyWebsiteUrl,
   isSocialOrAggregator,
-  extractSocialUrls
+  extractSocialUrls,
+  extractSocialProfilesFromCheerio,
+  extractSocialProfilesFromHtml
 };

@@ -116,6 +116,7 @@ export default function LeadTable({
         onFocusTierChange={onFocusTierChange}
         onCleanWebsites={onCleanWebsites}
         onResetOsint={onResetOsint}
+        onResolveWebsite={onResolveWebsite}
         onOpenAudit={onOpenAudit}
         searchTerm={searchTerm}
         onSearchChange={onSearchChange}
