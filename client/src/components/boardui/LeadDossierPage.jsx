@@ -116,6 +116,8 @@ export default function LeadDossierPage({
   // Findings show all toggle & map error state
   const [showAllFlaws, setShowAllFlaws] = useState(false);
   const [mapError, setMapError] = useState(false);
+  const [auditSubTab, setAuditSubTab] = useState('signals'); // 'signals' | 'tech'
+  const [signalsFilter, setSignalsFilter] = useState('problems'); // 'problems' | 'all'
 
   // Fetch settings on mount
   useEffect(() => {
@@ -239,6 +241,8 @@ export default function LeadDossierPage({
       setHasOpenedGmail(false);
       setShowAllFlaws(false);
       setMapError(false);
+      setAuditSubTab('signals');
+      setSignalsFilter('problems');
       fetchLeadDetails();
     }
   }, [lead?.id]);
@@ -345,6 +349,14 @@ export default function LeadDossierPage({
   const loadSec = (loadTimeMs / 1000).toFixed(1);
   const isMobileFriendly = audit?.mobile_friendly !== false && audit?.seo?.has_viewport !== false;
   const isHttps = Boolean(audit?.ssl_valid ?? (currentLead.website && currentLead.website.startsWith('https')));
+
+  // WarmReach-Style 26 Commercial Signals & 9-Point Tech Stack
+  const auditDataObj = audit?.audit_data || audit || {};
+  const auditSignals = auditDataObj.signals || audit?.signals || {};
+  const auditTechStack = auditDataObj.tech_stack || audit?.tech_stack || {};
+  const signalsList = Object.values(auditSignals);
+  const problemsFound = signalsList.filter(s => s.status === 'problem');
+  const problemsCount = auditDataObj.problems_count !== undefined ? auditDataObj.problems_count : problemsFound.length;
 
   // Update Lead Stage
   const handleUpdateStage = async (newStatus, newValue = dealValue) => {
@@ -1279,7 +1291,79 @@ export default function LeadDossierPage({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* Clean Browser URL Bar with single platform chip */}
+                  {/* Sub-Tabs: Signals & Problems vs Commercial Tech Stack */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1 border-b border-separator-border/60">
+                    <div className="flex items-center gap-1.5 p-1 rounded-xl bg-background-secondary-default border border-separator-border text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setAuditSubTab('signals')}
+                        className={cx(
+                          "px-3 py-1 rounded-lg font-medium transition-all flex items-center gap-1.5 cursor-pointer",
+                          auditSubTab === 'signals'
+                            ? "bg-background-primary-default text-text-primary shadow-xs border border-separator-border"
+                            : "text-text-secondary hover:text-text-primary"
+                        )}
+                      >
+                        <span>Signals & Problems</span>
+                        {problemsCount > 0 ? (
+                          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-semibold bg-amber-500/15 text-amber-500 border border-amber-500/30">
+                            {problemsCount}
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono text-emerald-500 bg-emerald-500/10">
+                            0
+                          </span>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setAuditSubTab('tech')}
+                        className={cx(
+                          "px-3 py-1 rounded-lg font-medium transition-all flex items-center gap-1.5 cursor-pointer",
+                          auditSubTab === 'tech'
+                            ? "bg-background-primary-default text-text-primary shadow-xs border border-separator-border"
+                            : "text-text-secondary hover:text-text-primary"
+                        )}
+                      >
+                        <span>Commercial Tech</span>
+                        <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono text-text-tertiary bg-background-tertiary-default">
+                          9
+                        </span>
+                      </button>
+                    </div>
+
+                    {auditSubTab === 'signals' && signalsList.length > 0 && (
+                      <div className="flex items-center gap-1 text-[11px] self-end sm:self-center">
+                        <button
+                          type="button"
+                          onClick={() => setSignalsFilter('problems')}
+                          className={cx(
+                            "px-2 py-0.5 rounded-md transition-colors cursor-pointer",
+                            signalsFilter === 'problems'
+                              ? "font-semibold text-amber-500 bg-amber-500/10 border border-amber-500/20"
+                              : "text-text-secondary hover:text-text-primary"
+                          )}
+                        >
+                          Problems ({problemsCount})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSignalsFilter('all')}
+                          className={cx(
+                            "px-2 py-0.5 rounded-md transition-colors cursor-pointer",
+                            signalsFilter === 'all'
+                              ? "font-semibold text-text-primary bg-background-secondary-default border border-separator-border"
+                              : "text-text-secondary hover:text-text-primary"
+                          )}
+                        >
+                          All ({signalsList.length})
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Browser URL Bar with Dynamic Builder Chip */}
                   <div className="rounded-xl border border-separator-border bg-background-secondary-default px-3.5 py-2 flex items-center justify-between">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="size-2 rounded-full bg-emerald-500 inline-block shrink-0" />
@@ -1287,7 +1371,7 @@ export default function LeadDossierPage({
                         https://{cleanDomain}
                       </span>
                       <Chip variant="subtle" color="blue" size="sm">
-                        WordPress
+                        {auditTechStack.builder || 'WordPress'}
                       </Chip>
                     </div>
                     <Button
@@ -1301,97 +1385,212 @@ export default function LeadDossierPage({
                     </Button>
                   </div>
 
-                  {/* 4 Scorecard Metrics with Semantic Amber/Red/Green Status Colors */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                    {/* 1. Speed Score (Semantic colors restored) */}
-                    <div className="p-3 rounded-xl bg-background-secondary-default border border-separator-border">
-                      <span className="text-[10px] uppercase font-mono text-text-tertiary block">Performance</span>
-                      <div className={cx(
-                        "text-base font-bold font-mono mt-1",
-                        perfScore >= 80 ? "text-emerald-500 dark:text-emerald-400" :
-                        perfScore >= 50 ? "text-amber-500 dark:text-amber-400" :
-                        "text-rose-500 dark:text-rose-400"
-                      )}>
-                        {perfScore}/100
-                      </div>
-                      <span className="text-[10px] text-text-secondary block mt-0.5 truncate" title="Lab test (Google PageSpeed)">
-                        Lab test (Google PageSpeed)
-                      </span>
-                    </div>
+                  {/* TAB 1: SIGNALS & AUDIT METRICS */}
+                  {auditSubTab === 'signals' && (
+                    <div className="space-y-4">
+                      {/* 4 Scorecard Metrics with Semantic Amber/Red/Green Status Colors */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        {/* 1. Speed Score */}
+                        <div className="p-3 rounded-xl bg-background-secondary-default border border-separator-border">
+                          <span className="text-[10px] uppercase font-mono text-text-tertiary block">Performance</span>
+                          <div className={cx(
+                            "text-base font-bold font-mono mt-1",
+                            perfScore >= 80 ? "text-emerald-500 dark:text-emerald-400" :
+                            perfScore >= 50 ? "text-amber-500 dark:text-amber-400" :
+                            "text-rose-500 dark:text-rose-400"
+                          )}>
+                            {perfScore}/100
+                          </div>
+                          <span className="text-[10px] text-text-secondary block mt-0.5 truncate" title="Lab test (Google PageSpeed)">
+                            Lab test (Google PageSpeed)
+                          </span>
+                        </div>
 
-                    {/* 2. Mobile Experience (Semantic colors restored) */}
-                    <div className="p-3 rounded-xl bg-background-secondary-default border border-separator-border">
-                      <span className="text-[10px] uppercase font-mono text-text-tertiary block">Mobile UX</span>
-                      <div className={cx(
-                        "text-base font-bold font-mono mt-1",
-                        isMobileFriendly ? "text-emerald-500 dark:text-emerald-400" : "text-amber-500 dark:text-amber-400"
-                      )}>
-                        {isMobileFriendly ? 'Mobile Ready' : 'Needs Fix'}
-                      </div>
-                      <span className="text-[10px] text-text-secondary block mt-0.5">
-                        Responsive Viewport
-                      </span>
-                    </div>
+                        {/* 2. Mobile Experience */}
+                        <div className="p-3 rounded-xl bg-background-secondary-default border border-separator-border">
+                          <span className="text-[10px] uppercase font-mono text-text-tertiary block">Mobile UX</span>
+                          <div className={cx(
+                            "text-base font-bold font-mono mt-1",
+                            isMobileFriendly ? "text-emerald-500 dark:text-emerald-400" : "text-amber-500 dark:text-amber-400"
+                          )}>
+                            {isMobileFriendly ? 'Mobile Ready' : 'Needs Fix'}
+                          </div>
+                          <span className="text-[10px] text-text-secondary block mt-0.5">
+                            Responsive Viewport
+                          </span>
+                        </div>
 
-                    {/* 3. Page Load Time (Semantic red/amber/green colors restored) */}
-                    <div className="p-3 rounded-xl bg-background-secondary-default border border-separator-border">
-                      <span className="text-[10px] uppercase font-mono text-text-tertiary block">Page Load</span>
-                      <div className={cx(
-                        "text-base font-bold font-mono mt-1",
-                        loadTimeMs < 2500 ? "text-emerald-500 dark:text-emerald-400" :
-                        loadTimeMs < 4000 ? "text-amber-500 dark:text-amber-400" :
-                        "text-rose-500 dark:text-rose-400"
-                      )}>
-                        {loadSec}s
-                      </div>
-                      <span className="text-[10px] text-text-secondary block mt-0.5">
-                        Mobile render latency
-                      </span>
-                    </div>
+                        {/* 3. Page Load Time */}
+                        <div className="p-3 rounded-xl bg-background-secondary-default border border-separator-border">
+                          <span className="text-[10px] uppercase font-mono text-text-tertiary block">Page Load</span>
+                          <div className={cx(
+                            "text-base font-bold font-mono mt-1",
+                            loadTimeMs < 2500 ? "text-emerald-500 dark:text-emerald-400" :
+                            loadTimeMs < 4000 ? "text-amber-500 dark:text-amber-400" :
+                            "text-rose-500 dark:text-rose-400"
+                          )}>
+                            {loadSec}s
+                          </div>
+                          <span className="text-[10px] text-text-secondary block mt-0.5">
+                            Mobile render latency
+                          </span>
+                        </div>
 
-                    {/* 4. SSL Security */}
-                    <div className="p-3 rounded-xl bg-background-secondary-default border border-separator-border">
-                      <span className="text-[10px] uppercase font-mono text-text-tertiary block">Security</span>
-                      <div className={cx(
-                        "text-base font-bold font-mono mt-1",
-                        isHttps ? "text-emerald-500 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400"
-                      )}>
-                        {isHttps ? 'Secure (HTTPS)' : 'Insecure (HTTP)'}
-                      </div>
-                      <span className="text-[10px] text-text-secondary block mt-0.5">
-                        TLS encryption
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Top 2-3 Findings / Opportunities List in Dossier */}
-                  {flaws.length > 0 && (
-                    <div className="space-y-2 pt-2 border-t border-separator-border/60">
-                      <div className="text-xs font-mono uppercase tracking-wider text-text-tertiary flex items-center gap-1.5">
-                        <RiAlertLine className="size-3.5 text-amber-400" />
-                        Key Audit Findings ({flaws.length})
+                        {/* 4. SSL Security */}
+                        <div className="p-3 rounded-xl bg-background-secondary-default border border-separator-border">
+                          <span className="text-[10px] uppercase font-mono text-text-tertiary block">Security</span>
+                          <div className={cx(
+                            "text-base font-bold font-mono mt-1",
+                            isHttps ? "text-emerald-500 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400"
+                          )}>
+                            {isHttps ? 'Secure (HTTPS)' : 'Insecure (HTTP)'}
+                          </div>
+                          <span className="text-[10px] text-text-secondary block mt-0.5">
+                            TLS encryption
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="grid grid-cols-1 gap-2">
-                        {displayedFlaws.map((flaw, idx) => (
-                          <div key={idx} className="p-2.5 rounded-xl bg-background-secondary-default border border-separator-border flex items-start gap-2.5 text-xs">
-                            <span className="size-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
-                            <span className="text-text-secondary leading-relaxed">
-                              {sanitizeFlaw(flaw)}
+                      {/* 26 Signals Matrix List (WarmReach-Style Commercial Audit) */}
+                      {signalsList.length > 0 ? (
+                        <div className="space-y-2 pt-2 border-t border-separator-border/60">
+                          <div className="flex items-center justify-between text-xs font-mono text-text-tertiary">
+                            <span className="uppercase tracking-wider flex items-center gap-1.5">
+                              <RiAlertLine className="size-3.5 text-amber-400" />
+                              {signalsFilter === 'problems' ? `Problems Found (${problemsCount})` : `Checked Signals (${signalsList.length})`}
                             </span>
+                            <span className="text-[11px] text-text-secondary">
+                              {signalsFilter === 'problems' ? 'Showing commercial pitch pain points' : 'Full signal audit'}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-2">
+                            {(signalsFilter === 'problems' ? problemsFound : signalsList).map((sig) => (
+                              <div
+                                key={sig.id}
+                                className={cx(
+                                  "p-2.5 rounded-xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 transition-colors",
+                                  sig.status === 'problem'
+                                    ? "bg-amber-500/5 border-amber-500/25"
+                                    : "bg-background-secondary-default/50 border-separator-border"
+                                )}
+                              >
+                                <div className="flex items-start gap-2.5 min-w-0">
+                                  <span
+                                    className={cx(
+                                      "size-2 rounded-full mt-1.5 shrink-0",
+                                      sig.status === 'problem' ? "bg-amber-500" : "bg-emerald-500"
+                                    )}
+                                  />
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className={cx(
+                                        "font-semibold",
+                                        sig.status === 'problem' ? "text-amber-500 dark:text-amber-400" : "text-text-primary"
+                                      )}>
+                                        {sig.name}
+                                      </span>
+                                      <span className="text-[10px] text-text-tertiary font-mono">
+                                        · {sig.category}
+                                      </span>
+                                    </div>
+                                    <p className="text-[11px] text-text-secondary mt-0.5 truncate" title={sig.proof}>
+                                      {sig.proof}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="shrink-0 self-start sm:self-center">
+                                  {sig.status === 'problem' ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-amber-500/15 text-amber-500 border border-amber-500/30">
+                                      Problem
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono text-emerald-500 bg-emerald-500/10 border border-emerald-500/20">
+                                      Fine
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        /* Fallback: Legacy Findings List */
+                        flaws.length > 0 && (
+                          <div className="space-y-2 pt-2 border-t border-separator-border/60">
+                            <div className="text-xs font-mono uppercase tracking-wider text-text-tertiary flex items-center gap-1.5">
+                              <RiAlertLine className="size-3.5 text-amber-400" />
+                              Key Audit Findings ({flaws.length})
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-2">
+                              {displayedFlaws.map((flaw, idx) => (
+                                <div key={idx} className="p-2.5 rounded-xl bg-background-secondary-default border border-separator-border flex items-start gap-2.5 text-xs">
+                                  <span className="size-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+                                  <span className="text-text-secondary leading-relaxed">
+                                    {sanitizeFlaw(flaw)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+
+                            {flaws.length > 3 && (
+                              <button
+                                type="button"
+                                onClick={() => setShowAllFlaws(p => !p)}
+                                className="text-xs text-accent-500 hover:underline cursor-pointer font-medium mt-1 inline-block"
+                              >
+                                {showAllFlaws ? 'Show less' : `+ Show all (${flaws.length})`}
+                              </button>
+                            )}
+                          </div>
+                        )
+                      )}
+                    </div>
+                  )}
+
+                  {/* TAB 2: COMMERCIAL TECH STACK (WarmReach TECH Tab) */}
+                  {auditSubTab === 'tech' && (
+                    <div className="space-y-3">
+                      <div className="text-xs text-text-secondary leading-relaxed">
+                        Commercial tech stack detected on <span className="font-mono text-text-primary">{cleanDomain}</span>. Use agency credits and ad pixels as pitch angles.
+                      </div>
+
+                      <div className="rounded-xl border border-separator-border bg-background-secondary-default divide-y divide-separator-border/60 overflow-hidden text-xs">
+                        {[
+                          { label: 'Builder', value: auditTechStack.builder || 'No DIY builder detected', isTarget: Boolean(auditTechStack.builder && auditTechStack.builder !== 'No DIY builder detected') },
+                          { label: 'Agency credit', value: auditTechStack.agency_credit || 'None in the footer', isTarget: !auditTechStack.agency_credit || auditTechStack.agency_credit === 'None in the footer' },
+                          { label: 'Ads pixels', value: auditTechStack.ads_pixels || 'None found', isTarget: Boolean(auditTechStack.ads_pixels && auditTechStack.ads_pixels !== 'None found') },
+                          { label: 'Call tracking', value: auditTechStack.call_tracking || 'None found', isTarget: false },
+                          { label: 'Analytics', value: auditTechStack.analytics || 'None found', isTarget: false },
+                          { label: 'Booking', value: auditTechStack.booking || 'None found', isTarget: !auditTechStack.booking || auditTechStack.booking === 'None found' },
+                          { label: 'Live chat', value: auditTechStack.live_chat || 'None found', isTarget: false },
+                          { label: 'Socials', value: auditTechStack.socials || 'None linked', isTarget: false },
+                          { label: 'Sitemap pages', value: auditTechStack.sitemap_pages || 'Not found', isTarget: false },
+                        ].map((item, idx) => (
+                          <div key={idx} className="px-3.5 py-2.5 flex items-center justify-between gap-3">
+                            <span className="font-mono text-text-tertiary text-[11px] w-28 shrink-0">{item.label}</span>
+                            <div className="flex items-center gap-2 min-w-0 text-right">
+                              <span className={cx(
+                                "font-medium truncate",
+                                item.label === 'Agency credit' && item.value === 'None in the footer'
+                                  ? "text-emerald-500 dark:text-emerald-400 font-semibold"
+                                  : item.label === 'Booking' && item.value === 'None found'
+                                  ? "text-amber-500 dark:text-amber-400"
+                                  : "text-text-primary"
+                              )}>
+                                {item.value}
+                              </span>
+                              {item.label === 'Agency credit' && item.value === 'None in the footer' && (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono uppercase bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shrink-0">
+                                  Unprotected
+                                </span>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
-
-                      {flaws.length > 3 && (
-                        <button
-                          type="button"
-                          onClick={() => setShowAllFlaws(p => !p)}
-                          className="text-xs text-accent-500 hover:underline cursor-pointer font-medium mt-1 inline-block"
-                        >
-                          {showAllFlaws ? 'Show less' : `+ Show all (${flaws.length})`}
-                        </button>
-                      )}
                     </div>
                   )}
                 </div>
