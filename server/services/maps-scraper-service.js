@@ -895,6 +895,11 @@ class MapsScraperService {
         // City: use place.complete_address.city, else parse it from address. Never fall back to the raw query string; leave NULL.
         const placeCity = extractCity(place);
 
+        // Discovery signals: Maps Rank, Local 3-Pack, and Unclaimed status
+        const currentRank = leads.length + 1;
+        const inLocalPack = currentRank <= 3 ? 1 : 0;
+        const isUnclaimed = (place.is_claimed === false || place.claimed === false || (isSocialOrNone && reviewsCount < 10)) ? 1 : 0;
+
         leads.push({
           business_name: title,
           website: rawWeb || null,
@@ -920,6 +925,9 @@ class MapsScraperService {
           instagram_url: socialUrls.instagram_url,
           rating: rating,
           reviews_count: reviewsCount,
+          maps_rank: currentRank,
+          in_local_pack: inLocalPack,
+          is_unclaimed: isUnclaimed,
           source: 'maps',
           status: 'discovered',
           deal_value: 1000,

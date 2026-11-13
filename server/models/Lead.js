@@ -33,6 +33,12 @@ class Lead {
 
     if (status === 'no_website') {
       query += " AND (l.has_no_website = 1 OR l.website IS NULL OR l.website = '' OR l.website_status IN ('no_website', 'social_only', 'directory_only'))";
+    } else if (status === 'in_local_pack') {
+      query += " AND l.in_local_pack = 1";
+    } else if (status === 'outside_local_pack') {
+      query += " AND (l.in_local_pack = 0 AND l.maps_rank > 3)";
+    } else if (status === 'unclaimed') {
+      query += " AND l.is_unclaimed = 1";
     } else if (status === 'follow_up' || status === 'followup_due') {
       query += " AND l.follow_up_at IS NOT NULL AND date(l.follow_up_at) <= date('now', 'localtime') AND (l.status IS NULL OR l.status NOT IN ('replied', 'won', 'archived'))";
     } else if (status && status !== 'all') {
@@ -164,6 +170,12 @@ class Lead {
 
     if (status === 'no_website') {
       query += " AND (l.has_no_website = 1 OR l.website IS NULL OR l.website = '' OR l.website_status IN ('no_website', 'social_only', 'directory_only'))";
+    } else if (status === 'in_local_pack') {
+      query += " AND l.in_local_pack = 1";
+    } else if (status === 'outside_local_pack') {
+      query += " AND (l.in_local_pack = 0 AND l.maps_rank > 3)";
+    } else if (status === 'unclaimed') {
+      query += " AND l.is_unclaimed = 1";
     } else if (status === 'follow_up' || status === 'followup_due') {
       query += " AND l.follow_up_at IS NOT NULL AND date(l.follow_up_at) <= date('now', 'localtime') AND (l.status IS NULL OR l.status NOT IN ('replied', 'won', 'archived'))";
     } else if (status && status !== 'all') {
@@ -307,6 +319,9 @@ class Lead {
     phone_e164 = null,
     phone_type = 'unknown',
     carrier = null,
+    maps_rank = null,
+    in_local_pack = 0,
+    is_unclaimed = 0,
     latitude = null,
     longitude = null,
     lat = null,
@@ -329,16 +344,18 @@ class Lead {
         rating, reviews_count, source, status,
         place_id, google_category, search_keyword, business_status,
         country, timezone, facebook_url, instagram_url,
-        phone_e164, phone_type, carrier, latitude, longitude, lat, lng, is_test
+        phone_e164, phone_type, carrier, maps_rank, in_local_pack, is_unclaimed,
+        latitude, longitude, lat, lng, is_test
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const info = stmt.run(
       business_name, website, maps_link, phone, address, city, category,
       rating, reviews_count, source, status,
       place_id, google_category, search_keyword, business_status,
       country, timezone, fb, ig,
-      e164, phone_type, carrier, finalLat, finalLng, finalLat, finalLng, is_test ? 1 : 0
+      e164, phone_type, carrier, maps_rank, in_local_pack ? 1 : 0, is_unclaimed ? 1 : 0,
+      finalLat, finalLng, finalLat, finalLng, is_test ? 1 : 0
     );
     return this.findById(info.lastInsertRowid);
   }
@@ -364,14 +381,16 @@ class Lead {
         rating, reviews_count, source, status, has_no_website, website_status, showcase_niche,
         place_id, google_category, search_keyword, business_status,
         country, timezone, facebook_url, instagram_url,
-        phone_e164, phone_type, carrier, latitude, longitude, lat, lng, is_test
+        phone_e164, phone_type, carrier, maps_rank, in_local_pack, is_unclaimed,
+        latitude, longitude, lat, lng, is_test
       )
       VALUES (
         @business_name, @website, @maps_link, @phone, @address, @city, @category,
         @rating, @reviews_count, @source, @status, @has_no_website, @website_status, @showcase_niche,
         @place_id, @google_category, @search_keyword, @business_status,
         @country, @timezone, @facebook_url, @instagram_url,
-        @phone_e164, @phone_type, @carrier, @latitude, @longitude, @lat, @lng, @is_test
+        @phone_e164, @phone_type, @carrier, @maps_rank, @in_local_pack, @is_unclaimed,
+        @latitude, @longitude, @lat, @lng, @is_test
       )
     `);
 
@@ -477,6 +496,9 @@ class Lead {
             phone_e164: item.phone_e164 || null,
             phone_type: item.phone_type || 'unknown',
             carrier: item.carrier || null,
+            maps_rank: item.maps_rank !== undefined ? item.maps_rank : null,
+            in_local_pack: item.in_local_pack !== undefined ? item.in_local_pack : 0,
+            is_unclaimed: item.is_unclaimed !== undefined ? item.is_unclaimed : 0,
             latitude: item.latitude !== undefined && item.latitude !== null ? item.latitude : (item.lat !== undefined && item.lat !== null ? item.lat : null),
             longitude: item.longitude !== undefined && item.longitude !== null ? item.longitude : (item.lng !== undefined && item.lng !== null ? item.lng : null),
             lat: item.lat !== undefined && item.lat !== null ? item.lat : (item.latitude !== undefined && item.latitude !== null ? item.latitude : null),
@@ -520,6 +542,9 @@ class Lead {
             phone_e164: item.phone_e164 || existing.phone_e164 || null,
             phone_type: (item.phone_type && item.phone_type !== 'unknown') ? item.phone_type : (existing.phone_type || 'unknown'),
             carrier: item.carrier || existing.carrier || null,
+            maps_rank: item.maps_rank || existing.maps_rank || null,
+            in_local_pack: item.in_local_pack !== undefined ? item.in_local_pack : (existing.in_local_pack || 0),
+            is_unclaimed: item.is_unclaimed !== undefined ? item.is_unclaimed : (existing.is_unclaimed || 0),
             latitude: item.latitude || item.lat || existing.latitude || existing.lat || null,
             longitude: item.longitude || item.lng || existing.longitude || existing.lng || null,
             lat: item.lat || item.latitude || existing.lat || existing.latitude || null,
@@ -547,6 +572,7 @@ class Lead {
       phone_type, carrier, phone_e164, deal_value, sequence_step,
       place_id, google_category, search_keyword, business_status,
       country, timezone, facebook_url, instagram_url,
+      maps_rank, in_local_pack, is_unclaimed,
       latitude, longitude, lat, lng,
       social_profiles, osint_evidence, notes, tags
     } = fields;
@@ -608,6 +634,9 @@ class Lead {
           timezone = COALESCE(?, timezone),
           facebook_url = COALESCE(?, facebook_url),
           instagram_url = COALESCE(?, instagram_url),
+          maps_rank = COALESCE(?, maps_rank),
+          in_local_pack = COALESCE(?, in_local_pack),
+          is_unclaimed = COALESCE(?, is_unclaimed),
           latitude = COALESCE(?, latitude),
           longitude = COALESCE(?, longitude),
           lat = COALESCE(?, lat),
@@ -625,6 +654,9 @@ class Lead {
       phone_type, carrier, phone_e164, deal_value, sequence_step,
       place_id, google_category, search_keyword, business_status,
       country, timezone, fb, ig,
+      maps_rank !== undefined ? maps_rank : null,
+      in_local_pack !== undefined ? in_local_pack : null,
+      is_unclaimed !== undefined ? is_unclaimed : null,
       finalLat, finalLng, finalLat, finalLng,
       social_profiles ? (typeof social_profiles==='string'?social_profiles:JSON.stringify(social_profiles)):null,
       osint_evidence ? (typeof osint_evidence==='string'?osint_evidence:JSON.stringify(osint_evidence)):null,
@@ -876,6 +908,11 @@ class Lead {
     const restaurantCount = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND (lower(category) LIKE '%rest%' OR lower(category) LIKE '%cafe%')").get().count;
     const otherCount = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND lower(category) NOT LIKE '%roof%' AND lower(category) NOT LIKE '%plumb%' AND lower(category) NOT LIKE '%hvac%' AND lower(category) NOT LIKE '%rest%'").get().count;
 
+    // Discovery signals: Local 3-Pack, Outside Local Pack, Unclaimed
+    const inLocalPack = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND in_local_pack = 1").get().count;
+    const outsideLocalPack = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND in_local_pack = 0 AND maps_rank > 3").get().count;
+    const unclaimedListings = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND is_unclaimed = 1").get().count;
+
     return {
       totalLeads,
       discovered,
@@ -886,6 +923,9 @@ class Lead {
       won,
       noWebsite,
       withWebsites,
+      inLocalPack,
+      outsideLocalPack,
+      unclaimedListings,
       verifiedNoWebsite,
       verifiedHasWebsite,
       uncertainCount,

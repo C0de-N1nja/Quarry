@@ -508,6 +508,51 @@ export default function BoardLeadTable({
                   {(stats?.noWebsite || 0).toLocaleString()}
                 </span>
               </PillTab>
+
+              <PillTab
+                variant="gray"
+                isSelected={activeFilter === 'in_local_pack'}
+                onSelect={() => {
+                  if (onFocusTierChange) onFocusTierChange('vault');
+                  if (onContactChannelChange) onContactChannelChange('all');
+                  if (onFilterChange) onFilterChange(activeFilter === 'in_local_pack' ? 'all' : 'in_local_pack');
+                }}
+              >
+                <span>Local 3-Pack</span>
+                <span className="ms-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-mono font-bold bg-amber-500/15 text-amber-500">
+                  {(stats?.inLocalPack || 0).toLocaleString()}
+                </span>
+              </PillTab>
+
+              <PillTab
+                variant="gray"
+                isSelected={activeFilter === 'outside_local_pack'}
+                onSelect={() => {
+                  if (onFocusTierChange) onFocusTierChange('vault');
+                  if (onContactChannelChange) onContactChannelChange('all');
+                  if (onFilterChange) onFilterChange(activeFilter === 'outside_local_pack' ? 'all' : 'outside_local_pack');
+                }}
+              >
+                <span>Rank 4+</span>
+                <span className="ms-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-mono font-bold bg-background-tertiary-default text-text-secondary">
+                  {(stats?.outsideLocalPack || 0).toLocaleString()}
+                </span>
+              </PillTab>
+
+              <PillTab
+                variant="gray"
+                isSelected={activeFilter === 'unclaimed'}
+                onSelect={() => {
+                  if (onFocusTierChange) onFocusTierChange('vault');
+                  if (onContactChannelChange) onContactChannelChange('all');
+                  if (onFilterChange) onFilterChange(activeFilter === 'unclaimed' ? 'all' : 'unclaimed');
+                }}
+              >
+                <span>Unclaimed</span>
+                <span className="ms-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-mono font-bold bg-orange-500/15 text-orange-400">
+                  {(stats?.unclaimedListings || 0).toLocaleString()}
+                </span>
+              </PillTab>
             </PillTabList>
 
             {/* Gold Vault Saved-Filter Chip (BoardUI Chip & Button design) */}
@@ -1093,6 +1138,24 @@ export default function BoardLeadTable({
                             {isNoWebsite && (
                               <Chip variant="bold" color="rose" className="shrink-0 text-[10px] py-0 px-1.5 font-bold">
                                 No website
+                              </Chip>
+                            )}
+
+                            {lead.in_local_pack === 1 && (
+                              <Chip variant="subtle" color="amber" className="shrink-0 text-[10px] py-0 px-1.5 font-medium" title={`Google Maps Rank #${lead.maps_rank || 1} (In top-3 local pack)`}>
+                                Top 3 Pack
+                              </Chip>
+                            )}
+
+                            {lead.maps_rank > 3 && (
+                              <Chip variant="subtle" color="gray" className="shrink-0 text-[10px] py-0 px-1.5 font-mono text-[10px]" title={`Google Maps Rank #${lead.maps_rank}`}>
+                                Rank #{lead.maps_rank}
+                              </Chip>
+                            )}
+
+                            {lead.is_unclaimed === 1 && (
+                              <Chip variant="bold" color="orange" className="shrink-0 text-[10px] py-0 px-1.5 font-bold" title="Unclaimed Google Business Listing">
+                                Unclaimed
                               </Chip>
                             )}
                           </div>
