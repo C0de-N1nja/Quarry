@@ -30,6 +30,7 @@ export default function SettingsModal({ onClose, onOpenOnboarding }) {
     enable_social_recon: 'true'
   });
 
+  const [fetching, setFetching] = useState(true);
   const [loading, setLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
@@ -39,6 +40,7 @@ export default function SettingsModal({ onClose, onOpenOnboarding }) {
   }, []);
 
   const fetchSettings = async () => {
+    setFetching(true);
     try {
       const res = await fetch('/api/settings');
       const data = await res.json();
@@ -47,6 +49,8 @@ export default function SettingsModal({ onClose, onOpenOnboarding }) {
       }
     } catch (err) {
       console.error('Failed to load settings', err);
+    } finally {
+      setFetching(false);
     }
   };
 
@@ -133,7 +137,30 @@ export default function SettingsModal({ onClose, onOpenOnboarding }) {
           </div>
         )}
 
-        {activeTab === 'general' ? (
+        {fetching ? (
+          <div className="space-y-6 animate-pulse select-none">
+            <div className="space-y-2">
+              <div className="h-4 w-40 rounded bg-background-tertiary-default/80 dark:bg-zinc-800" />
+              <div className="h-3 w-72 rounded bg-background-tertiary-default/50 dark:bg-zinc-800/50" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="space-y-1.5">
+                  <div className="h-3 w-20 rounded bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+                  <div className="h-9 w-full rounded-xl bg-background-secondary-default border border-separator-border" />
+                </div>
+              ))}
+            </div>
+            <div className="pt-4 space-y-3">
+              <div className="h-4 w-36 rounded bg-background-tertiary-default/80 dark:bg-zinc-800" />
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-12 w-full rounded-xl bg-background-secondary-default border border-separator-border" />
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : activeTab === 'general' ? (
           <div className="space-y-5">
             {/* Outreach Sender Profile */}
             <div>

@@ -17,6 +17,7 @@ export default function LiveJobsDrawer({
   const [activeJob, setActiveJob] = useState(null);
   const [recentLogs, setRecentLogs] = useState([]);
   const [isAborting, setIsAborting] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('workers'); // 'workers' | 'logs' | 'health'
 
   // Poll active background job and telemetry
@@ -36,7 +37,10 @@ export default function LiveJobsDrawer({
             }
           }
         }
-      } catch (e) {}
+      } catch (e) {
+      } finally {
+        if (isMounted) setIsInitialLoading(false);
+      }
     }
 
     fetchJobStatus();
@@ -115,7 +119,23 @@ export default function LiveJobsDrawer({
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {activeTab === 'workers' && (
               <div className="space-y-4">
-                {activeJob ? (
+                {isInitialLoading ? (
+                  <div className="p-4 rounded-2xl border border-separator-border bg-background-secondary-default/50 space-y-3.5 animate-pulse select-none">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="size-2 rounded-full bg-background-tertiary-default/80 dark:bg-zinc-800" />
+                        <div className="h-3.5 w-36 rounded bg-background-tertiary-default/80 dark:bg-zinc-800" />
+                      </div>
+                      <div className="h-5 w-16 rounded-full bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+                    </div>
+                    <div className="space-y-2 py-1">
+                      <div className="h-3 w-48 rounded bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+                      <div className="h-3 w-40 rounded bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+                      <div className="h-3 w-32 rounded bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+                    </div>
+                    <div className="h-8 w-full rounded-xl bg-background-tertiary-default/70 dark:bg-zinc-800/70" />
+                  </div>
+                ) : activeJob ? (
                   <div className="p-4 rounded-2xl border border-accent-500/30 bg-accent-500/5 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">

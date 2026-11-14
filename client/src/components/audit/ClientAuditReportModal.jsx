@@ -20,10 +20,41 @@ import { cx } from '@/utils/cx';
 export default function ClientAuditReportModal({
   lead,
   audit,
+  isLoading = false,
   settings = {},
   onClose
 }) {
   if (!lead) return null;
+
+  const [internalAudit, setInternalAudit] = React.useState(audit || null);
+  const [fetchingAudit, setFetchingAudit] = React.useState(!audit && Boolean(lead?.id));
+
+  React.useEffect(() => {
+    if (audit) {
+      setInternalAudit(audit);
+      setFetchingAudit(false);
+      return;
+    }
+    if (lead?.id) {
+      let isMounted = true;
+      setFetchingAudit(true);
+      fetch(`/api/leads/${lead.id}/audit`)
+        .then(res => res.json())
+        .then(data => {
+          if (isMounted && data.success && data.audit) {
+            setInternalAudit(data.audit);
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (isMounted) setFetchingAudit(false);
+        });
+      return () => { isMounted = false; };
+    }
+  }, [lead?.id, audit]);
+
+  const activeAudit = internalAudit || audit;
+  const showSkeleton = isLoading || fetchingAudit;
 
   const businessName = lead.business_name || lead.company_name || 'Prospect';
   const city = lead.city || 'Austin';
@@ -33,10 +64,10 @@ export default function ClientAuditReportModal({
   const reviewsCount = lead.reviews_count || 0;
 
   // Audit Metrics
-  const isHttps = Boolean(audit?.ssl_valid ?? (website && website.startsWith('https')));
-  const ttfbMs = audit?.ttfb_ms || audit?.metrics?.ttfb_ms || (audit?.performance_score ? Math.round((100 - audit.performance_score) * 25) : 850);
-  const perfScore = audit?.performance_score || (ttfbMs < 800 ? 88 : ttfbMs < 1600 ? 64 : 42);
-  const isMobileFriendly = Boolean(audit?.mobile_viewport_present ?? audit?.metrics?.isMobileResponsive ?? true);
+  const isHttps = Boolean(activeAudit?.ssl_valid ?? (website && website.startsWith('https')));
+  const ttfbMs = activeAudit?.ttfb_ms || activeAudit?.metrics?.ttfb_ms || (activeAudit?.performance_score ? Math.round((100 - activeAudit.performance_score) * 25) : 850);
+  const perfScore = activeAudit?.performance_score || (ttfbMs < 800 ? 88 : ttfbMs < 1600 ? 64 : 42);
+  const isMobileFriendly = Boolean(activeAudit?.mobile_viewport_present ?? activeAudit?.metrics?.isMobileResponsive ?? true);
   const seconds = (ttfbMs / 1000).toFixed(1);
 
   // Agency Info from settings
@@ -118,8 +149,45 @@ export default function ClientAuditReportModal({
 
       {/* Modal Body: Single Responsive Sheet (Zero double scrollbars) */}
       <ModalBody className="p-4 sm:p-6 flex-1 overflow-y-auto bg-background-tertiary-default">
-        {/* Executive A4 Sheet Container */}
-        <div className="w-full bg-white text-slate-900 rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 space-y-6">
+        {showSkeleton ? (
+          <div className="w-full bg-white text-slate-900 rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 space-y-6 animate-pulse select-none">
+            {/* Header Skeleton */}
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-200 pb-5">
+              <div className="space-y-2">
+                <div className="h-3 w-44 rounded bg-slate-200" />
+                <div className="h-6 w-64 rounded bg-slate-200" />
+                <div className="h-3.5 w-48 rounded bg-slate-100" />
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 w-40 space-y-2">
+                <div className="h-2.5 w-24 rounded bg-slate-200" />
+                <div className="h-5 w-16 rounded bg-slate-200" />
+              </div>
+            </div>
+            {/* Scorecard Skeleton */}
+            <div className="space-y-2.5">
+              <div className="h-3 w-52 rounded bg-slate-200" />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-24 rounded-xl bg-slate-100 border border-slate-200" />
+                ))}
+              </div>
+            </div>
+            {/* Sections Skeleton */}
+            <div className="space-y-3 pt-2">
+              <div className="h-3 w-40 rounded bg-slate-200" />
+              <div className="h-20 rounded-xl bg-slate-100 border border-slate-200" />
+              <div className="h-20 rounded-xl bg-slate-100 border border-slate-200" />
+              <div className="h-20 rounded-xl bg-slate-100 border border-slate-200" />
+            </div>
+            {/* Footer Skeleton */}
+            <div className="border-t border-slate-200 pt-4 flex justify-between items-center">
+              <div className="h-4 w-56 rounded bg-slate-200" />
+              <div className="h-6 w-44 rounded bg-slate-200" />
+            </div>
+          </div>
+        ) : (
+          /* Executive A4 Sheet Container */
+          <div className="w-full bg-white text-slate-900 rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 space-y-6">
           
           {/* Header Grid */}
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-200 pb-5">
@@ -292,8 +360,8 @@ export default function ClientAuditReportModal({
               </span>
             </div>
           </div>
-
         </div>
+      )}
       </ModalBody>
     </Modal>
   );
