@@ -5,6 +5,7 @@ import BoardLeadTable from './boardui/BoardLeadTable';
 
 export default function LeadTable({ 
   leads = [], 
+  isLoading = false,
   activeFilter = 'all', 
   onFilterChange, 
   searchTerm = '', 
@@ -54,6 +55,7 @@ export default function LeadTable({
       <div className="flex w-full flex-col">
         <KanbanBoard
           leads={leads}
+          isLoading={isLoading}
           stats={stats}
           onSelectLead={onOpenLeadDrawer || onSelectLead}
           onRefresh={onRefresh}
@@ -67,6 +69,7 @@ export default function LeadTable({
       <div className="flex w-full flex-col">
         <SplitView
           leads={leads}
+          isLoading={isLoading}
           selectedLead={selectedLead}
           onSelectLead={onSelectLead}
           onRefreshLead={onRefresh}
@@ -84,6 +87,7 @@ export default function LeadTable({
     <div className="flex w-full flex-col">
       <BoardLeadTable
         leads={leads}
+        isLoading={isLoading}
         totalCount={totalCount}
         stats={stats}
         selectedLead={selectedLead}

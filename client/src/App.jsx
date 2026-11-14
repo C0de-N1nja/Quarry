@@ -43,6 +43,7 @@ export default function App() {
   const [pageSize, setPageSize] = useState('50'); // Default to 50 for instantaneous responsiveness
   const [currentPage, setCurrentPage] = useState(1);
   const [totalLeadsCount, setTotalLeadsCount] = useState(0);
+  const [isLoadingLeads, setIsLoadingLeads] = useState(true);
 
   // Debounce search input to guarantee immediate, zero-lag typing
   useEffect(() => {
@@ -203,6 +204,7 @@ export default function App() {
   };
 
   const fetchLeads = async () => {
+    setIsLoadingLeads(true);
     try {
       let url = `/api/leads?status=${activeFilter}&search=${encodeURIComponent(debouncedSearch)}`;
       if (activeNiche && activeNiche !== 'all') {
@@ -252,6 +254,8 @@ export default function App() {
       }
     } catch (err) {
       console.error('Failed to fetch leads', err);
+    } finally {
+      setIsLoadingLeads(false);
     }
   };
 
@@ -534,6 +538,7 @@ export default function App() {
 
         <LeadTable
           leads={leads}
+          isLoading={isLoadingLeads}
           activeFilter={activeFilter}
           onFilterChange={setActiveFilter}
           searchTerm={searchTerm}

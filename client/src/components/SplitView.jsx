@@ -26,8 +26,71 @@ import { Button, ButtonLink } from '@/components/base/buttons/button';
 import { ButtonGroup, ButtonGroupItem } from '@/components/base/buttons/button-group';
 import { Kbd } from '@/components/base/kbd/kbd';
 
+function SplitQueueSkeleton({ index }) {
+  return (
+    <div key={`queue-skeleton-${index}`} className="p-3.5 border-b border-separator-border/60 space-y-2.5 animate-pulse select-none">
+      <div className="flex items-center justify-between gap-2">
+        <div className="h-4 w-1/2 rounded bg-background-tertiary-default/80 dark:bg-zinc-800" />
+        <div className="h-3 w-12 rounded-full bg-background-tertiary-default/50 dark:bg-zinc-800/50" />
+      </div>
+      <div className="h-3 w-3/4 rounded bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+      <div className="flex items-center gap-2 pt-1">
+        <div className="h-4 w-16 rounded-full bg-background-tertiary-default/50 dark:bg-zinc-800/50" />
+        <div className="h-4 w-14 rounded-full bg-background-tertiary-default/50 dark:bg-zinc-800/50" />
+        <div className="h-4 w-16 rounded-full bg-background-tertiary-default/50 dark:bg-zinc-800/50 ml-auto" />
+      </div>
+    </div>
+  );
+}
+
+function SplitDossierSkeleton() {
+  return (
+    <div className="flex-1 flex flex-col p-6 space-y-6 animate-pulse select-none">
+      <div className="space-y-2.5 pb-4 border-b border-separator-border/60">
+        <div className="flex items-center justify-between">
+          <div className="h-7 w-64 rounded-lg bg-background-tertiary-default/80 dark:bg-zinc-800" />
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-24 rounded-lg bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+            <div className="h-8 w-28 rounded-lg bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="h-4 w-28 rounded bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+          <div className="h-4 w-40 rounded bg-background-tertiary-default/50 dark:bg-zinc-800/50" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="p-4 rounded-xl border border-separator-border/60 bg-background-secondary-default/50 space-y-3">
+          <div className="h-4 w-28 rounded bg-background-tertiary-default/80 dark:bg-zinc-800" />
+          <div className="h-4 w-44 rounded bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+          <div className="h-4 w-36 rounded bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+        </div>
+        <div className="p-4 rounded-xl border border-separator-border/60 bg-background-secondary-default/50 space-y-3">
+          <div className="h-4 w-32 rounded bg-background-tertiary-default/80 dark:bg-zinc-800" />
+          <div className="h-4 w-40 rounded bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+          <div className="h-4 w-48 rounded bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+        </div>
+      </div>
+
+      <div className="p-5 rounded-2xl border border-separator-border bg-background-secondary-default/30 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="h-5 w-40 rounded bg-background-tertiary-default/80 dark:bg-zinc-800" />
+          <div className="h-4 w-20 rounded bg-background-tertiary-default/50 dark:bg-zinc-800/50" />
+        </div>
+        <div className="space-y-2 pt-2">
+          <div className="h-3 w-full rounded bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+          <div className="h-3 w-5/6 rounded bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+          <div className="h-3 w-4/6 rounded bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SplitView({
   leads = [],
+  isLoading = false,
   selectedLead,
   onSelectLead,
   onRefreshLead,
@@ -201,7 +264,11 @@ export default function SplitView({
 
         {/* Scrollable List of Lead Cards */}
         <div ref={listRef} className="flex-1 overflow-y-auto divide-y divide-separator-border/60">
-          {leads.length === 0 ? (
+          {isLoading ? (
+            Array.from({ length: 6 }).map((_, i) => (
+              <SplitQueueSkeleton key={`split-skel-${i}`} index={i} />
+            ))
+          ) : leads.length === 0 ? (
             <div className="p-8 text-center text-text-tertiary">
               <RiBuildingLine className="h-8 w-8 mx-auto mb-2 opacity-40 text-text-secondary" />
               <p className="text-body-medium font-medium text-text-secondary">No leads match this view</p>
@@ -349,7 +416,9 @@ export default function SplitView({
           RIGHT PANE: LIVE PROSPECT DOSSIER & 1-CLICK OUTREACH (Col 6 to 12)
       ------------------------------------------------------------- */}
       <div className="lg:col-span-7 xl:col-span-8 flex flex-col bg-background-primary-default rounded-2xl border border-separator-border shadow-xs overflow-hidden">
-        {currentLead ? (
+        {isLoading ? (
+          <SplitDossierSkeleton />
+        ) : currentLead ? (
           <div className="flex-1 flex flex-col overflow-y-auto">
             {/* Dossier Top Bar */}
             <div className="p-4 sm:p-5 border-b border-separator-border bg-background-secondary-default/30">

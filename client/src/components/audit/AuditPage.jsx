@@ -23,6 +23,104 @@ import { Button } from '@/components/base/buttons/button';
 import { Chip } from '@/components/base/badges/chip';
 import { toast } from '@/components/base/toast/toast';
 
+function AuditPageSkeleton({ onBack }) {
+  return (
+    <div className="min-h-screen bg-background-primary-default text-text-primary flex flex-col font-sans select-none animate-pulse">
+      {/* Top Header Bar Skeleton */}
+      <header className="sticky top-0 z-40 bg-background-primary-default/90 backdrop-blur-md border-b border-separator-border px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="secondary"
+              size="small"
+              onClick={onBack}
+              leadingIcon={RiArrowLeftLine}
+            >
+              Back to Dashboard
+            </Button>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-52 rounded-lg bg-background-tertiary-default/80 dark:bg-zinc-800" />
+                <div className="h-5 w-28 rounded-full bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+              </div>
+              <div className="h-3.5 w-40 rounded bg-background-tertiary-default/50 dark:bg-zinc-800/50" />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-24 rounded-lg bg-background-tertiary-default/80 dark:bg-zinc-800" />
+            <div className="h-8 w-28 rounded-lg bg-background-tertiary-default/80 dark:bg-zinc-800" />
+            <div className="h-8 w-24 rounded-lg bg-background-tertiary-default/80 dark:bg-zinc-800" />
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content Area Skeleton */}
+      <main className="max-w-7xl w-full mx-auto p-6 space-y-6 flex-1">
+        {/* Top 4 Lighthouse Metric Cards Skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={`metric-skeleton-${i}`}
+              className="p-5 rounded-2xl bg-background-secondary-default border border-separator-border shadow-xs space-y-3.5"
+            >
+              <div className="flex items-center justify-between">
+                <div className="h-4 w-24 rounded bg-background-tertiary-default/80 dark:bg-zinc-800" />
+                <div className="h-4 w-14 rounded-full bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <div className="h-10 w-16 rounded-lg bg-background-tertiary-default/90 dark:bg-zinc-800/90" />
+                <div className="h-3 w-8 rounded bg-background-tertiary-default/50 dark:bg-zinc-800/50" />
+              </div>
+              <div className="pt-2 border-t border-separator-border/60 flex justify-between">
+                <div className="h-3 w-16 rounded bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+                <div className="h-3 w-12 rounded bg-background-tertiary-default/80 dark:bg-zinc-800" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Core Web Vitals & Loading Speed Skeleton */}
+        <div className="p-6 rounded-2xl bg-background-secondary-default border border-separator-border shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="h-5 w-48 rounded bg-background-tertiary-default/80 dark:bg-zinc-800" />
+            <div className="h-4 w-28 rounded-full bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+            {Array.from({ length: 3 }).map((_, j) => (
+              <div key={`vital-skeleton-${j}`} className="p-4 rounded-xl bg-background-primary-default border border-separator-border/60 space-y-2">
+                <div className="h-3.5 w-20 rounded bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+                <div className="h-7 w-24 rounded bg-background-tertiary-default/80 dark:bg-zinc-800" />
+                <div className="h-2 w-full rounded-full bg-background-tertiary-default/50 dark:bg-zinc-800/50" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Issues & Flaws Card Skeleton */}
+        <div className="p-6 rounded-2xl bg-background-secondary-default border border-separator-border shadow-xs space-y-4">
+          <div className="flex items-center gap-3 border-b border-separator-border/60 pb-3">
+            <div className="h-6 w-28 rounded-lg bg-background-tertiary-default/80 dark:bg-zinc-800" />
+            <div className="h-6 w-28 rounded-lg bg-background-tertiary-default/50 dark:bg-zinc-800/50" />
+            <div className="h-6 w-28 rounded-lg bg-background-tertiary-default/50 dark:bg-zinc-800/50" />
+          </div>
+          <div className="space-y-3 pt-2">
+            {Array.from({ length: 4 }).map((_, k) => (
+              <div key={`flaw-skeleton-${k}`} className="p-4 rounded-xl bg-background-primary-default border border-separator-border/60 flex items-center justify-between gap-4">
+                <div className="space-y-2 flex-1">
+                  <div className="h-4 w-1/2 rounded bg-background-tertiary-default/80 dark:bg-zinc-800" />
+                  <div className="h-3 w-3/4 rounded bg-background-tertiary-default/50 dark:bg-zinc-800/50" />
+                </div>
+                <div className="h-6 w-20 rounded-full bg-background-tertiary-default/60 dark:bg-zinc-800/60 shrink-0" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
 export default function AuditPage({ leadId, onBack, onOpenPitch }) {
   const [lead, setLead] = useState(null);
   const [audit, setAudit] = useState(null);
@@ -98,14 +196,7 @@ export default function AuditPage({ leadId, onBack, onOpenPitch }) {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background-primary-default text-text-primary flex flex-col items-center justify-center gap-4">
-        <Loader2 className="h-8 w-8 animate-spin text-accent-500" />
-        <div className="text-sm font-medium text-text-secondary">
-          Initializing Website Health & Core Web Vitals Auditor...
-        </div>
-      </div>
-    );
+    return <AuditPageSkeleton onBack={onBack} />;
   }
 
   if (error && !audit) {

@@ -225,8 +225,65 @@ function normalizeNiche(niche = '') {
     .join(' ');
 }
 
+function TableSkeletonRow({ index }) {
+  return (
+    <TableRow
+      key={`skeleton-${index}`}
+      className="min-h-[60px] h-[64px] border-b border-separator-border/40 select-none animate-pulse"
+    >
+      {/* Checkbox Skeleton */}
+      <TableCell className="w-11 px-2 py-3 text-center">
+        <div className="size-4 mx-auto rounded bg-background-tertiary-default/80 dark:bg-zinc-800" />
+      </TableCell>
+
+      {/* Company Column Skeleton (Sticky Left) */}
+      <TableCell className="w-[320px] px-4 py-2 sticky left-0 z-10 bg-background-primary-default border-r border-separator-border/60">
+        <div className="flex items-center gap-2.5">
+          <div className="size-8 rounded-full bg-background-tertiary-default/80 dark:bg-zinc-800 shrink-0" />
+          <div className="flex flex-col gap-1.5 w-full max-w-[200px]">
+            <div className="h-4 w-3/4 rounded bg-background-tertiary-default/80 dark:bg-zinc-800" />
+            <div className="flex items-center gap-2">
+              <div className="h-2.5 w-1/3 rounded bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+              <div className="h-2.5 w-1/4 rounded bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+            </div>
+          </div>
+        </div>
+      </TableCell>
+
+      {/* Contacts Column Skeleton */}
+      <TableCell className="w-[320px] px-4 py-2">
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            <div className="h-3.5 w-28 rounded bg-background-tertiary-default/80 dark:bg-zinc-800" />
+            <div className="h-4 w-12 rounded-full bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="size-4 rounded-full bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+            <div className="size-4 rounded-full bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+            <div className="size-4 rounded-full bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+          </div>
+        </div>
+      </TableCell>
+
+      {/* Stage Column Skeleton */}
+      <TableCell className="w-[140px] px-4 py-2">
+        <div className="h-6 w-24 rounded-full bg-background-tertiary-default/80 dark:bg-zinc-800" />
+      </TableCell>
+
+      {/* Next Step Column Skeleton (Sticky Right) */}
+      <TableCell className="w-[170px] px-3 py-2 text-right sticky right-0 z-10 bg-background-primary-default border-l border-separator-border/60">
+        <div className="flex items-center justify-end gap-1.5">
+          <div className="h-7 w-24 rounded-lg bg-background-tertiary-default/80 dark:bg-zinc-800" />
+          <div className="size-8 rounded-lg bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+}
+
 export default function BoardLeadTable({
   leads = [],
+  isLoading = false,
   totalCount = 0,
   stats,
   selectedLead,
@@ -1177,7 +1234,7 @@ export default function BoardLeadTable({
             </TableHeader>
 
             <TableBody
-              renderEmptyState={() => (
+              renderEmptyState={() => !isLoading ? (
                 <div className="flex h-56 flex-col items-center justify-center gap-3 text-center">
                   <div className="flex size-12 items-center justify-center rounded-2xl bg-background-secondary-default text-text-tertiary border border-separator-border">
                     <RiGlobalLine className="size-6" />
@@ -1200,9 +1257,14 @@ export default function BoardLeadTable({
                     </Button>
                   )}
                 </div>
-              )}
+              ) : null}
             >
-              {displayedLeads.map((lead, index) => {
+              {isLoading ? (
+                Array.from({ length: 8 }).map((_, i) => (
+                  <TableSkeletonRow key={`skeleton-row-${i}`} index={i} />
+                ))
+              ) : (
+                displayedLeads.map((lead, index) => {
                 const isSelected = selectedLeadIds.has(lead.id) || isAllMatchingSelected;
                 const isCurrentlyActive = selectedLead?.id === lead.id;
                 const isFocused = focusedIndex === index;
@@ -1606,7 +1668,8 @@ export default function BoardLeadTable({
                     </TableCell>
                   </TableRow>
                 );
-              })}
+              })
+            )}
             </TableBody>
           </Table>
         </div>

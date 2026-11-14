@@ -1914,7 +1914,9 @@ export default function LeadDossierPage({
                     Owner
                   </span>
                   <div className="flex items-center gap-2 min-w-0 justify-end text-right">
-                    {verifiedOwner ? (
+                    {loading ? (
+                      <div className="h-4 w-28 rounded bg-background-tertiary-default/80 dark:bg-zinc-800 animate-pulse" />
+                    ) : verifiedOwner ? (
                       <div className="truncate">
                         <span className="font-bold text-text-primary block truncate">{verifiedOwner}</span>
                         <span className="text-[10px] text-text-secondary block truncate">
@@ -1993,7 +1995,9 @@ export default function LeadDossierPage({
                     Email
                   </span>
                   <div className="flex items-center gap-1.5 min-w-0 justify-end">
-                    {primaryEmail ? (
+                    {loading ? (
+                      <div className="h-4 w-32 rounded bg-background-tertiary-default/80 dark:bg-zinc-800 animate-pulse" />
+                    ) : primaryEmail ? (
                       <>
                         <span className="font-bold font-mono text-text-primary text-xs truncate max-w-[170px]" title={primaryEmail}>
                           {primaryEmail}

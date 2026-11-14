@@ -22,7 +22,29 @@ const STAGES = [
   { id: 'won', label: '5. Deal Won', dotColor: 'green', chipColor: 'lime', match: ['won'] }
 ];
 
-export default function KanbanBoard({ leads = [], stats, onSelectLead, onStageChange, onRefresh }) {
+function KanbanTicketSkeleton({ index }) {
+  return (
+    <div
+      key={`kanban-skeleton-${index}`}
+      className="p-3.5 rounded-xl border border-separator-border bg-background-primary-default shadow-xs space-y-2.5 animate-pulse select-none"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div className="h-4 w-3/4 rounded bg-background-tertiary-default/80 dark:bg-zinc-800" />
+        <div className="size-4 rounded-full bg-background-tertiary-default/50 dark:bg-zinc-800/50" />
+      </div>
+      <div className="flex items-center gap-1.5">
+        <div className="h-3 w-16 rounded bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+        <div className="h-3 w-12 rounded bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+      </div>
+      <div className="pt-2 border-t border-separator-border/40 flex items-center justify-between">
+        <div className="h-3 w-20 rounded bg-background-tertiary-default/50 dark:bg-zinc-800/50" />
+        <div className="h-5 w-14 rounded-full bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+      </div>
+    </div>
+  );
+}
+
+export default function KanbanBoard({ leads = [], isLoading = false, stats, onSelectLead, onStageChange, onRefresh }) {
   const [boardSearch, setBoardSearch] = useState('');
   const [expandedStages, setExpandedStages] = useState(new Set());
   const [dragOverStage, setDragOverStage] = useState(null);
@@ -174,29 +196,35 @@ export default function KanbanBoard({ leads = [], stats, onSelectLead, onStageCh
 
               {/* Cards Container */}
               <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5">
-                <AnimatePresence>
-                  {stageLeads.length === 0 ? (
-                    <motion.div 
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="h-32 flex flex-col items-center justify-center text-caption-1-medium text-text-tertiary border border-dashed border-separator-border rounded-xl p-2 text-center"
-                    >
-                      <RiKanbanView className="size-5 mb-1.5 opacity-40 text-text-secondary" />
-                      <span>No leads in stage</span>
-                    </motion.div>
-                  ) : (
-                    visibleLeads.map((lead) => (
-                      <BoardTicket
-                        key={lead.id}
-                        lead={lead}
-                        onSelect={onSelectLead}
-                        onAdvance={handleQuickAdvance}
-                        onSaveDealValue={handleSaveDealValue}
-                      />
-                    ))
-                  )}
-                </AnimatePresence>
+                {isLoading ? (
+                  Array.from({ length: 3 }).map((_, idx) => (
+                    <KanbanTicketSkeleton key={`skeleton-ticket-${stage.id}-${idx}`} index={idx} />
+                  ))
+                ) : (
+                  <AnimatePresence>
+                    {stageLeads.length === 0 ? (
+                      <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="h-32 flex flex-col items-center justify-center text-caption-1-medium text-text-tertiary border border-dashed border-separator-border rounded-xl p-2 text-center"
+                      >
+                        <RiKanbanView className="size-5 mb-1.5 opacity-40 text-text-secondary" />
+                        <span>No leads in stage</span>
+                      </motion.div>
+                    ) : (
+                      visibleLeads.map((lead) => (
+                        <BoardTicket
+                          key={lead.id}
+                          lead={lead}
+                          onSelect={onSelectLead}
+                          onAdvance={handleQuickAdvance}
+                          onSaveDealValue={handleSaveDealValue}
+                        />
+                      ))
+                    )}
+                  </AnimatePresence>
+                )}
 
                 {/* Show More toggle if stage has more than 30 cards */}
                 {stageLeads.length > 30 && (

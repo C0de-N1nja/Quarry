@@ -19,6 +19,28 @@ export default function SummaryStrip({
   onFocusTierChange,
   totalCount
 }) {
+  if (!stats) {
+    return (
+      <div className="w-full mb-3 rounded-2xl border border-separator-border bg-background-secondary-default p-2 sm:p-2.5 shadow-xs select-none animate-pulse">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 w-full">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={`summary-skeleton-${i}`}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-separator-border/70 bg-background-primary-default/60"
+            >
+              <div className="size-8 rounded-lg bg-background-tertiary-default/80 dark:bg-zinc-800 shrink-0" />
+              <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                <div className="h-3 w-16 rounded bg-background-tertiary-default/60 dark:bg-zinc-800/60" />
+                <div className="h-5 w-12 rounded bg-background-tertiary-default/90 dark:bg-zinc-800/90" />
+              </div>
+              <div className="h-4 w-12 rounded-full bg-background-tertiary-default/40 dark:bg-zinc-800/40 shrink-0 hidden sm:block" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   const totalLeads = stats?.totalLeads ?? totalCount ?? 0;
   const noWebsite = stats?.noWebsite ?? 0;
   const readyToPitch = stats?.enriched ?? 0;
