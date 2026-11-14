@@ -23,6 +23,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Robots.txt explicit allow-all for web inspection and tunnels
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain');
+  res.send('User-agent: *\nAllow: /\n');
+});
+
 // Core REST API Routes
 app.use('/api/leads', leadsRouter);
 app.use('/api/search', searchRouter);
