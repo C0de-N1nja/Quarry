@@ -147,7 +147,7 @@ export default function KanbanBoard({ leads = [], isLoading = false, stats, onSe
       </div>
 
       {/* 5-Column Kanban Board with comfortable column widths and drag-and-drop */}
-      <div className="flex gap-4 overflow-x-auto pb-4 items-start no-scrollbar">
+      <div className="flex gap-3.5 overflow-x-auto pb-4 items-start">
         {STAGES.map((stage) => {
           const stageLeads = getLeadsForStage(stage);
           const stageValue = stageLeads.reduce((acc, l) => acc + (Number(l.deal_value) || 0), 0);
@@ -172,7 +172,7 @@ export default function KanbanBoard({ leads = [], isLoading = false, stats, onSe
                 const leadId = e.dataTransfer.getData('text/plain');
                 if (leadId) handleStageDrop(leadId, stage.id);
               }}
-              className={`min-w-[280px] sm:min-w-[300px] flex-1 max-w-[360px] bg-background-secondary-default/40 rounded-2xl border transition-all flex flex-col min-h-[580px] max-h-[80vh] shadow-2xs overflow-hidden ${
+              className={`min-w-[240px] sm:min-w-[260px] xl:min-w-[270px] flex-1 max-w-[340px] bg-background-secondary-default/40 rounded-2xl border transition-all flex flex-col min-h-[580px] max-h-[80vh] shadow-2xs overflow-hidden ${
                 isTargeted ? 'border-accent-500 ring-2 ring-accent-500/30 bg-accent-500/5' : 'border-separator-border'
               }`}
             >

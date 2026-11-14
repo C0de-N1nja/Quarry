@@ -242,7 +242,9 @@ export default function App() {
         url += '&tier=gold';
       }
 
-      if (pageSize === 'all') {
+      if (viewMode === 'kanban') {
+        url += '&limit=500';
+      } else if (pageSize === 'all') {
         url += '&limit=200';
       } else {
         const lim = parseInt(pageSize, 10) || 50;
@@ -290,7 +292,7 @@ export default function App() {
 
   useEffect(() => {
     fetchLeads();
-  }, [activeFilter, debouncedSearch, activeNiche, activeCountry, activeCity, focusTier, contactChannel, ratingFilter, reviewsFilter, noteFilter, pageSize, currentPage]);
+  }, [activeFilter, debouncedSearch, activeNiche, activeCountry, activeCity, focusTier, contactChannel, ratingFilter, reviewsFilter, noteFilter, pageSize, currentPage, viewMode]);
 
   useEffect(() => {
     fetchStats();

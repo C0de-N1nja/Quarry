@@ -21,9 +21,9 @@ import { toast } from '@/components/base/toast/toast';
 export default function SettingsModal({ onClose, onOpenOnboarding }) {
   const [activeTab, setActiveTab] = useState('general'); // 'general' or 'osint'
   const [settings, setSettings] = useState({
-    sender_name: 'Rehan',
+    sender_name: 'Muhammad Rehan',
     sender_email: '',
-    my_portfolio: 'https://github.com',
+    my_portfolio: '',
     crawler_concurrency: '4',
     enable_mx_verification: 'true',
     enable_whatsapp_detection: 'true',
@@ -247,7 +247,7 @@ export default function SettingsModal({ onClose, onOpenOnboarding }) {
                     rows={3}
                     value={settings.outreach_signature || ''}
                     onChange={(e) => setSettings({ ...settings, outreach_signature: e.target.value })}
-                    placeholder="Best regards,&#10;Muhammad Rehan | Founder, Apex Digital&#10;cal.com/rehan"
+                    placeholder="Best regards,&#10;Muhammad Rehan | Freelance Web Consultant&#10;https://yourportfolio.com"
                     className="w-full px-3 py-2 rounded-xl bg-background-secondary-default border border-separator-border text-text-primary font-mono text-[11px] focus:border-text-primary focus:outline-none resize-none transition-colors leading-relaxed"
                   />
                 </div>

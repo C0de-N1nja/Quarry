@@ -14,6 +14,52 @@ export const PITCH_ANGLES = [
   { id: 'reputation_gap', label: 'Reputation to Revenue', desc: 'Aligns their 5-star customer proof with a premium web presence' }
 ];
 
+export function inferCountry(phone = '', countryCode = '') {
+  const code = (countryCode || '').toUpperCase().trim();
+  const phoneDigits = (phone || '').replace(/[^\d+]/g, '');
+
+  const COUNTRY_MAP = {
+    AU: 'Australia',
+    US: 'United States',
+    GB: 'United Kingdom',
+    UK: 'United Kingdom',
+    CA: 'Canada',
+    NZ: 'New Zealand',
+    IE: 'Ireland',
+    ZA: 'South Africa',
+    AE: 'United Arab Emirates',
+    PK: 'Pakistan',
+    IN: 'India',
+    SG: 'Singapore',
+    DE: 'Germany',
+    FR: 'France'
+  };
+
+  if (COUNTRY_MAP[code]) return COUNTRY_MAP[code];
+  if (code.length > 2) return code;
+
+  if (phoneDigits.startsWith('+61') || phoneDigits.startsWith('61')) return 'Australia';
+  if (phoneDigits.startsWith('+44') || phoneDigits.startsWith('44')) return 'United Kingdom';
+  if (phoneDigits.startsWith('+64') || phoneDigits.startsWith('64')) return 'New Zealand';
+  if (phoneDigits.startsWith('+971') || phoneDigits.startsWith('971')) return 'United Arab Emirates';
+  if (phoneDigits.startsWith('+92') || phoneDigits.startsWith('92')) return 'Pakistan';
+  if (phoneDigits.startsWith('+91') || phoneDigits.startsWith('91')) return 'India';
+  if (phoneDigits.startsWith('+1') || phoneDigits.startsWith('1')) return 'United States';
+
+  return null;
+}
+
+export function formatLocation(lead) {
+  if (!lead) return 'your area';
+  const inferred = inferCountry(lead.phone, lead.country);
+  if (lead.city && inferred && !lead.city.toLowerCase().includes(inferred.toLowerCase())) {
+    return `${lead.city}, ${inferred}`;
+  }
+  if (lead.city) return lead.city;
+  if (inferred) return inferred;
+  return 'your area';
+}
+
 export function determineOptimalAngle(lead, audit) {
   const isNoWebsite = lead.has_no_website === 1 || !lead.website || lead.website === 'None' || 
     /facebook\.com|instagram\.com|linkedin\.com|linktr\.ee/i.test(lead.website || '');
@@ -40,9 +86,10 @@ export function generatePitchDraft({
   angle = 'auto'
 }) {
   const businessName = lead.business_name || lead.company_name || 'your business';
-  const city = lead.city || 'your area';
-  const rating = lead.rating ? `${lead.rating}/5.0` : null;
-  const reviewsCount = lead.reviews_count || 0;
+  const location = formatLocation(lead);
+  const hasReviews = Number(lead.rating) > 0 && Number(lead.reviews_count) > 0;
+  const rating = hasReviews ? `${lead.rating}/5.0` : null;
+  const reviewsCount = Number(lead.reviews_count) || 0;
   const senderName = settings.sender_name || 'Muhammad Rehan';
   const agencyName = settings.agency_name || '';
   const bookingLink = settings.my_portfolio || '';
@@ -57,8 +104,8 @@ export function generatePitchDraft({
     case 'no_website': {
       subject = `Web presence inquiry for ${businessName}`;
       const reputationProof = rating && reviewsCount > 0
-        ? `I noticed your verified ${rating} Google rating with ${reviewsCount.toLocaleString()} customer reviews in ${city} — impressive track record.`
-        : `I was researching reputable service businesses in ${city} and came across ${businessName}.`;
+        ? `I noticed your verified ${rating} Google rating with ${reviewsCount.toLocaleString()} customer reviews in ${location} — impressive track record.`
+        : `I was researching reputable service businesses in ${location} and came across ${businessName}.`;
       
       body = `Hi ${businessName} team,
 
@@ -83,7 +130,7 @@ ${signature}`;
       
       body = `Hi ${businessName} team,
 
-I came across ${businessName} while reviewing top-rated service providers in ${city}.
+I came across ${businessName} while reviewing top-rated service providers in ${location}.
 
 I noticed your website takes approximately ${seconds} seconds to respond on mobile data connections. Over 50% of mobile searchers navigate back if a service page takes longer than 2 seconds to load.
 
@@ -116,13 +163,13 @@ ${signature}`;
     default: {
       const proofText = rating && reviewsCount > 0 
         ? `${rating} rating and ${reviewsCount.toLocaleString()} verified customer reviews` 
-        : `established reputation in ${city}`;
+        : `established reputation in ${location}`;
 
       subject = `Aligning ${businessName}'s web presence with your verified reputation`;
       
       body = `Hi ${businessName} team,
 
-I was reviewing your verified profile on Google and was impressed by your ${proofText} in ${city}.
+I was reviewing your verified profile on Google and was impressed by your ${proofText} in ${location}.
 
 Your customer satisfaction record is outstanding, but your current online presence does not fully reflect that premium standard to first-time searchers.
 

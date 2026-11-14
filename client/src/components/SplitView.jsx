@@ -25,6 +25,7 @@ import { StatusDot } from '@/components/base/badges/status-dot';
 import { Button, ButtonLink } from '@/components/base/buttons/button';
 import { ButtonGroup, ButtonGroupItem } from '@/components/base/buttons/button-group';
 import { Kbd } from '@/components/base/kbd/kbd';
+import { formatLocation } from '@/utils/pitchGenerator';
 
 function SplitQueueSkeleton({ index }) {
   return (
@@ -206,22 +207,24 @@ export default function SplitView({
     const digits = phone.replace(/[^\d]/g, '');
     if (!digits) return '#';
     const cleanDigits = digits.length === 10 ? `1${digits}` : digits;
+    const location = formatLocation(lead);
     const reputationNote = (Number(lead.rating) > 0 && Number(lead.reviews_count) > 0)
       ? `noticed your ${lead.rating} rating on Google Maps`
       : `came across ${lead.business_name || 'your business'} on Google Maps`;
     const msg = encodeURIComponent(
-      `Hi ${lead.business_name || 'there'}! I ${reputationNote} in ${lead.city || 'your area'}, but saw you don't have an active website yet. We created a free modern website concept for your business. Would you like me to send you the preview link?`
+      `Hi ${lead.business_name || 'there'}! I ${reputationNote} in ${location}, but saw you don't have an active website yet. We created a free modern website concept for your business. Would you like me to send you the preview link?`
     );
     return `https://wa.me/${cleanDigits}?text=${msg}`;
   };
 
   const getPitchText = (lead) => {
     if (!lead) return '';
+    const location = formatLocation(lead);
     const hasReviews = Number(lead.rating) > 0 && Number(lead.reviews_count) > 0;
     const proofText = hasReviews
       ? `saw your established reputation (${lead.rating} / 5.0 with ${lead.reviews_count} verified reviews)`
       : `came across your local service listing on Google`;
-    return `Hi ${lead.business_name} Team,\n\nI was researching businesses in ${lead.city || 'your area'} and ${proofText}.\n\nI noticed you don't currently have a dedicated commercial website, meaning you could be losing high-value local customers searching Google directly to competitors.\n\nWe put together a clean, mobile-optimized website prototype designed specifically for ${lead.business_name}. Would you be open to checking out a quick 30-second live preview?`;
+    return `Hi ${lead.business_name} Team,\n\nI was researching businesses in ${location} and ${proofText}.\n\nI noticed you don't currently have a dedicated commercial website, meaning you could be losing high-value local customers searching Google directly to competitors.\n\nWe put together a clean, mobile-optimized website prototype designed specifically for ${lead.business_name}. Would you be open to checking out a quick 30-second live preview?`;
   };
 
   // Copy quick pitch text

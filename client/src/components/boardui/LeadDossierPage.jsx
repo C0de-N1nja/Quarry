@@ -38,7 +38,7 @@ import { Avatar } from '@/components/base/avatar/avatar';
 import { PillTabList, PillTab } from '@/components/base/tabs/pill-tab';
 import { toast } from '@/components/base/toast/toast';
 import { cx } from '@/utils/cx';
-import { PITCH_ANGLES, generatePitchDraft, determineOptimalAngle } from '@/utils/pitchGenerator';
+import { PITCH_ANGLES, generatePitchDraft, determineOptimalAngle, formatLocation, inferCountry } from '@/utils/pitchGenerator';
 import ClientAuditReportModal from '../audit/ClientAuditReportModal';
 
 // Friendly Step-by-Step Research Stages
@@ -806,7 +806,7 @@ export default function LeadDossierPage({
   const primaryPhone = contact?.phone || currentLead.phone;
   const primaryEmail = contact?.email || currentLead.email;
   const hasWhatsApp = Boolean(contact?.whatsapp || currentLead.whatsapp || (parsedOsint && parsedOsint.whatsapp_intel && parsedOsint.whatsapp_intel.is_whatsapp_registered));
-  const locationString = currentLead.address || [currentLead.city, currentLead.country].filter(Boolean).join(', ') || '';
+  const locationString = currentLead.address || formatLocation(currentLead);
   const mapsUrl = currentLead.maps_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
     [currentLead.business_name, locationString].filter(Boolean).join(' ')
   )}`;
@@ -934,10 +934,10 @@ export default function LeadDossierPage({
                   </Chip>
                 </div>
 
-                {/* Subtitle: Niche • City • Rating (reviews) */}
+                {/* Subtitle: Niche • Location • Rating (reviews) */}
                 <div className="flex items-center gap-2 text-xs text-text-secondary mt-0.5 flex-wrap">
                   <span className="font-medium text-text-primary">{currentLead.category || 'General Services'}</span>
-                  {currentLead.city && <span>• {currentLead.city}</span>}
+                  <span>• {formatLocation(currentLead)}</span>
                   {currentLead.rating > 0 ? (
                     <span className="inline-flex items-center gap-1 font-mono text-text-tertiary">
                       <RiStarFill className="size-3 text-amber-500" />
@@ -2105,7 +2105,7 @@ export default function LeadDossierPage({
                   <iframe
                     title="Google Maps Location"
                     src={`https://maps.google.com/maps?q=${encodeURIComponent(
-                      currentLead.address || [currentLead.business_name, currentLead.city, currentLead.country].filter(Boolean).join(', ')
+                      currentLead.address || [currentLead.business_name, formatLocation(currentLead)].filter(Boolean).join(', ')
                     )}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
                     className="w-full h-full border-0 filter contrast-[0.95] dark:invert-[0.9] dark:hue-rotate-180"
                     loading="lazy"
@@ -2124,7 +2124,7 @@ export default function LeadDossierPage({
                 <div>
                   <span className="text-[10px] uppercase font-mono text-text-tertiary block">Commercial Address</span>
                   <span className="text-xs font-bold text-text-primary block mt-0.5">
-                    {currentLead.address || [currentLead.city, currentLead.country].filter(Boolean).join(', ') || 'Address not listed'}
+                    {currentLead.address || formatLocation(currentLead)}
                   </span>
                 </div>
 
