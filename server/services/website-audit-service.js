@@ -297,6 +297,8 @@ class WebsiteAuditService {
 
     const businessName = lead?.business_name || 'your business';
     const contactName = lead?.contact_name || 'there';
+    const Setting = require('../models/Setting');
+    const senderName = Setting.get('sender_name') || 'Web Consultant';
 
     const pitchDraft = {
       subject: `Quick website observation for ${businessName}`,
@@ -312,7 +314,7 @@ We put together an ultra-fast, modern interactive prototype for ${businessName} 
 Would you be open to a quick 5-minute walk-through this week?
 
 Best regards,
-Rehan`
+${senderName}`
     };
 
     const auditData = {

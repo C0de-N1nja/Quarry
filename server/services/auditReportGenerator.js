@@ -25,9 +25,9 @@ class AuditReportGenerator {
     const perfScore = audit.performance_score || (ttfbMs < 800 ? 88 : ttfbMs < 1600 ? 64 : 42);
     const isMobileFriendly = Boolean(audit.mobile_viewport_present ?? (audit.metrics && audit.metrics.isMobileResponsive) ?? true);
 
-    const agencyName = settings.agency_name || 'Apex Web Studio';
-    const consultantName = settings.sender_name || 'Muhammad Rehan';
-    const email = settings.sender_email || 'contact@muhammadrehan.me';
+    const agencyName = settings.agency_name || 'Web Studio';
+    const consultantName = settings.sender_name || 'Consultant';
+    const email = settings.sender_email || 'contact@domain.com';
     const portfolioUrl = settings.my_portfolio || '';
 
     return {

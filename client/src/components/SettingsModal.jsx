@@ -21,7 +21,7 @@ import { toast } from '@/components/base/toast/toast';
 export default function SettingsModal({ onClose, onOpenOnboarding }) {
   const [activeTab, setActiveTab] = useState('general'); // 'general' or 'osint'
   const [settings, setSettings] = useState({
-    sender_name: 'Muhammad Rehan',
+    sender_name: '',
     sender_email: '',
     my_portfolio: '',
     crawler_concurrency: '4',

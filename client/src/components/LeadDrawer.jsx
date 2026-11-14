@@ -60,19 +60,19 @@ import { toast } from '@/components/base/toast/toast';
 const PITCH_TEMPLATES = {
   no_website_showcase: {
     getSubject: (l) => `Question regarding ${l.business_name || 'your business'} in ${l.city || 'your area'}`,
-    getBody: (l, owner) => `Hi ${owner || 'there'},\n\nI was looking up top-rated ${l.category || 'service businesses'} in ${l.city || 'your area'} and came across ${l.business_name} on Google Maps.\n\nI noticed you don't currently have an official website listed on your profile. Most local customers search on smartphones before making a call, and without an official landing page, a lot of potential booking volume ends up going to nearby competitors.\n\nAre you taking on new clients this month? I'd be happy to share a quick mobile blueprint of how to turn those Google searches directly into phone calls.\n\nBest regards,\nRehan`
+    getBody: (l, owner) => `Hi ${owner || 'there'},\n\nI was looking up top-rated ${l.category || 'service businesses'} in ${l.city || 'your area'} and came across ${l.business_name} on Google Maps.\n\nI noticed you don't currently have an official website listed on your profile. Most local customers search on smartphones before making a call, and without an official landing page, a lot of potential booking volume ends up going to nearby competitors.\n\nAre you taking on new clients this month? I'd be happy to share a quick mobile blueprint of how to turn those Google searches directly into phone calls.\n\nBest regards,\n[Your Name]`
   },
   speed_mobile: {
     getSubject: (l) => `Quick observation regarding ${l.business_name}'s website loading speed`,
-    getBody: (l, owner) => `Hi ${owner || 'there'},\n\nI recently came across ${l.business_name} and took a look at your website (${l.website || ''}).\n\nI ran a quick mobile speed test and noticed it takes several seconds for the page to render on phones. Google studies show that over 53% of mobile visitors abandon a site if it takes longer than 3 seconds to load.\n\nWith a few targeted asset optimizations, you could easily improve your mobile conversion rate. Would you be open to a quick 2-minute breakdown?\n\nBest regards,\nRehan`
+    getBody: (l, owner) => `Hi ${owner || 'there'},\n\nI recently came across ${l.business_name} and took a look at your website (${l.website || ''}).\n\nI ran a quick mobile speed test and noticed it takes several seconds for the page to render on phones. Google studies show that over 53% of mobile visitors abandon a site if it takes longer than 3 seconds to load.\n\nWith a few targeted asset optimizations, you could easily improve your mobile conversion rate. Would you be open to a quick 2-minute breakdown?\n\nBest regards,\n[Your Name]`
   },
   security_form_leak: {
     getSubject: (l) => `Website security & lead capture for ${l.business_name}`,
-    getBody: (l, owner) => `Hi ${owner || 'there'},\n\nI was reviewing ${l.business_name}'s website (${l.website || ''}) and noticed a few missing modern security headers and unoptimized contact form handlers that may trigger browser warnings for visitors.\n\nUpgrading these headers and adding an instant inquiry response flow would ensure every visitor feels safe reaching out.\n\nWould you be open to taking a look at the quick findings?\n\nBest regards,\nRehan`
+    getBody: (l, owner) => `Hi ${owner || 'there'},\n\nI was reviewing ${l.business_name}'s website (${l.website || ''}) and noticed a few missing modern security headers and unoptimized contact form handlers that may trigger browser warnings for visitors.\n\nUpgrading these headers and adding an instant inquiry response flow would ensure every visitor feels safe reaching out.\n\nWould you be open to taking a look at the quick findings?\n\nBest regards,\n[Your Name]`
   },
   social_presence: {
     getSubject: (l) => `Connecting ${l.business_name}'s social audience to direct bookings`,
-    getBody: (l, owner) => `Hi ${owner || 'there'},\n\nLove the work you're doing at ${l.business_name}. I saw your social media presence and noticed a big opportunity to bridge your followers directly into a high-converting automated booking flow.\n\nWould love to share how similar businesses in ${l.city || 'your city'} are generating 3x more bookings directly from social traffic.\n\nBest regards,\nRehan`
+    getBody: (l, owner) => `Hi ${owner || 'there'},\n\nLove the work you're doing at ${l.business_name}. I saw your social media presence and noticed a big opportunity to bridge your followers directly into a high-converting automated booking flow.\n\nWould love to share how similar businesses in ${l.city || 'your city'} are generating 3x more bookings directly from social traffic.\n\nBest regards,\n[Your Name]`
   }
 };
 

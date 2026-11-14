@@ -90,7 +90,7 @@ export function generatePitchDraft({
   const hasReviews = Number(lead.rating) > 0 && Number(lead.reviews_count) > 0;
   const rating = hasReviews ? `${lead.rating}/5.0` : null;
   const reviewsCount = Number(lead.reviews_count) || 0;
-  const senderName = settings.sender_name || 'Muhammad Rehan';
+  const senderName = settings.sender_name || 'Your Name';
   const agencyName = settings.agency_name || '';
   const bookingLink = settings.my_portfolio || '';
   const signature = settings.outreach_signature || `Best regards,\n${senderName}${agencyName ? ` | ${agencyName}` : ''}${bookingLink ? `\n${bookingLink}` : ''}`;

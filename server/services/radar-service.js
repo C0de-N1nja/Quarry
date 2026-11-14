@@ -203,8 +203,8 @@ class RadarService {
    */
   generateProposal(gig) {
     const settings = Setting.getAll();
-    const myName = settings.sender_name || 'Rehan';
-    const myPortfolio = settings.my_portfolio || 'https://github.com';
+    const myName = settings.sender_name || 'Software Engineer';
+    const myPortfolio = settings.my_portfolio || '';
     const company = gig.company || 'Hiring Team';
     const role = gig.role || 'Software Engineer';
     const tags = (gig.tags && gig.tags.length > 0) ? gig.tags.join(', ') : 'Node.js, REST APIs, PostgreSQL, and high-performance backend systems';

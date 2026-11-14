@@ -403,7 +403,7 @@ export default function RadarModal({ onClose, onLeadCreated }) {
 
               {/* Bottom Drawer Actions */}
               <div className="p-4 border-t border-separator-border bg-background-secondary-default flex items-center justify-between">
-                <span className="text-[10px] text-text-tertiary">Address Rehan's strengths directly</span>
+                <span className="text-[10px] text-text-tertiary">Tailored to your background directly</span>
                 <Button
                   onClick={() => copyToClipboard(`${activeProposal.subject}\n\n${activeProposal.body}`, 'all')}
                   variant="primary"

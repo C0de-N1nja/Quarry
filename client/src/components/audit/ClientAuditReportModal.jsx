@@ -71,9 +71,9 @@ export default function ClientAuditReportModal({
   const seconds = (ttfbMs / 1000).toFixed(1);
 
   // Agency Info from settings
-  const agencyName = settings.agency_name || 'Apex Web Studio';
-  const consultantName = settings.sender_name || 'Muhammad Rehan';
-  const email = settings.sender_email || 'contact@muhammadrehan.me';
+  const agencyName = settings.agency_name || 'Web Studio';
+  const consultantName = settings.sender_name || 'Consultant';
+  const email = settings.sender_email || 'contact@domain.com';
   const portfolioUrl = settings.my_portfolio || '';
 
   const handleDownloadPdf = () => {
