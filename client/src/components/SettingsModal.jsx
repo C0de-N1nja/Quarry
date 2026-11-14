@@ -179,7 +179,7 @@ export default function SettingsModal({ onClose, onOpenOnboarding }) {
                     type="text"
                     value={settings.sender_name || ''}
                     onChange={(e) => setSettings({ ...settings, sender_name: e.target.value })}
-                    placeholder="e.g. Muhammad Rehan"
+                    placeholder="e.g. Your Full Name"
                     className="w-full px-3 py-2 rounded-xl bg-background-secondary-default border border-separator-border text-text-primary focus:border-text-primary focus:outline-none transition-colors"
                   />
                 </div>
@@ -247,7 +247,7 @@ export default function SettingsModal({ onClose, onOpenOnboarding }) {
                     rows={3}
                     value={settings.outreach_signature || ''}
                     onChange={(e) => setSettings({ ...settings, outreach_signature: e.target.value })}
-                    placeholder="Best regards,&#10;Muhammad Rehan | Freelance Web Consultant&#10;https://yourportfolio.com"
+                    placeholder="Best regards,&#10;Your Name | Freelance Web Consultant&#10;https://yourportfolio.com"
                     className="w-full px-3 py-2 rounded-xl bg-background-secondary-default border border-separator-border text-text-primary font-mono text-[11px] focus:border-text-primary focus:outline-none resize-none transition-colors leading-relaxed"
                   />
                 </div>

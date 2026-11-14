@@ -71,12 +71,17 @@ export default function ClientAuditReportModal({
   const seconds = (ttfbMs / 1000).toFixed(1);
 
   // Agency Info from settings
+  const isProfileConfigured = Boolean(settings.sender_name && settings.sender_email);
   const agencyName = settings.agency_name || 'Web Studio';
   const consultantName = settings.sender_name || 'Consultant';
   const email = settings.sender_email || 'contact@domain.com';
   const portfolioUrl = settings.my_portfolio || '';
 
   const handleDownloadPdf = () => {
+    if (!isProfileConfigured) {
+      toast.warning('Please configure your Name and Email in Settings before downloading client audit reports.');
+      return;
+    }
     try {
       const downloadUrl = `/api/leads/${lead.id}/audit-pdf`;
       window.location.href = downloadUrl;
@@ -87,6 +92,10 @@ export default function ClientAuditReportModal({
   };
 
   const handlePrintWindow = () => {
+    if (!isProfileConfigured) {
+      toast.warning('Please configure your Name and Email in Settings before printing client audit reports.');
+      return;
+    }
     window.open(`/api/leads/${lead.id}/audit-report?print=true`, '_blank');
   };
 
@@ -149,6 +158,11 @@ export default function ClientAuditReportModal({
 
       {/* Modal Body: Single Responsive Sheet (Zero double scrollbars) */}
       <ModalBody className="p-4 sm:p-6 flex-1 overflow-y-auto bg-background-tertiary-default">
+        {!isProfileConfigured && (
+          <div className="p-3 mb-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs flex items-center justify-between gap-3">
+            <span>Outreach profile not configured. Set your consultant name and email in Settings to personalize this report before sending.</span>
+          </div>
+        )}
         {showSkeleton ? (
           <div className="w-full bg-white text-slate-900 rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 space-y-6 animate-pulse select-none">
             {/* Header Skeleton */}

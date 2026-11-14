@@ -410,6 +410,9 @@ export default function LeadDossierPage({
 
   // Generate Cold Email Pitch Draft
   const handleGeneratePitch = (selectedAngle = pitchAngle) => {
+    if (!settings?.sender_name) {
+      toast.warning('Please set your Name in Settings to automatically brand this pitch.');
+    }
     const draft = generatePitchDraft({
       lead: currentLead,
       audit,
@@ -444,6 +447,9 @@ export default function LeadDossierPage({
 
   // Open Gmail Web Compose
   const handleOpenGmail = () => {
+    if (!settings?.sender_name) {
+      toast.warning('Note: Sender name is not configured in Settings.');
+    }
     const to = contact?.email || currentLead.email || '';
     const su = encodeURIComponent(pitchSubject || `Quick question for ${currentLead.business_name}`);
     const body = encodeURIComponent(pitchBody || '');
@@ -1746,6 +1752,12 @@ export default function LeadDossierPage({
                   ))}
                 </PillTabList>
               </div>
+
+              {!settings?.sender_name && (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs flex items-center justify-between gap-3">
+                  <span>Outreach profile not configured. Set your consultant name in Settings to personalize your outreach signature.</span>
+                </div>
+              )}
 
               {/* Subject Line Field */}
               <div className="space-y-1.5">
