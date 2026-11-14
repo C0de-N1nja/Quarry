@@ -1,6 +1,6 @@
 # Quarry
 
-> **The all-in-one software that finds local businesses, checks if they need a website, discovers the owner's contact info, and helps you reach out in one click.**
+> **The all-in-one software that finds local businesses with or without websites, audits their site health, discovers the real owner's contact info, and helps you reach out in one click.**
 
 ![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
 ![React](https://img.shields.io/badge/React-18.3-61dafb?style=for-the-badge&logo=react&logoColor=black)
@@ -15,11 +15,13 @@
 
 ## What is Quarry?
 
-Most web designers and marketing agencies struggle to find clients because they waste time messaging businesses that already have expensive, modern websites.
+Most web designers and marketing agencies struggle to find clients because they waste time messaging businesses with generic templates without knowing what that business actually needs.
 
-**Quarry solves this problem.** It automatically searches Google Maps across your chosen city and industry to find busy local businesses (like roofers, plumbers, dentists, and auto mechanics) that have great reviews from real customers—but **no website of their own**, an outdated site, or an unclaimed business listing.
+**Quarry solves this problem.** It searches Google Maps across your chosen city and industry to find high-rated local businesses (contractors, clinics, auto shops, restaurants) and splits them into two clear opportunities:
+1. **Businesses with NO website**: Great local reputation, but completely missing an online home.
+2. **Businesses WITH a website**: Actively getting traffic, but losing customers due to missing phone links, slow load times, or no online booking.
 
-Then, Quarry finds the business owner's direct phone number, email, and social profiles, spots what's missing on their site, and drafts a personalized message so you can reach out and close deals faster.
+Then, Quarry finds the business owner's direct phone number, email, and social profiles, audits their website health, and drafts a personalized message so you can reach out and close deals faster.
 
 ---
 
