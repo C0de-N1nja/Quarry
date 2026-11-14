@@ -1,145 +1,92 @@
 # Quarry
 
-> **The autonomous local business discovery, multi-country Google Maps harvester, deep OSINT intelligence, and 1-click client acquisition engine.**
+> **The all-in-one software that finds local businesses, checks if they need a website, discovers the owner's contact info, and helps you reach out in one click.**
 
 ![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
 ![React](https://img.shields.io/badge/React-18.3-61dafb?style=for-the-badge&logo=react&logoColor=black)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4.0-38bdf8?style=for-the-badge&logo=tailwindcss&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-22.x-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-4.21-000000?style=for-the-badge&logo=express&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-WAL_Mode-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-Fast_Storage-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
 ![BoardUI](https://img.shields.io/badge/Design_System-BoardUI-6366f1?style=for-the-badge)
 ![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 
 ---
 
-## Why Quarry?
+## What is Quarry?
 
-Most freelance web developers and agency owners fail at cold outreach for one simple reason:  
-**They pitch companies that already spent \$10,000 on custom websites.**
+Most web designers and marketing agencies struggle to find clients because they waste time messaging businesses that already have expensive, modern websites.
 
-**Quarry** turns client acquisition on its head. It autonomously mines Google Maps and search engine web results to surface profitable local contractors, clinics, restaurants, and service businesses that have hundreds of glowing 5-star customer reviews—but **literally zero website**, rely solely on a social profile or directory listing, or have slow, broken websites.
+**Quarry solves this problem.** It automatically searches Google Maps across your chosen city and industry to find busy local businesses (like roofers, plumbers, dentists, and auto mechanics) that have great reviews from real customers—but **no website of their own**, an outdated site, or an unclaimed business listing.
 
-Quarry's OSINT engine runs automated deep background checks to verify the company's real status, uncover the verified owner's direct mobile phone or email, and generate a bespoke, high-converting audit and pitch in one click.
-
----
-
-## Core Capabilities
-
-### 1. Multi-Country Google Maps Harvester (Go Native Engine)
-- Zero-Docker, high-speed standalone Go scraper binary (`google_maps_scraper`) directly integrated into the dashboard.
-- Country Selector covering the United States (US), United Kingdom (GB), Australia (AU), Canada (CA), and United Arab Emirates (AE) with international E.164 phone normalization.
-- 6 categorized trade clusters (Contractors, Restaurants & Food, Medical & Dental, Professional Services, Automotive, Personal Care) plus instant custom write-in search.
-- Live Harvester HUD telemetry showing extraction rate, unique prospects, and genuine no-website leads in real time.
-
-### 2. Discovery Signals & Local 3-Pack Tracking
-- **Google Maps Rank Position**: Tracks each prospect's exact rank on Google Maps for their niche and city.
-- **Local 3-Pack Badge**: Instantly identifies businesses holding top 3 positions vs businesses ranked #4+ that need SEO to break into the pack.
-- **Unclaimed Google Business Profiles**: Flags unmanaged and unclaimed listings for high-converting local agency pitches.
-
-### 3. Organic Web & Social Presence Resolver
-- Inspects Google organic web results below the map container for businesses with and without websites.
-- **Directory vs Official Website Classification**: Distinguishes authentic business websites from 3rd-party contractor directories (Angi, Houzz, Bark, Yelp, YellowPages, Hipages, TrueLocal, Checkatrade) and social profiles so directories are never mistaken for official websites.
-- **Social Profile Discovery**: Crawls website footers and runs targeted search dorks to extract verified Facebook pages, Instagram profiles, LinkedIn companies, and YouTube channels into the dossier.
-
-### 4. 26-Point Commercial Sales Signals & Tech Stack Auditor
-- Scans target sites across 4 key dimensions:
-  - **Conversion Bottlenecks**: Tap-to-call link missing on mobile, online booking tool missing (Calendly, Housecall Pro, Jobber, ServiceTitan), contact forms, and live chat widgets.
-  - **Site Health & Speed**: Mobile viewport tag, SSL HTTPS security, load speed against Google's 3.0s guideline, and copyright year freshness.
-  - **SEO & AI Search Visibility**: JSON-LD schema markup, primary heading hierarchy, meta descriptions, sitemaps, image alt tags, analytics, and robots.txt AI crawler blocking.
-  - **Commercial Profile**: Amateurs DIY builders (Wix, GoDaddy, Weebly), incumbent web agency credits, active ad spend (Google/Meta Ads), and call tracking detection.
-
-### 5. Multi-Layer OSINT & Decision Maker Extraction
-- Discovers decision makers, founders, and managing partners via Secretary of State corporate registry checks and team pages.
-- Email deliverability validation (SMTP handshake, MX verification, catch-all detection).
-- Phone line type classification (mobile cell vs landline vs VoIP) with click-to-call and WhatsApp deep-links.
-
-### 6. BoardUI Design System
-- Built with Tailwind CSS v4, OKLCH color tokens, and React Aria primitives.
-- Three specialized triage views:
-  - **Table View**: Dynamic PillTab filters (All, Ready to Pitch, No Website, Local 3-Pack, Rank 4+, Unclaimed, Gold Vault), multi-column search, and batch actions.
-  - **Kanban Pipeline**: Drag-and-drop progression (Discovered -> Contacted -> Replied -> Won -> Archived).
-  - **Split View & Lead Dossier**: Interactive dossier with live audit scorecards, Google Maps preview, sales signal analysis, and 1-click tailored email pitch generator.
+Then, Quarry finds the business owner's direct phone number, email, and social profiles, spots what's missing on their site, and drafts a personalized message so you can reach out and close deals faster.
 
 ---
 
-## Quickstart
+## What Quarry Does for You
 
-### Prerequisites
-- **Node.js** v20+ or v22+
-- **npm** v10+
+### 1. Automatic Business Finder
+- **Search Any City and Trade**: Pick a country (USA, UK, Australia, Canada, UAE), choose a trade from the menu (or type your own, like *"Italian Restaurant"* or *"Dentist"*), and click search.
+- **Fast, Built-In Finder**: Searches Google Maps directly on your computer with zero monthly subscription fees.
+- **Live Counter**: Watch in real time as leads with no website and great reviews are added to your dashboard.
 
-### 1. Clone the repository
+### 2. Spotting High-Value Opportunities
+- **Google Maps Rank Position**: Shows where each business shows up on Google Maps (#1, #5, #14).
+- **Top 3 Map Pack**: Tells you if a business is already in the top 3 on Google Maps or sitting lower down where they need help to get noticed.
+- **Unclaimed Google Listings**: Flags businesses that haven't claimed their Google listing yet, giving you an easy reason to call and offer your services.
+
+### 3. Website vs Directory Checker
+- **Never Confuse Directories with Real Websites**: If a business is listed on Yelp, YellowPages, Bark, or Houzz, Quarry knows that is just a directory listing, not their official website.
+- **Social Media Detection**: Finds the business's official Facebook, Instagram, and LinkedIn pages so you have multiple ways to reach them.
+
+### 4. Automatic Website Health Check
+If a business already has a website, Quarry runs a quick check to find real problems you can mention in your pitch:
+- **No Tap-to-Call**: The phone number cannot be tapped on a mobile phone to call immediately.
+- **No Online Booking**: Customers cannot book appointments online after hours.
+- **No Contact Form**: There is no message form for visitors to ask for a quote.
+- **Slow or Not Mobile-Friendly**: The site takes too long to open on phones or looks broken on small screens.
+- **No Agency in Footer**: Confirms the business doesn't have an existing web agency managing their site.
+
+### 5. Finding the Owner
+- Searches public business records to find the real owner or founder's name.
+- Validates their email so your messages don't bounce.
+- Checks if their phone number is a mobile cell phone (ready for calling or WhatsApp) or an office landline.
+
+### 6. Clean, Simple Dashboard
+- **Prospect Table**: See all your leads in one organized view. Filter by *"No Website"*, *"Top 3 Pack"*, *"Unclaimed"*, or star rating.
+- **Kanban Deal Pipeline**: Drag and drop leads from *"Discovered"* to *"Contacted"*, *"Replied"*, and *"Won"*.
+- **Detailed Lead Dossier**: Click any business to see their full profile, phone, address, map location, website check, and a ready-to-send pitch email.
+
+---
+
+## How to Get Started
+
+### What You Need
+- A computer running **Node.js** (version 20 or newer)
+- An internet connection
+
+### 1. Download the Project
 ```bash
 git clone https://github.com/C0de-N1nja/Quarry.git
 cd Quarry
 ```
 
-### 2. Install dependencies
+### 2. Install
 ```bash
-# Installs server and client dependencies
 npm run install:all
 ```
 
-### 3. Configure environment variables (optional)
-```bash
-cp .env.example .env
-```
-Quarry runs out of the box with embedded SQLite (`server/db/hunting.db`) in WAL mode. No external database server or SaaS subscription is required.
-
-### 4. Start the platform
+### 3. Start the App
 ```bash
 ./run.sh
 # or
 npm run dev
 ```
 
-- **Frontend Dashboard**: [http://localhost:3000](http://localhost:3000)
-- **Backend REST API**: [http://localhost:5000](http://localhost:5000)
-
----
-
-## Project Structure
-
-```
-Quarry/
-├── client/                     # Vite + React 18 + Tailwind CSS v4 + BoardUI
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── boardui/        # BoardLeadTable, LeadDossierPage, DashboardSidebar
-│   │   │   ├── audit/          # ClientAuditReportModal, AuditPage
-│   │   │   ├── KanbanBoard.jsx # Drag-and-drop stage pipeline
-│   │   │   ├── SplitView.jsx   # Keyboard-friendly split triage
-│   │   │   ├── LeadDrawer.jsx  # Detailed intelligence slide-out
-│   │   │   └── SearchModal.jsx # Multi-country Maps Harvester modal
-│   │   ├── styles/             # Tailwind v4 globals, OKLCH tokens, BoardUI CSS
-│   │   ├── App.jsx             # Root layout and state orchestrator
-│   │   └── main.jsx
-│   └── vite.config.js
-├── server/                     # Node.js + Express backend
-│   ├── controllers/            # Lead, OSINT, audit, export, settings controllers
-│   ├── routes/                 # REST API routes (/api/leads, /api/osint, /api/audit)
-│   ├── services/
-│   │   ├── maps-scraper-service.js   # Go binary Google Maps harvester & rank parser
-│   │   ├── crawler-service.js        # Web & social presence resolver
-│   │   ├── website-audit-service.js  # 26 sales signals & 9 tech stack auditor
-│   │   ├── social-domains.js         # Country-scoped directory & social classifier
-│   │   ├── osint-service.js          # Corporate registry & search dorking engine
-│   │   ├── owner-osint-service.js    # Founder and decision maker extractor
-│   │   ├── phone-service.js          # libphonenumber-js E.164 normalization
-│   │   └── email-verifier-service.js # SMTP deliverability tester
-│   ├── db/
-│   │   ├── hunting.db          # SQLite production database (WAL mode)
-│   │   ├── database.js         # better-sqlite3 connection manager
-│   │   └── schema.sql          # Table definitions and migrations
-│   └── server.js               # Express application entrypoint
-├── run.sh                      # Unified launch script
-├── package.json
-└── README.md
-```
+- Open your browser and go to: **[http://localhost:3000](http://localhost:3000)**
 
 ---
 
 ## License
 
-Distributed under the **MIT License**. See `LICENSE` for details.
+This project is licensed under the **MIT License**. Free to use and customize.
