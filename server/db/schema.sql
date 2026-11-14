@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS leads (
   phone_e164 TEXT,
   opted_out INTEGER DEFAULT 0,
   source TEXT DEFAULT 'crawler', -- 'crawler', 'csv', 'manual', 'maps'
-  status TEXT DEFAULT 'discovered', -- 'discovered', 'audited', 'enriched', 'pitched', 'sent', 'replied', 'won', 'archived'
+  status TEXT DEFAULT 'new', -- 'new', 'contact_found', 'messaged', 'replied', 'won', 'lost'
   place_id TEXT,
   google_category TEXT,
   search_keyword TEXT,

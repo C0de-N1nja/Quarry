@@ -29,7 +29,7 @@ export default function App() {
 
   const [leads, setLeads] = useState([]);
   const [stats, setStats] = useState(null);
-  const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'no_website', 'discovered', etc.
+  const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'no_website', 'new', etc.
   const [activeNiche, setActiveNiche] = useState('all'); // 'all' or collection name (e.g. 'Dental Clinic')
   const [activeCountry, setActiveCountry] = useState('all'); // 'all' or country code (e.g. 'US', 'AU')
   const [activeCity, setActiveCity] = useState('all'); // 'all' or specific city
@@ -365,7 +365,7 @@ export default function App() {
       const res = await fetch(`/api/leads/${leadId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'archived' })
+        body: JSON.stringify({ status: 'lost' })
       });
       const data = await res.json();
       if (data.success) {
@@ -437,7 +437,7 @@ export default function App() {
   // 1-Click Reset OSINT Data (for all leads or specific collection)
   const handleResetOsint = async (category = 'all') => {
     const scopeLabel = category && category !== 'all' ? `collection "${category}"` : 'ALL leads in the database';
-    if (!window.confirm(`Reset Research & Contact Details:\n\nAre you sure you want to delete and reset all contact details for ${scopeLabel}?\n\nThis will clear all contacts and return the leads to "discovered" status so you can research them fresh.`)) {
+    if (!window.confirm(`Reset Research & Contact Details:\n\nAre you sure you want to delete and reset all contact details for ${scopeLabel}?\n\nThis will clear all contacts and return the leads to "new" status so you can research them fresh.`)) {
       return;
     }
     try {

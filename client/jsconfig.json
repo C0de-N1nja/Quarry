@@ -2,7 +2,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@shared/*": ["../shared/*"],
+      "@shared": ["../shared/stages.js"]
     },
     "jsx": "react-jsx"
   },

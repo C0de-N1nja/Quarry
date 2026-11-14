@@ -81,7 +81,7 @@ class CrawlerService {
             rating: null,
             reviews_count: 0,
             source: 'crawler',
-            status: 'discovered',
+            status: 'new',
             has_no_website: 0,
             no_website_verified: 0,
             website_status: 'active'
@@ -133,7 +133,7 @@ class CrawlerService {
                 rating: null,
                 reviews_count: 0,
                 source: 'crawler',
-                status: 'discovered',
+                status: 'new',
                 has_no_website: 0,
                 no_website_verified: 0,
                 website_status: 'active'
@@ -202,7 +202,7 @@ class CrawlerService {
         rating,
         reviews_count,
         source: 'csv',
-        status: 'discovered'
+        status: 'new'
       });
     }
 

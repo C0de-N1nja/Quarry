@@ -13,6 +13,7 @@ import {
 } from '@remixicon/react';
 import { Chip } from '@/components/base/badges/chip';
 import { IconButton } from '@/components/base/buttons/icon-button';
+import { normalizeStage, getStageLabel } from '@shared/stages';
 
 function normalizeNiche(niche = '') {
   if (!niche) return 'Local Business';
@@ -229,9 +230,9 @@ function BoardTicket({
 
         {/* Sequence / Stage Step Info */}
         <div className="flex items-center gap-1">
-          {lead.status === 'replied' ? (
+          {normalizeStage(lead.status) === 'replied' ? (
             <Chip variant="caption" color="cyan">
-              In Discussion
+              Replied
             </Chip>
           ) : lead.sequence_step > 1 && lead.sequence_step < 4 ? (
             <Chip variant="caption" color={isDue ? "rose" : "neutral"} className="font-mono">

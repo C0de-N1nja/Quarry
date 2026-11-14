@@ -26,6 +26,7 @@ import { Button, ButtonLink } from '@/components/base/buttons/button';
 import { ButtonGroup, ButtonGroupItem } from '@/components/base/buttons/button-group';
 import { Kbd } from '@/components/base/kbd/kbd';
 import { formatLocation } from '@/utils/pitchGenerator';
+import { STAGES, STAGE_CONFIG, normalizeStage, getStageLabel } from '@shared/stages';
 
 function SplitQueueSkeleton({ index }) {
   return (
@@ -395,14 +396,15 @@ export default function SplitView({
                         <Chip 
                           variant="caption" 
                           color={
-                            lead.status === 'won' ? 'lime' :
-                            lead.status === 'pitched' ? 'yellow' :
-                            lead.status === 'contacted' ? 'purple' :
+                            normalizeStage(lead.status) === 'won' ? 'lime' :
+                            normalizeStage(lead.status) === 'messaged' ? 'yellow' :
+                            normalizeStage(lead.status) === 'contact_found' ? 'purple' :
+                            normalizeStage(lead.status) === 'replied' ? 'cyan' :
                             'neutral'
                           }
                           className="uppercase font-mono"
                         >
-                          {lead.status || 'discovered'}
+                          {getStageLabel(lead.status)}
                         </Chip>
                       </div>
                     </div>
@@ -752,15 +754,15 @@ export default function SplitView({
 
                 <div className="flex items-center gap-2 flex-wrap">
                   <ButtonGroup size="small">
-                    {['discovered', 'ready', 'pitched', 'contacted', 'won'].map((st) => (
+                    {STAGE_CONFIG.map((stage) => (
                       <ButtonGroupItem
-                        key={st}
-                        selected={currentLead.status === st}
+                        key={stage.id}
+                        selected={normalizeStage(currentLead.status) === stage.id}
                         disabled={updatingStage}
-                        onClick={() => handleStageChange(st)}
+                        onClick={() => handleStageChange(stage.id)}
                         className="capitalize"
                       >
-                        {st}
+                        {stage.label}
                       </ButtonGroupItem>
                     ))}
                   </ButtonGroup>

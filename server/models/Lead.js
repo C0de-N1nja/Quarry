@@ -1,6 +1,7 @@
 const db = require('../db/database');
 const { isSocialOrAggregator, extractSocialUrls, classifyWebsiteUrl } = require('../services/social-domains');
 const phoneService = require('../services/phone-service');
+const { STAGES, normalizeStage } = require('../../shared/stages');
 
 /**
  * Lead Model: Encapsulates database queries and persistence for prospective clients.
@@ -28,7 +29,7 @@ class Lead {
 
     if (!includeTest) {
       query += ' AND (l.is_test = 0 OR l.is_test IS NULL)';
-      if (status !== 'archived') { query += " AND (l.status IS NULL OR l.status != 'archived')"; }
+      if (status !== 'lost' && status !== 'archived') { query += " AND (l.status IS NULL OR (l.status != 'lost' AND l.status != 'archived'))"; }
     }
 
     if (status === 'no_website') {
@@ -40,10 +41,11 @@ class Lead {
     } else if (status === 'unclaimed') {
       query += " AND l.is_unclaimed = 1";
     } else if (status === 'follow_up' || status === 'followup_due') {
-      query += " AND l.follow_up_at IS NOT NULL AND date(l.follow_up_at) <= date('now', 'localtime') AND (l.status IS NULL OR l.status NOT IN ('replied', 'won', 'archived'))";
+      query += " AND l.follow_up_at IS NOT NULL AND date(l.follow_up_at) <= date('now', 'localtime') AND (l.status IS NULL OR l.status NOT IN ('replied', 'won', 'lost', 'archived'))";
     } else if (status && status !== 'all') {
+      const normalizedStatus = normalizeStage(status);
       query += ' AND l.status = ?';
-      params.push(status);
+      params.push(normalizedStatus);
     }
 
     if (contactChannel === 'has_email') {
@@ -170,7 +172,7 @@ class Lead {
 
     if (!includeTest) {
       query += ' AND (l.is_test = 0 OR l.is_test IS NULL)';
-      if (status !== 'archived') { query += " AND (l.status IS NULL OR l.status != 'archived')"; }
+      if (status !== 'lost' && status !== 'archived') { query += " AND (l.status IS NULL OR (l.status != 'lost' AND l.status != 'archived'))"; }
     }
 
     if (status === 'no_website') {
@@ -182,10 +184,11 @@ class Lead {
     } else if (status === 'unclaimed') {
       query += " AND l.is_unclaimed = 1";
     } else if (status === 'follow_up' || status === 'followup_due') {
-      query += " AND l.follow_up_at IS NOT NULL AND date(l.follow_up_at) <= date('now', 'localtime') AND (l.status IS NULL OR l.status NOT IN ('replied', 'won', 'archived'))";
+      query += " AND l.follow_up_at IS NOT NULL AND date(l.follow_up_at) <= date('now', 'localtime') AND (l.status IS NULL OR l.status NOT IN ('replied', 'won', 'lost', 'archived'))";
     } else if (status && status !== 'all') {
+      const normalizedStatus = normalizeStage(status);
       query += ' AND l.status = ?';
-      params.push(status);
+      params.push(normalizedStatus);
     }
 
     if (contactChannel === 'has_email') {
@@ -317,7 +320,7 @@ class Lead {
     rating = 0,
     reviews_count = 0,
     source = 'manual',
-    status = 'discovered',
+    status = STAGES.NEW,
     place_id = null,
     google_category = null,
     search_keyword = null,
@@ -361,7 +364,7 @@ class Lead {
     `);
     const info = stmt.run(
       business_name, website, maps_link, phone, address, city, category,
-      rating, reviews_count, source, status,
+      rating, reviews_count, source, normalizeStage(status),
       place_id, google_category, search_keyword, business_status,
       country, timezone, fb, ig,
       e164, phone_type, carrier, maps_rank, in_local_pack ? 1 : 0, is_unclaimed ? 1 : 0,
@@ -489,7 +492,7 @@ class Lead {
             rating: item.rating !== undefined ? item.rating : 0,
             reviews_count: item.reviews_count !== undefined ? item.reviews_count : 0,
             source: item.source || 'manual',
-            status: item.status || 'discovered',
+            status: normalizeStage(item.status || STAGES.NEW),
             has_no_website: isSocialOrNone ? (item.has_no_website !== undefined ? item.has_no_website : 1) : 0,
             website_status: !isSocialOrNone 
               ? (item.website_status && item.website_status !== 'no_website' ? item.website_status : 'active')
@@ -586,6 +589,10 @@ class Lead {
       latitude, longitude, lat, lng,
       social_profiles, osint_evidence, notes, tags
     } = fields;
+
+    if (status !== undefined && status !== null) {
+      status = normalizeStage(status);
+    }
 
     // Check if lead currently has or is receiving an authentic standalone website
     let currentWeb = website;
@@ -688,7 +695,7 @@ class Lead {
 
     db.prepare(`
       UPDATE leads 
-      SET status = CASE WHEN status IN ('discovered', 'audited', 'enriched') THEN 'contacted' ELSE status END,
+      SET status = CASE WHEN status IN ('new', 'contact_found') THEN 'messaged' ELSE status END,
           contacted_at = CURRENT_TIMESTAMP,
           follow_up_at = ?,
           follow_up_note = COALESCE(?, follow_up_note),
@@ -723,15 +730,16 @@ class Lead {
   }
 
   static updateStatus(id, status) {
-    db.prepare('UPDATE leads SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(status, id);
+    db.prepare('UPDATE leads SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(normalizeStage(status), id);
     return this.findById(id);
   }
 
   static updateStage(id, status, dealValue = null) {
+    const norm = normalizeStage(status);
     if (dealValue !== null) {
-      db.prepare('UPDATE leads SET status = ?, deal_value = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(status, dealValue, id);
+      db.prepare('UPDATE leads SET status = ?, deal_value = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(norm, dealValue, id);
     } else {
-      db.prepare('UPDATE leads SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(status, id);
+      db.prepare('UPDATE leads SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(norm, id);
     }
     return this.findById(id);
   }
@@ -754,7 +762,7 @@ class Lead {
       FROM leads l
       LEFT JOIN contacts c ON l.id = c.lead_id
       WHERE (l.is_test = 0 OR l.is_test IS NULL)
-        AND l.status IN ('pitched', 'sent')
+        AND l.status = 'messaged'
         AND l.sequence_step < 4
         AND (l.next_followup_date IS NOT NULL AND datetime(l.next_followup_date) <= datetime('now'))
       ORDER BY l.next_followup_date ASC
@@ -762,7 +770,7 @@ class Lead {
   }
 
   static optOut(id) {
-    db.prepare("UPDATE leads SET opted_out = 1, status = 'archived', updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id);
+    db.prepare("UPDATE leads SET opted_out = 1, status = 'lost', updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id);
     return this.findById(id);
   }
 
@@ -797,21 +805,21 @@ class Lead {
   }
 
   static getPipelineStats() {
-    const totalLeads = db.prepare("SELECT COUNT(*) as count FROM leads WHERE is_test IS NOT 1 AND status IS NOT 'archived'").get().count;
-    const discovered = db.prepare("SELECT COUNT(*) as count FROM leads WHERE status = 'discovered' AND (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived')").get().count;
-    const enriched = db.prepare("SELECT COUNT(*) as count FROM leads WHERE status = 'enriched' AND (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived')").get().count;
-    const pitched = db.prepare("SELECT COUNT(*) as count FROM leads WHERE status = 'pitched' AND (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived')").get().count;
-    const sent = db.prepare("SELECT COUNT(*) as count FROM leads WHERE status = 'sent' AND (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived')").get().count;
-    const replied = db.prepare("SELECT COUNT(*) as count FROM leads WHERE status = 'replied' AND (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived')").get().count;
-    const won = db.prepare("SELECT COUNT(*) as count FROM leads WHERE status = 'won' AND (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived')").get().count;
+    const totalLeads = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR (status != 'lost' AND status != 'archived'))").get().count;
+    const stageNew = db.prepare("SELECT COUNT(*) as count FROM leads WHERE status = 'new' AND (is_test = 0 OR is_test IS NULL)").get().count;
+    const contactFound = db.prepare("SELECT COUNT(*) as count FROM leads WHERE status = 'contact_found' AND (is_test = 0 OR is_test IS NULL)").get().count;
+    const messaged = db.prepare("SELECT COUNT(*) as count FROM leads WHERE status = 'messaged' AND (is_test = 0 OR is_test IS NULL)").get().count;
+    const replied = db.prepare("SELECT COUNT(*) as count FROM leads WHERE status = 'replied' AND (is_test = 0 OR is_test IS NULL)").get().count;
+    const won = db.prepare("SELECT COUNT(*) as count FROM leads WHERE status = 'won' AND (is_test = 0 OR is_test IS NULL)").get().count;
+    const lost = db.prepare("SELECT COUNT(*) as count FROM leads WHERE status = 'lost' AND (is_test = 0 OR is_test IS NULL)").get().count;
     const decisionMakers = db.prepare("SELECT COUNT(*) as count FROM contacts c JOIN leads l ON c.lead_id = l.id WHERE c.email_type = 'decision_maker' AND (l.is_test = 0 OR l.is_test IS NULL)").get().count;
-    const noWebsite = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND (has_no_website = 1 OR website IS NULL OR website = '' OR website_status IN ('no_website', 'social_only', 'directory_only'))").get().count;
-    const withWebsites = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND (has_no_website = 0 OR has_no_website IS NULL) AND website IS NOT NULL AND website != '' AND (website_status IS NULL OR website_status NOT IN ('no_website', 'social_only', 'directory_only'))").get().count;
+    const noWebsite = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR (status != 'lost' AND status != 'archived')) AND (has_no_website = 1 OR website IS NULL OR website = '' OR website_status IN ('no_website', 'social_only', 'directory_only'))").get().count;
+    const withWebsites = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR (status != 'lost' AND status != 'archived')) AND (has_no_website = 0 OR has_no_website IS NULL) AND website IS NOT NULL AND website != '' AND (website_status IS NULL OR website_status NOT IN ('no_website', 'social_only', 'directory_only'))").get().count;
     
     // Website verification status breakdown
-    const verifiedNoWebsite = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND (website_status IN ('no_website', 'social_only', 'directory_only') OR has_no_website = 1)").get().count;
-    const verifiedHasWebsite = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND website_status IN ('has_website', 'active') AND (has_no_website = 0 OR has_no_website IS NULL)").get().count;
-    const uncertainCount = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND website_status = 'uncertain'").get().count;
+    const verifiedNoWebsite = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR (status != 'lost' AND status != 'archived')) AND (website_status IN ('no_website', 'social_only', 'directory_only') OR has_no_website = 1)").get().count;
+    const verifiedHasWebsite = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR (status != 'lost' AND status != 'archived')) AND website_status IN ('has_website', 'active') AND (has_no_website = 0 OR has_no_website IS NULL)").get().count;
+    const uncertainCount = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR (status != 'lost' AND status != 'archived')) AND website_status = 'uncertain'").get().count;
 
     // Contact Channel distribution (email vs whatsapp vs social media vs phone)
     const withEmail = db.prepare("SELECT COUNT(*) as count FROM leads l JOIN contacts c ON l.id = c.lead_id WHERE (l.is_test = 0 OR l.is_test IS NULL) AND c.email IS NOT NULL AND c.email != ''").get().count;
@@ -820,14 +828,14 @@ class Lead {
     const withPhoneOnly = db.prepare("SELECT COUNT(*) as count FROM leads l LEFT JOIN contacts c ON l.id = c.lead_id WHERE (l.is_test = 0 OR l.is_test IS NULL) AND (c.email IS NULL OR c.email = '') AND (c.whatsapp IS NULL OR c.whatsapp = '') AND l.phone IS NOT NULL AND l.phone != ''").get().count;
     const socialInsteadOfEmail = db.prepare("SELECT COUNT(*) as count FROM leads l LEFT JOIN contacts c ON l.id = c.lead_id WHERE (l.is_test = 0 OR l.is_test IS NULL) AND (c.email IS NULL OR c.email = '') AND ((c.whatsapp IS NOT NULL AND c.whatsapp != '') OR (l.social_profiles IS NOT NULL AND l.social_profiles != '' AND l.social_profiles != '{}') OR (l.facebook_url IS NOT NULL AND l.facebook_url != '') OR (l.instagram_url IS NOT NULL AND l.instagram_url != '') OR (l.website LIKE '%facebook.com%' OR l.website LIKE '%instagram.com%' OR l.website LIKE '%linkedin.com%'))").get().count;
 
-    const pipelineVal = db.prepare("SELECT COALESCE(SUM(deal_value), 0) as total FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND status NOT IN ('archived', 'lost')").get().total;
-    const wonVal = db.prepare("SELECT COALESCE(SUM(deal_value), 0) as total FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND status = 'won'").get().total;
-    const activeVal = db.prepare("SELECT COALESCE(SUM(deal_value), 0) as total FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND status IN ('pitched', 'sent', 'replied')").get().total;
+    const pipelineVal = db.prepare("SELECT COALESCE(SUM(deal_value), 0) as total FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR (status != 'lost' AND status != 'archived'))").get().total;
+    const wonVal = db.prepare("SELECT COALESCE(SUM(deal_value), 0) as total FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND status = 'won'").get().total;
+    const activeVal = db.prepare("SELECT COALESCE(SUM(deal_value), 0) as total FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND status IN ('messaged', 'replied')").get().total;
 
     const followUpsDue = db.prepare(`
       SELECT COUNT(*) as count FROM leads 
       WHERE (is_test = 0 OR is_test IS NULL) 
-        AND (status IS NULL OR status NOT IN ('replied', 'won', 'archived'))
+        AND (status IS NULL OR status NOT IN ('replied', 'won', 'lost', 'archived'))
         AND follow_up_at IS NOT NULL 
         AND date(follow_up_at) <= date('now', 'localtime')
     `).get().count;
@@ -835,14 +843,14 @@ class Lead {
     const followUpsOverdue = db.prepare(`
       SELECT COUNT(*) as count FROM leads 
       WHERE (is_test = 0 OR is_test IS NULL) 
-        AND (status IS NULL OR status NOT IN ('replied', 'won', 'archived'))
+        AND (status IS NULL OR status NOT IN ('replied', 'won', 'lost', 'archived'))
         AND follow_up_at IS NOT NULL 
         AND date(follow_up_at) < date('now', 'localtime')
     `).get().count;
 
     const goldCount = db.prepare(`
       SELECT COUNT(*) as count FROM leads 
-      WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived')
+      WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR (status != 'lost' AND status != 'archived'))
         AND (has_no_website = 1 OR website IS NULL OR website = '') 
         AND rating >= 4.5 AND reviews_count >= 10 AND phone IS NOT NULL
     `).get().count;
@@ -851,7 +859,7 @@ class Lead {
     const dynamicCollections = db.prepare(`
       SELECT category, COUNT(*) as count 
       FROM leads 
-      WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND category IS NOT NULL AND TRIM(category) != '' 
+      WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR (status != 'lost' AND status != 'archived')) AND category IS NOT NULL AND TRIM(category) != '' 
       GROUP BY category 
       ORDER BY count DESC, category ASC
     `).all();
@@ -873,7 +881,7 @@ class Lead {
     const dynamicCountries = db.prepare(`
       SELECT country, COUNT(*) as count 
       FROM leads 
-      WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND country IS NOT NULL AND TRIM(country) != '' 
+      WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR (status != 'lost' AND status != 'archived')) AND country IS NOT NULL AND TRIM(country) != '' 
       GROUP BY country 
       ORDER BY count DESC, country ASC
     `).all();
@@ -887,7 +895,7 @@ class Lead {
     const dynamicCities = db.prepare(`
       SELECT city, country, COUNT(*) as count 
       FROM leads 
-      WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND city IS NOT NULL AND TRIM(city) != '' 
+      WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR (status != 'lost' AND status != 'archived')) AND city IS NOT NULL AND TRIM(city) != '' 
       GROUP BY city, country 
       ORDER BY count DESC, city ASC
     `).all();
@@ -898,24 +906,29 @@ class Lead {
       count: c.count
     }));
 
-    const roofingCount = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND lower(category) LIKE '%roof%'").get().count;
-    const plumbingCount = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND (lower(category) LIKE '%plumb%' OR lower(category) LIKE '%hvac%' OR lower(category) LIKE '%air%')").get().count;
-    const restaurantCount = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND (lower(category) LIKE '%rest%' OR lower(category) LIKE '%cafe%')").get().count;
-    const otherCount = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND lower(category) NOT LIKE '%roof%' AND lower(category) NOT LIKE '%plumb%' AND lower(category) NOT LIKE '%hvac%' AND lower(category) NOT LIKE '%rest%'").get().count;
+    const roofingCount = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR (status != 'lost' AND status != 'archived')) AND lower(category) LIKE '%roof%'").get().count;
+    const plumbingCount = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR (status != 'lost' AND status != 'archived')) AND (lower(category) LIKE '%plumb%' OR lower(category) LIKE '%hvac%' OR lower(category) LIKE '%air%')").get().count;
+    const restaurantCount = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR (status != 'lost' AND status != 'archived')) AND (lower(category) LIKE '%rest%' OR lower(category) LIKE '%cafe%')").get().count;
+    const otherCount = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR (status != 'lost' AND status != 'archived')) AND lower(category) NOT LIKE '%roof%' AND lower(category) NOT LIKE '%plumb%' AND lower(category) NOT LIKE '%hvac%' AND lower(category) NOT LIKE '%rest%'").get().count;
 
     // Discovery signals: Local 3-Pack, Outside Local Pack, Unclaimed
-    const inLocalPack = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND in_local_pack = 1").get().count;
-    const outsideLocalPack = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND in_local_pack = 0 AND maps_rank > 3").get().count;
-    const unclaimedListings = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND is_unclaimed = 1").get().count;
+    const inLocalPack = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR (status != 'lost' AND status != 'archived')) AND in_local_pack = 1").get().count;
+    const outsideLocalPack = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR (status != 'lost' AND status != 'archived')) AND in_local_pack = 0 AND maps_rank > 3").get().count;
+    const unclaimedListings = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR (status != 'lost' AND status != 'archived')) AND is_unclaimed = 1").get().count;
 
     return {
       totalLeads,
-      discovered,
-      enriched,
-      pitched,
-      sent,
+      new: stageNew,
+      contact_found: contactFound,
+      messaged,
       replied,
       won,
+      lost,
+      // Backward compatibility aliases
+      discovered: stageNew,
+      enriched: contactFound,
+      pitched: messaged,
+      sent: messaged,
       noWebsite,
       withWebsites,
       inLocalPack,
@@ -960,7 +973,7 @@ class Lead {
         db.prepare(`DELETE FROM contacts WHERE lead_id IN (${placeholders})`).run(...leadIds);
         db.prepare(`
           UPDATE leads 
-          SET status = 'discovered',
+          SET status = 'new',
               website_status = 'unknown',
               no_website_verified = 0,
               social_profiles = NULL,
@@ -981,7 +994,7 @@ class Lead {
       } catch (e) {}
       const info = db.prepare(`
         UPDATE leads 
-        SET status = 'discovered',
+        SET status = 'new',
             website_status = 'unknown',
             no_website_verified = 0,
             social_profiles = NULL,

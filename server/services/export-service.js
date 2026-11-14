@@ -171,7 +171,7 @@ class ExportService {
         reviews_count: row.reviews_count ? Number(row.reviews_count) : 0,
         showcase_niche: matchedNiche.toUpperCase(),
         showcase_url: showcaseUrl,
-        outreach_status: (row.status || 'discovered').toUpperCase(),
+        outreach_status: (row.status || 'new').toUpperCase(),
         sequence_step: row.sequence_step > 0 ? `Step ${row.sequence_step}` : 'Not Started',
         outbox_status: (row.outbox_status || 'Draft').toUpperCase(),
         timestamp: row.outbox_sent_at || row.outbox_scheduled_at || row.last_sequence_sent_at || '',

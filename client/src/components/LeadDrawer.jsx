@@ -56,6 +56,7 @@ import { PillTabList, PillTab } from '@/components/base/tabs/pill-tab';
 import AgentProgress from './boardui/AgentProgress';
 import WhatsAppModal from './boardui/WhatsAppModal';
 import { toast } from '@/components/base/toast/toast';
+import { STAGES, STAGE_CONFIG, normalizeStage, getStageLabel } from '@shared/stages';
 
 const PITCH_TEMPLATES = {
   no_website_showcase: {
@@ -134,7 +135,7 @@ export default function LeadDrawer({
   const [selectedAngle, setSelectedAngle] = useState(isNoWebsiteLead ? 'no_website_showcase' : 'speed_mobile');
   const [renderedPitch, setRenderedPitch] = useState({ subject: '', body: '' });
 
-  const [currentLeadStatus, setCurrentLeadStatus] = useState(lead?.status || 'discovered');
+  const [currentLeadStatus, setCurrentLeadStatus] = useState(lead?.status ? normalizeStage(lead.status) : 'new');
   const [dealValue, setDealValue] = useState(lead?.deal_value || 1000);
 
   const [phoneScanning, setPhoneScanning] = useState(false);
@@ -176,7 +177,7 @@ export default function LeadDrawer({
     const text = encodeURIComponent(renderedPitch.body || `Hi ${lead.business_name}, I saw your great reviews on Google Maps...`);
     const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${text}` : `https://wa.me/?text=${text}`;
     window.open(waUrl, '_blank');
-    handleUpdateStage('pitched');
+    handleUpdateStage('messaged');
   };
 
   const handleOpenMailto = () => {
@@ -184,7 +185,7 @@ export default function LeadDrawer({
     const subject = encodeURIComponent(renderedPitch.subject || `Inquiry regarding ${lead.business_name}`);
     const body = encodeURIComponent(renderedPitch.body || '');
     window.location.href = `mailto:${email || ''}?subject=${subject}&body=${body}`;
-    handleUpdateStage('pitched');
+    handleUpdateStage('messaged');
   };
 
   const handleCopyPitch = () => {
@@ -576,16 +577,13 @@ export default function LeadDrawer({
             </h2>
             <div className="relative inline-flex items-center">
               <select
-                value={currentLeadStatus}
+                value={normalizeStage(currentLeadStatus)}
                 onChange={(e) => handleUpdateStage(e.target.value)}
                 className="appearance-none text-[10px] font-mono font-medium pl-2 pr-5 py-0.5 rounded-full bg-background-tertiary-default text-text-primary border border-separator-border uppercase focus:outline-none cursor-pointer hover:border-accent-500/50 transition-colors"
               >
-                <option value="discovered">Discovered</option>
-                <option value="enriched">Enriched</option>
-                <option value="pitched">Pitched</option>
-                <option value="sent">Sent</option>
-                <option value="replied">In Discussion</option>
-                <option value="won">Deal Won</option>
+                {STAGE_CONFIG.map((s) => (
+                  <option key={s.id} value={s.id}>{s.label}</option>
+                ))}
               </select>
               <RiArrowDownSLine className="pointer-events-none absolute right-1 size-3 text-text-tertiary" />
             </div>

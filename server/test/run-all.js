@@ -62,7 +62,7 @@ async function run() {
   test('Lead insertion and querying works properly', () => {
     const insert = db.prepare(`
       INSERT INTO leads (business_name, website, phone, address, city, category, source, status)
-      VALUES (?, ?, ?, ?, ?, ?, 'test', 'discovered')
+      VALUES (?, ?, ?, ?, ?, ?, 'test', 'new')
     `).run('Austin Apex Roofing', 'https://apexroofingtx.test', '512-555-0199', '123 Main St', 'Austin, TX', 'Roofing');
     
     testLeadId = insert.lastInsertRowid;
@@ -101,8 +101,8 @@ async function run() {
   // Test 9: OSINT Enrichment on No-Website Lead (Website Gate Removed)
 
   await testAsync('osintService successfully enriches leads with empty/null websites', async () => {
-    // Reset test lead status to discovered
-    db.prepare("UPDATE leads SET status = 'discovered' WHERE id = ?").run(testLeadId);
+    // Reset test lead status to new
+    db.prepare("UPDATE leads SET status = 'new' WHERE id = ?").run(testLeadId);
 
     const noWebLead = {
       id: testLeadId,
@@ -112,7 +112,7 @@ async function run() {
       phone: '512-555-0199',
       city: 'Austin, TX',
       category: 'Roofing',
-      status: 'discovered'
+      status: 'new'
     };
 
     const result = await osintService.enrichLead(noWebLead);
@@ -122,7 +122,7 @@ async function run() {
 
     const updatedLead = Lead.findById(testLeadId);
     assert(['has_website', 'no_website', 'uncertain'].includes(updatedLead.website_status), 'Lead table must store website_status');
-    assert.strictEqual(updatedLead.status, 'enriched', 'Lead status must transition to enriched');
+    assert.strictEqual(updatedLead.status, 'contact_found', 'Lead status must transition to contact_found');
   });
 
   // Category 3 Tests
@@ -210,6 +210,23 @@ async function run() {
     const wonLead = Lead.updateStage(testLeadId, 'won', 3500);
     assert.strictEqual(wonLead.status, 'won');
     assert.strictEqual(wonLead.deal_value, 3500);
+  });
+
+  test('Unified lead stages: shared constants, normalization, and progression work across all 6 stages', () => {
+    const { STAGES, STAGE_IDS, STAGE_LABELS, normalizeStage, getNextStage, getStageLabel } = require('../../shared/stages');
+    assert.deepStrictEqual(STAGE_IDS, ['new', 'contact_found', 'messaged', 'replied', 'won', 'lost']);
+    assert.strictEqual(normalizeStage('discovered'), 'new');
+    assert.strictEqual(normalizeStage('enriched'), 'contact_found');
+    assert.strictEqual(normalizeStage('pitched'), 'messaged');
+    assert.strictEqual(normalizeStage('in_discussion'), 'replied');
+    assert.strictEqual(normalizeStage('archived'), 'lost');
+
+    assert.strictEqual(getNextStage('new'), 'contact_found');
+    assert.strictEqual(getNextStage('contact_found'), 'messaged');
+    assert.strictEqual(getNextStage('messaged'), 'replied');
+    assert.strictEqual(getNextStage('replied'), 'won');
+
+    assert.strictEqual(getStageLabel('contact_found'), 'Contact found');
   });
 
   // Test 16: Pipeline Revenue Analytics
@@ -610,7 +627,7 @@ async function run() {
     // 2. Insert test leads for each channel
     const emailLeadId = db.prepare(`
       INSERT INTO leads (business_name, website, phone, city, category, source, status)
-      VALUES ('Email Prospect Co', '', '512-555-1111', 'Austin', 'Roofing', 'test', 'discovered')
+      VALUES ('Email Prospect Co', '', '512-555-1111', 'Austin', 'Roofing', 'test', 'new')
     `).run().lastInsertRowid;
     db.prepare(`
       INSERT INTO contacts (lead_id, email) VALUES (?, 'info@emailprospect.test')
@@ -618,7 +635,7 @@ async function run() {
 
     const waLeadId = db.prepare(`
       INSERT INTO leads (business_name, website, phone, city, category, source, status)
-      VALUES ('WhatsApp Prospect Co', '', '512-555-2222', 'Austin', 'Roofing', 'test', 'discovered')
+      VALUES ('WhatsApp Prospect Co', '', '512-555-2222', 'Austin', 'Roofing', 'test', 'new')
     `).run().lastInsertRowid;
     db.prepare(`
       INSERT INTO contacts (lead_id, whatsapp) VALUES (?, '15125552222')
@@ -626,12 +643,12 @@ async function run() {
 
     const socialLeadId = db.prepare(`
       INSERT INTO leads (business_name, website, social_profiles, city, category, source, status)
-      VALUES ('Social Prospect Co', '', '{"instagram":"https://instagram.com/socialprospect"}', 'Austin', 'Roofing', 'test', 'discovered')
+      VALUES ('Social Prospect Co', '', '{"instagram":"https://instagram.com/socialprospect"}', 'Austin', 'Roofing', 'test', 'new')
     `).run().lastInsertRowid;
 
     const phoneLeadId = db.prepare(`
       INSERT INTO leads (business_name, website, phone, city, category, source, status)
-      VALUES ('Phone Only Prospect Co', '', '512-555-4444', 'Austin', 'Roofing', 'test', 'discovered')
+      VALUES ('Phone Only Prospect Co', '', '512-555-4444', 'Austin', 'Roofing', 'test', 'new')
     `).run().lastInsertRowid;
 
     // Verify findAll and count with contactChannel
@@ -715,18 +732,18 @@ async function run() {
     // 1. Insert 2 test leads in 'Dental Clinic' and 1 in 'Roofing'
     const d1 = db.prepare(`
       INSERT INTO leads (business_name, category, status, website_status, no_website_verified, social_profiles)
-      VALUES ('Dental Co 1', 'Dental Clinic', 'enriched', 'no_website', 1, '{"facebook":"fb.com/d1"}')
+      VALUES ('Dental Co 1', 'Dental Clinic', 'contact_found', 'no_website', 1, '{"facebook":"fb.com/d1"}')
     `).run().lastInsertRowid;
     db.prepare(`INSERT INTO contacts (lead_id, email, whatsapp) VALUES (?, 'd1@test.com', '15125551111')`).run(d1);
 
     const d2 = db.prepare(`
       INSERT INTO leads (business_name, category, status, website_status, no_website_verified)
-      VALUES ('Dental Co 2', 'Dental Clinic', 'enriched', 'no_website', 1)
+      VALUES ('Dental Co 2', 'Dental Clinic', 'contact_found', 'no_website', 1)
     `).run().lastInsertRowid;
 
     const r1 = db.prepare(`
       INSERT INTO leads (business_name, category, status, website_status, no_website_verified)
-      VALUES ('Roofing Co 1', 'Roofing', 'enriched', 'no_website', 1)
+      VALUES ('Roofing Co 1', 'Roofing', 'contact_found', 'no_website', 1)
     `).run().lastInsertRowid;
     db.prepare(`INSERT INTO contacts (lead_id, email) VALUES (?, 'r1@test.com')`).run(r1);
 
@@ -735,7 +752,7 @@ async function run() {
     assert(catReset.count >= 2, 'Should reset at least 2 dental leads');
 
     const d1Check = Lead.findById(d1);
-    assert.strictEqual(d1Check.status, 'discovered', 'Dental lead must be reset to discovered');
+    assert.strictEqual(d1Check.status, 'new', 'Dental lead must be reset to new');
     assert.strictEqual(d1Check.website_status, 'unknown', 'Dental lead website_status must be unknown');
     assert.strictEqual(d1Check.no_website_verified, 0, 'Dental lead no_website_verified must be 0');
     
@@ -744,7 +761,7 @@ async function run() {
 
     // Roofing lead must remain untouched
     const r1Check = Lead.findById(r1);
-    assert.strictEqual(r1Check.status, 'enriched', 'Roofing lead must not be touched by dental reset');
+    assert.strictEqual(r1Check.status, 'contact_found', 'Roofing lead must not be touched by dental reset');
     const r1Contact = db.prepare('SELECT * FROM contacts WHERE lead_id = ?').get(r1);
     assert(r1Contact && r1Contact.email === 'r1@test.com', 'Roofing contact must be preserved');
 
@@ -752,7 +769,7 @@ async function run() {
     const allReset = Lead.resetOsint();
     assert(allReset.count > 0, 'Should reset leads');
     const r1After = Lead.findById(r1);
-    assert.strictEqual(r1After.status, 'discovered', 'All leads must be reset to discovered');
+    assert.strictEqual(r1After.status, 'new', 'All leads must be reset to new');
     const r1ContactAfter = db.prepare('SELECT * FROM contacts WHERE lead_id = ?').get(r1);
     assert(!r1ContactAfter, 'All contacts must be cleared');
 
@@ -930,7 +947,7 @@ async function run() {
     assert(platforms.length > 0, 'Known active email must return at least 1 verified platform');
     
     // Test persistence in Contact model
-    const testLeadIdHolehe = db.prepare("INSERT INTO leads (business_name, status) VALUES ('Holehe Test Co', 'discovered')").run().lastInsertRowid;
+    const testLeadIdHolehe = db.prepare("INSERT INTO leads (business_name, status) VALUES ('Holehe Test Co', 'new')").run().lastInsertRowid;
     try {
       const Contact = require('../models/Contact');
       Contact.upsert({
@@ -1007,7 +1024,7 @@ async function run() {
     assert.strictEqual(grav.displayName, 'Beau Lebens', 'Must resolve real full name from Gravatar');
 
     // 2. Test Contact model persistence of avatar_url and gravatar_data
-    const testLeadIdGrav = db.prepare("INSERT INTO leads (business_name, status) VALUES ('Gravatar Test Lead', 'discovered')").run().lastInsertRowid;
+    const testLeadIdGrav = db.prepare("INSERT INTO leads (business_name, status) VALUES ('Gravatar Test Lead', 'new')").run().lastInsertRowid;
     try {
       const Contact = require('../models/Contact');
       Contact.upsert({

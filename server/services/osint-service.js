@@ -1692,8 +1692,8 @@ class OsintService {
         phone_e164: phoneE164
       };
 
-      if (lead.status === 'discovered') {
-        updateData.status = 'enriched';
+      if (lead.status === 'new') {
+        updateData.status = 'contact_found';
       }
 
       Lead.update(lead.id, updateData);

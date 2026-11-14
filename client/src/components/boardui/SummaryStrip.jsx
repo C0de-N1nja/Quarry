@@ -43,13 +43,12 @@ export default function SummaryStrip({
 
   const totalLeads = stats?.totalLeads ?? totalCount ?? 0;
   const noWebsite = stats?.noWebsite ?? 0;
-  const readyToPitch = stats?.enriched ?? 0;
+  const readyToPitch = stats?.contact_found ?? 0;
   const replied = stats?.replied ?? 0;
 
-  // Active filter states matching tabs exactly
   const isTotalActive = activeFilter === 'all' && contactChannel === 'all' && focusTier === 'vault';
   const isNoWebsiteActive = activeFilter === 'no_website';
-  const isReadyToPitchActive = activeFilter === 'enriched';
+  const isReadyToPitchActive = activeFilter === 'contact_found';
   const isRepliedActive = activeFilter === 'replied';
 
   const metrics = [
@@ -95,7 +94,7 @@ export default function SummaryStrip({
       onClick: () => {
         if (onFocusTierChange) onFocusTierChange('vault');
         if (onContactChannelChange) onContactChannelChange('all');
-        if (onFilterChange) onFilterChange('enriched');
+        if (onFilterChange) onFilterChange('contact_found');
       }
     },
     {

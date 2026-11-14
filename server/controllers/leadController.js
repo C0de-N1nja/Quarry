@@ -95,7 +95,7 @@ class LeadController {
         city,
         category,
         source: 'manual',
-        status: 'discovered'
+        status: 'new'
       });
 
       res.json({ success: true, lead });

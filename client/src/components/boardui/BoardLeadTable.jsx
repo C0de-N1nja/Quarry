@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { STAGES, STAGE_CONFIG, normalizeStage, getStageLabel } from '@shared/stages';
 import {
   RiShieldCheckLine,
   RiSpeedUpLine,
@@ -130,42 +131,28 @@ function getStageBadge(lead, isOptedOut) {
       dotColor: null
     };
   }
-  const status = (lead?.status || '').toLowerCase();
+  const status = normalizeStage(lead?.status);
   switch (status) {
-    case 'discovered':
+    case 'new':
       return {
-        label: 'Discovered',
+        label: 'New',
         chipColor: 'neutral',
         variant: 'subtle',
-        dotColor: 'indigo'
+        dotColor: 'blue'
       };
-    case 'audited':
+    case 'contact_found':
       return {
-        label: 'Audited',
+        label: 'Contact found',
         chipColor: 'cyan',
         variant: 'subtle',
-        dotColor: 'green'
+        dotColor: 'purple'
       };
-    case 'enriched':
+    case 'messaged':
       return {
-        label: 'Enriched',
-        chipColor: 'cyan',
-        variant: 'subtle',
-        dotColor: 'green'
-      };
-    case 'pitched':
-      return {
-        label: 'Pitched',
+        label: 'Messaged',
         chipColor: 'purple',
         variant: 'subtle',
-        dotColor: 'indigo'
-      };
-    case 'sent':
-      return {
-        label: 'Sent',
-        chipColor: 'blue',
-        variant: 'subtle',
-        dotColor: 'indigo'
+        dotColor: 'yellow'
       };
     case 'replied':
       return {
@@ -181,19 +168,19 @@ function getStageBadge(lead, isOptedOut) {
         variant: 'bold',
         dotColor: null
       };
-    case 'archived':
+    case 'lost':
       return {
-        label: 'Archived',
+        label: 'Lost',
         chipColor: 'soft',
         variant: 'subtle',
         dotColor: null
       };
     default:
       return {
-        label: status ? (status.charAt(0).toUpperCase() + status.slice(1)) : 'Discovered',
+        label: getStageLabel(status),
         chipColor: 'neutral',
         variant: 'subtle',
-        dotColor: 'indigo'
+        dotColor: 'neutral'
       };
   }
 }
@@ -561,16 +548,16 @@ export default function BoardLeadTable({
 
               <PillTab
                 variant="gray"
-                isSelected={activeFilter === 'enriched'}
+                isSelected={activeFilter === 'contact_found'}
                 onSelect={() => {
                   if (onFocusTierChange) onFocusTierChange('vault');
                   if (onContactChannelChange) onContactChannelChange('all');
-                  if (onFilterChange) onFilterChange(activeFilter === 'enriched' ? 'all' : 'enriched');
+                  if (onFilterChange) onFilterChange(activeFilter === 'contact_found' ? 'all' : 'contact_found');
                 }}
               >
                 <span>Ready to Pitch</span>
                 <span className="ms-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-mono font-bold bg-status-lime-background text-status-lime-text">
-                  {(stats?.enriched || 0).toLocaleString()}
+                  {(stats?.contact_found || 0).toLocaleString()}
                 </span>
               </PillTab>
 
@@ -742,12 +729,12 @@ export default function BoardLeadTable({
           <button
             type="button"
             onClick={() => {
-              if (onFilterChange) onFilterChange('discovered');
+              if (onFilterChange) onFilterChange(activeFilter === 'new' ? 'all' : 'new');
               setOsintScopeChoice(selectedLeadIds.size > 0 ? 'selected' : 'filter');
             }}
             className={cx(
               "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all cursor-pointer shadow-2xs button-press-motion",
-              activeFilter === 'discovered'
+              activeFilter === 'new'
                 ? "bg-amber-500/15 border-amber-500/50 text-amber-500 font-semibold ring-1 ring-amber-500/30"
                 : "bg-background-primary-default border-separator-border hover:border-amber-500/50 text-text-secondary hover:text-text-primary"
             )}
@@ -755,7 +742,7 @@ export default function BoardLeadTable({
           >
             <span className="flex size-4 items-center justify-center rounded-full bg-amber-500/20 text-amber-500 font-mono text-[10px] font-bold">2</span>
             <span className="font-medium">Find Contacts</span>
-            <span className="font-mono text-[10px] text-amber-500/80">({(stats?.discovered || 0).toLocaleString()} pending)</span>
+            <span className="font-mono text-[10px] text-amber-500/80">({(stats?.new || 0).toLocaleString()} pending)</span>
           </button>
 
           <span className="text-text-tertiary font-mono">→</span>
@@ -785,11 +772,11 @@ export default function BoardLeadTable({
           <button
             type="button"
             onClick={() => {
-              if (onFilterChange) onFilterChange('enriched');
+              if (onFilterChange) onFilterChange(activeFilter === 'contact_found' ? 'all' : 'contact_found');
             }}
             className={cx(
               "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all cursor-pointer shadow-2xs button-press-motion",
-              activeFilter === 'enriched'
+              activeFilter === 'contact_found'
                 ? "bg-emerald-500/15 border-emerald-500/50 text-emerald-500 font-semibold ring-1 ring-emerald-500/30"
                 : "bg-background-primary-default border-separator-border hover:border-emerald-500/50 text-text-secondary hover:text-text-primary"
             )}
@@ -797,7 +784,7 @@ export default function BoardLeadTable({
           >
             <span className="flex size-4 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-500 font-mono text-[10px] font-bold">4</span>
             <span className="font-medium">Ready to Pitch</span>
-            <span className="font-mono text-[10px] text-emerald-500/80 font-bold">({(stats?.enriched || 0).toLocaleString()} ready)</span>
+            <span className="font-mono text-[10px] text-emerald-500/80 font-bold">({(stats?.contact_found || 0).toLocaleString()} ready)</span>
           </button>
         </div>
 
@@ -1486,7 +1473,7 @@ export default function BoardLeadTable({
                           <span>{stage.label}</span>
                         </Chip>
 
-                        {lead.follow_up_at && !['replied', 'won', 'archived'].includes(lead.status) && (() => {
+                        {lead.follow_up_at && !['replied', 'won', 'lost', 'archived'].includes(normalizeStage(lead.status)) && (() => {
                           const today = new Date().toISOString().split('T')[0];
                           const isOverdue = lead.follow_up_at < today;
                           const isToday = lead.follow_up_at === today;
@@ -1518,8 +1505,8 @@ export default function BoardLeadTable({
                         
                         {/* State-Driven Next Step Action Button */}
                         {(() => {
-                          // 1. Follow-up state (already contacted or negotiating)
-                          if (['contacted', 'in_conversation', 'meeting', 'won'].includes(lead.status)) {
+                          // 1. Follow-up state (already messaged or negotiating)
+                          if (['messaged', 'contacted', 'replied', 'won'].includes(normalizeStage(lead.status))) {
                             return (
                               <Button
                                 size="small"
@@ -1534,8 +1521,8 @@ export default function BoardLeadTable({
                             );
                           }
 
-                          // 2. Ready to pitch state (enriched or has verified contact data)
-                          if (lead.status === 'enriched' || lead.contact_name || lead.email || lead.whatsapp) {
+                          // 2. Ready to pitch state (contact found or has verified contact data)
+                          if (normalizeStage(lead.status) === 'contact_found' || lead.contact_name || lead.email || lead.whatsapp) {
                             return (
                               <Button
                                 size="small"
@@ -1873,7 +1860,7 @@ export default function BoardLeadTable({
               <h3 className="text-body-large font-bold text-text-primary">Reset Contact & Research Data</h3>
             </div>
             <p className="text-body-medium text-text-secondary leading-relaxed">
-              Are you sure you want to delete and reset all contact details and research data for <strong className="text-text-primary font-bold">{activeNiche !== 'all' ? `collection "${activeNiche}"` : `all ${totalItems.toLocaleString()} prospects`}</strong>? This clears contact records and resets status to discovered.
+              Are you sure you want to delete and reset all contact details and research data for <strong className="text-text-primary font-bold">{activeNiche !== 'all' ? `collection "${activeNiche}"` : `all ${totalItems.toLocaleString()} prospects`}</strong>? This clears contact records and resets status to new.
             </p>
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-separator-border">
               <Button

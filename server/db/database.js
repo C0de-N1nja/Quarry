@@ -35,7 +35,7 @@ const leadColumns = [
   'phone_e164 TEXT',
   'opted_out INTEGER DEFAULT 0',
   "source TEXT DEFAULT 'crawler'",
-  "status TEXT DEFAULT 'discovered'",
+  "status TEXT DEFAULT 'new'",
   'deal_value INTEGER DEFAULT 1000',
   'sequence_step INTEGER DEFAULT 1',
   'last_sequence_sent_at DATETIME',
@@ -106,6 +106,18 @@ try {
 } catch (e) {}
 
 try { db.exec("UPDATE leads SET is_test = 1 WHERE business_name LIKE '%test%' OR business_name LIKE '%mock%' OR source = 'test'"); } catch (e) {}
+
+// Idempotent lead stage migration to unified pipeline stages
+try {
+  db.exec(`
+    UPDATE leads SET status = 'new' WHERE status IN ('discovered', 'Discovered', 'New');
+    UPDATE leads SET status = 'contact_found' WHERE status IN ('enriched', 'Enriched', 'contacts_found', 'Contacts Found');
+    UPDATE leads SET status = 'messaged' WHERE status IN ('pitched', 'Pitched', 'outreached', 'Outreached', 'contacted', 'Contacted', 'sent', 'Sent');
+    UPDATE leads SET status = 'replied' WHERE status IN ('in_discussion', 'In Discussion', 'Replied');
+    UPDATE leads SET status = 'won' WHERE status = 'Won';
+    UPDATE leads SET status = 'lost' WHERE status IN ('archived', 'Archived', 'Lost');
+  `);
+} catch (e) {}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS runs (

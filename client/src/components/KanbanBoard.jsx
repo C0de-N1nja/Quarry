@@ -12,15 +12,10 @@ import { Chip } from '@/components/base/badges/chip';
 import { StatusDot } from '@/components/base/badges/status-dot';
 import { SearchField } from '@/components/base/search-field/search-field';
 import { Button } from '@/components/base/buttons/button';
+import { STAGE_CONFIG, normalizeStage, getNextStage } from '@shared/stages';
 import BoardTicket from './boardui/BoardTicket';
 
-const STAGES = [
-  { id: 'discovered', label: '1. Discovered', dotColor: 'indigo', chipColor: 'blue' },
-  { id: 'enriched', label: '2. Contacts Found', dotColor: 'indigo', chipColor: 'purple', match: ['enriched'] },
-  { id: 'pitched', label: '3. Pitched / Outreached', dotColor: 'yellow', chipColor: 'yellow', match: ['pitched', 'sent'] },
-  { id: 'replied', label: '4. In Discussion', dotColor: 'indigo', chipColor: 'cyan', match: ['replied'] },
-  { id: 'won', label: '5. Deal Won', dotColor: 'green', chipColor: 'lime', match: ['won'] }
-];
+const STAGES = STAGE_CONFIG;
 
 function KanbanTicketSkeleton({ index }) {
   return (
@@ -61,18 +56,12 @@ export default function KanbanBoard({ leads = [], isLoading = false, stats, onSe
   }, [leads, boardSearch]);
 
   const getLeadsForStage = (stage) => {
-    if (stage.match) {
-      return filteredLeads.filter(l => stage.match.includes(l.status));
-    }
-    return filteredLeads.filter(l => l.status === stage.id);
+    return filteredLeads.filter(l => normalizeStage(l.status) === stage.id);
   };
 
   const getNextStageId = (currentStatus) => {
-    if (currentStatus === 'discovered') return 'enriched';
-    if (currentStatus === 'enriched') return 'pitched';
-    if (currentStatus === 'pitched' || currentStatus === 'sent') return 'replied';
-    if (currentStatus === 'replied') return 'won';
-    return null;
+    const next = getNextStage(currentStatus);
+    return next !== normalizeStage(currentStatus) ? next : null;
   };
 
   const handleStageDrop = async (leadId, targetStage) => {
@@ -146,8 +135,8 @@ export default function KanbanBoard({ leads = [], isLoading = false, stats, onSe
         </Chip>
       </div>
 
-      {/* 5-Column Kanban Board with comfortable column widths and drag-and-drop */}
-      <div className="flex gap-3.5 overflow-x-auto pb-4 items-start">
+      {/* 6-Column Unified Kanban Board with comfortable column widths and drag-and-drop */}
+      <div className="flex gap-2.5 overflow-x-auto pb-4 items-start">
         {STAGES.map((stage) => {
           const stageLeads = getLeadsForStage(stage);
           const stageValue = stageLeads.reduce((acc, l) => acc + (Number(l.deal_value) || 0), 0);
@@ -172,7 +161,7 @@ export default function KanbanBoard({ leads = [], isLoading = false, stats, onSe
                 const leadId = e.dataTransfer.getData('text/plain');
                 if (leadId) handleStageDrop(leadId, stage.id);
               }}
-              className={`min-w-[240px] sm:min-w-[260px] xl:min-w-[270px] flex-1 max-w-[340px] bg-background-secondary-default/40 rounded-2xl border transition-all flex flex-col min-h-[580px] max-h-[80vh] shadow-2xs overflow-hidden ${
+              className={`min-w-[185px] sm:min-w-[190px] xl:min-w-[200px] flex-1 max-w-[260px] bg-background-secondary-default/40 rounded-2xl border transition-all flex flex-col min-h-[580px] max-h-[80vh] shadow-2xs overflow-hidden ${
                 isTargeted ? 'border-accent-500 ring-2 ring-accent-500/30 bg-accent-500/5' : 'border-separator-border'
               }`}
             >

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { STAGES, STAGE_CONFIG, normalizeStage, getStageLabel } from '@shared/stages';
 import {
   RiArrowLeftLine,
   RiArrowLeftSLine,
@@ -61,14 +62,6 @@ const AUDIT_STEPS = [
 
 const ALL_TAGS = ['High Intent', 'Called Owner', 'Needs Redesign', 'Follow Up'];
 
-const STAGES = [
-  { id: 'discovered', label: 'Discovered', color: 'indigo' },
-  { id: 'contacted', label: 'Contacted', color: 'blue' },
-  { id: 'replied', label: 'Replied', color: 'purple' },
-  { id: 'won', label: 'Won', color: 'green' },
-  { id: 'archived', label: 'Archived', color: 'neutral' }
-];
-
 export default function LeadDossierPage({
   lead,
   leads = [],
@@ -93,7 +86,7 @@ export default function LeadDossierPage({
   const [auditProgress, setAuditProgress] = useState(0);
   const auditAbortControllerRef = useRef(null);
   const auditTimerRef = useRef(null);
-  const [currentStatus, setCurrentStatus] = useState(lead?.status || 'discovered');
+  const [currentStatus, setCurrentStatus] = useState(lead?.status ? normalizeStage(lead.status) : 'new');
   const [dealValue, setDealValue] = useState(lead?.deal_value || '');
 
   // App Settings (Sender Profile & Defaults)
@@ -233,7 +226,7 @@ export default function LeadDossierPage({
 
   useEffect(() => {
     if (lead?.id) {
-      setCurrentStatus(lead.status || 'discovered');
+      setCurrentStatus(lead.status ? normalizeStage(lead.status) : 'new');
       setDealValue(lead.deal_value || '');
       const rawNotes = localStorage.getItem(`quarry_notes_${lead.id}`) || lead.notes || '';
       setNotes(getCleanNotes(rawNotes));
@@ -472,15 +465,15 @@ export default function LeadDossierPage({
       });
       const data = await res.json();
       if (data.success) {
-        setCurrentStatus('contacted');
+        setCurrentStatus('messaged');
         setDetail(prev => ({ ...prev, lead: data.lead }));
-        toast.success('Marked as Contacted! Follow-up reminder active.', {
+        toast.success('Marked as Messaged! Follow-up reminder active.', {
           description: `Follow-up scheduled for ${data.lead.follow_up_at}`
         });
         if (onRefreshLead) onRefreshLead(currentLead.id);
       }
     } catch (err) {
-      toast.error('Failed to mark as contacted');
+      toast.error('Failed to mark as messaged');
     }
   };
 
@@ -1018,8 +1011,8 @@ export default function LeadDossierPage({
                 Stage:
               </span>
               <PillTabList className="flex-wrap gap-1">
-                {STAGES.map((s) => {
-                  const isSelected = currentStatus === s.id;
+                {STAGE_CONFIG.map((s) => {
+                  const isSelected = normalizeStage(currentStatus) === s.id;
                   return (
                     <PillTab
                       key={s.id}
@@ -1046,7 +1039,7 @@ export default function LeadDossierPage({
             <div className="flex items-center gap-2 flex-wrap text-xs lg:border-l lg:border-separator-border lg:pl-4">
               <span className="text-text-tertiary font-medium">Follow-up:</span>
 
-              {currentLead.follow_up_at && !['replied', 'won', 'archived'].includes(currentStatus) ? (() => {
+              {currentLead.follow_up_at && !['replied', 'won', 'lost', 'archived'].includes(normalizeStage(currentStatus)) ? (() => {
                 const today = new Date().toISOString().split('T')[0];
                 const isOverdue = currentLead.follow_up_at < today;
                 const isToday = currentLead.follow_up_at === today;
