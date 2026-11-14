@@ -256,7 +256,6 @@ export default function BoardLeadTable({
   onResetAllFilters,
   focusTier = 'vault',
   onFocusTierChange,
-  onCleanWebsites,
   onResetOsint,
   onOpenAudit,
   searchTerm = '',
@@ -274,7 +273,6 @@ export default function BoardLeadTable({
   const [isOsintScopeModalOpen, setIsOsintScopeModalOpen] = useState(false);
   const [osintScopeChoice, setOsintScopeChoice] = useState('filter'); // 'selected', 'filter', 'all'
   const [leadToDelete, setLeadToDelete] = useState(null); // single lead to delete
-  const [isCleanSitesConfirmOpen, setIsCleanSitesConfirmOpen] = useState(false);
   const [isResetOsintConfirmOpen, setIsResetOsintConfirmOpen] = useState(false);
   const [clientAuditLead, setClientAuditLead] = useState(null);
   const [settings, setSettings] = useState({});
@@ -627,10 +625,6 @@ export default function BoardLeadTable({
                   <DropdownItem onSelect={() => setIsResetOsintConfirmOpen(true)} className="px-2.5 py-2 rounded-lg text-body-medium">
                     <RiRefreshLine className="size-4 text-text-secondary" />
                     <span>Reset Research Data</span>
-                  </DropdownItem>
-                  <DropdownItem onSelect={() => setIsCleanSitesConfirmOpen(true)} className="px-2.5 py-2 rounded-lg text-body-medium text-status-rose-text hover:bg-status-rose-background">
-                    <RiDeleteBin6Line className="size-4 text-status-rose-text" />
-                    <span>Clean {stats?.withWebsites || 0} sites</span>
                   </DropdownItem>
                 </DropdownGroup>
               </DropdownPopover>
@@ -1652,40 +1646,6 @@ export default function BoardLeadTable({
                 }}
               >
                 Delete
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Clean Sites Confirmation Modal */}
-      {isCleanSitesConfirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="w-full max-w-sm rounded-2xl border border-separator-border bg-background-primary-default p-5 shadow-xl space-y-3">
-            <div className="flex items-center gap-2 text-status-rose-text">
-              <RiAlertLine className="size-5 shrink-0" />
-              <h3 className="text-body-large font-bold text-text-primary">Clean Sites Confirmation</h3>
-            </div>
-            <p className="text-body-medium text-text-secondary leading-relaxed">
-              This action will permanently purge <strong className="text-text-primary font-bold">{stats?.withWebsites || 0}</strong> prospects that already possess verified active websites, retaining only genuine no-website targets.
-            </p>
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-separator-border">
-              <Button
-                size="small"
-                variant="secondary"
-                onClick={() => setIsCleanSitesConfirmOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="small"
-                variant="danger"
-                onClick={() => {
-                  setIsCleanSitesConfirmOpen(false);
-                  onCleanWebsites && onCleanWebsites();
-                }}
-              >
-                Clean {stats?.withWebsites || 0} Sites
               </Button>
             </div>
           </div>

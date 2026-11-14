@@ -44,7 +44,6 @@ export default function LeadTable({
   onResetAllFilters,
   focusTier = 'vault',
   onFocusTierChange,
-  onCleanWebsites,
   onPurgeAllLeads,
   onResetOsint,
   onOpenAudit,
@@ -118,7 +117,6 @@ export default function LeadTable({
         onResetAllFilters={onResetAllFilters}
         focusTier={focusTier}
         onFocusTierChange={onFocusTierChange}
-        onCleanWebsites={onCleanWebsites}
         onResetOsint={onResetOsint}
         onResolveWebsite={onResolveWebsite}
         onOpenAudit={onOpenAudit}

@@ -782,45 +782,6 @@ class Lead {
     return db.prepare('DELETE FROM leads WHERE id = ?').run(id);
   }
 
-  static purgeLeadsWithWebsites() {
-    // Select all leads that have an authentic website (not missing, not social-only)
-    const toArchive = db.prepare(`
-      SELECT id FROM leads 
-      WHERE website IS NOT NULL 
-        AND website != '' 
-        AND lower(website) NOT LIKE '%facebook.com%' 
-        AND lower(website) NOT LIKE '%instagram.com%' 
-        AND lower(website) NOT LIKE '%linkedin.com%' 
-        AND lower(website) NOT LIKE '%twitter.com%' 
-        AND lower(website) NOT LIKE '%x.com%' 
-        AND lower(website) NOT LIKE '%linktr.ee%'
-        AND (website_status IS NULL OR website_status != 'social_only')
-        AND (status != 'archived' OR status IS NULL)
-    `).all();
-
-    const archiveTransaction = db.transaction((rows) => {
-      const updateStmt = db.prepare(`
-        UPDATE leads 
-        SET status = 'archived',
-            archived_reason = 'has_website',
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `);
-      for (const r of rows) {
-        updateStmt.run(r.id);
-      }
-    });
-
-    archiveTransaction(toArchive);
-
-    const remainingCount = db.prepare("SELECT COUNT(*) as count FROM leads WHERE (status != 'archived' OR status IS NULL) AND (has_no_website = 1 OR website IS NULL OR website = '') AND (website IS NULL OR website = '' OR lower(website) LIKE '%facebook.com%' OR lower(website) LIKE '%instagram.com%' OR lower(website) LIKE '%linkedin.com%' OR lower(website) LIKE '%linktr.ee%')").get().count;
-
-    return {
-      purgedCount: toArchive.length,
-      remainingCount
-    };
-  }
-
   static purgeAll() {
     const deleteTransaction = db.transaction(() => {
       db.prepare('DELETE FROM contacts').run();

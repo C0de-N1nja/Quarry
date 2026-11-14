@@ -238,20 +238,6 @@ class LeadController {
     }
   }
 
-  async cleanWebsites(req, res) {
-    try {
-      const result = Lead.purgeLeadsWithWebsites();
-      res.json({
-        success: true,
-        purgedCount: result.purgedCount,
-        remainingCount: result.remainingCount,
-        message: `Successfully cleaned ${result.purgedCount} leads with websites. Retained ${result.remainingCount} authentic no-website prospects!`
-      });
-    } catch (err) {
-      res.status(500).json({ success: false, error: err.message });
-    }
-  }
-
   async purgeAll(req, res) {
     try {
       Lead.purgeAll();

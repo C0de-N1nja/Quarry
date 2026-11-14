@@ -5,7 +5,6 @@ const leadController = require('../controllers/leadController');
 // Leads CRUD & Metrics routes
 router.get('/', leadController.getLeads);
 router.get('/stats', leadController.getStats);
-router.post('/clean-websites', leadController.cleanWebsites);
 router.post('/purge-all', leadController.purgeAll);
 router.post('/auto-resolve-websites', leadController.autoResolveAll);
 router.get('/:id', leadController.getLeadById);

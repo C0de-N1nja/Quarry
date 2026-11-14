@@ -735,52 +735,6 @@ async function run() {
     db.prepare('DELETE FROM leads WHERE id = ?').run(leadId);
   });
 
-  // Test 36: Clean Data / Purge Website Leads
-  test('Lead.purgeLeadsWithWebsites removes active website leads and retains authentic no-website prospects', () => {
-    const noWebName = `Retain NoWeb ${Date.now()}`;
-    const withWebName = `Purge WithWeb ${Date.now()}`;
-
-    const batch = [
-      {
-        business_name: noWebName,
-        website: null,
-        phone: '512-555-1111',
-        city: 'Austin',
-        has_no_website: 1,
-        website_status: 'no_website'
-      },
-      {
-        business_name: withWebName,
-        website: 'https://hasactivewebsite.com',
-        phone: '512-555-2222',
-        city: 'Austin',
-        has_no_website: 0,
-        website_status: 'active'
-      }
-    ];
-
-    Lead.insertBatch(batch);
-    const statsBefore = Lead.getPipelineStats();
-    assert(statsBefore.withWebsites >= 1, 'Must register at least 1 lead with website');
-
-    const purgeResult = Lead.purgeLeadsWithWebsites();
-    assert(purgeResult.purgedCount >= 1, 'Should purge at least 1 lead with website');
-
-    // Verify the no-website lead was preserved
-    const remainingLead = db.prepare('SELECT * FROM leads WHERE business_name = ?').get(noWebName);
-    assert(remainingLead, 'No-website lead must be preserved');
-    assert.strictEqual(remainingLead.has_no_website, 1);
-
-    // Verify the with-website lead was soft-archived rather than deleted
-    const purgedLead = db.prepare('SELECT * FROM leads WHERE business_name = ?').get(withWebName);
-    assert(purgedLead, 'With-website lead must still exist in database');
-    assert.strictEqual(purgedLead.status, 'archived', 'Status must be set to archived');
-    assert.strictEqual(purgedLead.archived_reason, 'has_website', 'Archived reason must be has_website');
-
-    // Clean up
-    db.prepare('DELETE FROM leads WHERE business_name IN (?, ?)').run(noWebName, withWebName);
-  });
-
   // Test 37: Dynamic Collections & Total Database Purge
   test('Dynamic Collections autogenerate from categories and Lead.purgeAll wipes clean slate', () => {
     Lead.create({

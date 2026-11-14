@@ -398,29 +398,6 @@ export default function App() {
     window.location.href = url;
   };
 
-  // 1-Click Clean Data (Purge leads with websites)
-  const handleCleanWebsites = async () => {
-    const withWebsitesCount = stats?.withWebsites || 0;
-    if (!window.confirm(`Clean Data Action:\n\nThis will purge the ${withWebsitesCount} leads that already have websites and keep ONLY authentic no-website prospects.\n\nDo you want to proceed?`)) {
-      return;
-    }
-    try {
-      const res = await fetch('/api/leads/clean-websites', { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        alert(data.message || `Cleaned ${data.purgedCount} leads with websites. Retained ${data.remainingCount} no-website prospects!`);
-        setActiveFilter('no_website'); // switch view to the clean no-website leads
-        await fetchLeads();
-        await fetchStats();
-      } else {
-        alert('Failed: ' + (data.error || 'Server error'));
-      }
-    } catch (err) {
-      console.error('Failed to clean websites', err);
-      alert('Failed to clean websites: ' + err.message);
-    }
-  };
-
   // 1-Click Complete Database Reset / Purge All Leads
   const handlePurgeAllLeads = async () => {
     if (!window.confirm("Complete Database Reset:\n\nAre you sure you want to delete ALL leads and pipeline data from the database? This will give you a 100% clean slate to test the scraper.")) {
@@ -620,7 +597,6 @@ export default function App() {
           onResetAllFilters={handleResetAllFilters}
           focusTier={focusTier}
           onFocusTierChange={setFocusTier}
-          onCleanWebsites={handleCleanWebsites}
           onPurgeAllLeads={handlePurgeAllLeads}
           onResetOsint={handleResetOsint}
           onOpenAudit={handleOpenAudit}
