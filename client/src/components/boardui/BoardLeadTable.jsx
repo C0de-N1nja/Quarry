@@ -241,6 +241,8 @@ export default function BoardLeadTable({
   onFilterChange,
   activeNiche = 'all',
   onNicheChange,
+  activeCountry = 'all',
+  onCountryChange,
   activeCity = 'all',
   onCityChange,
   contactChannel = 'all',
@@ -322,17 +324,38 @@ export default function BoardLeadTable({
     return Array.from(set).slice(0, 25);
   }, [stats, leads]);
 
-  // Unique Cities
+  // Unique Countries from backend stats or current leads
+  const countryOptions = useMemo(() => {
+    if (stats?.countries && stats.countries.length > 0) {
+      return stats.countries;
+    }
+    const map = new Map();
+    leads.forEach(l => {
+      if (l.country && l.country.trim()) {
+        const code = l.country.trim().toUpperCase();
+        map.set(code, (map.get(code) || 0) + 1);
+      }
+    });
+    return Array.from(map.entries()).map(([code, count]) => ({ code, name: code, count }));
+  }, [stats, leads]);
+
+  // Unique Cities cascaded by activeCountry
   const cityOptions = useMemo(() => {
     if (stats?.cities && stats.cities.length > 0) {
-      return stats.cities.map(c => typeof c === 'string' ? c : c.name || c.city);
+      const filtered = (activeCountry && activeCountry !== 'all')
+        ? stats.cities.filter(c => c.country && c.country.toUpperCase() === activeCountry.toUpperCase())
+        : stats.cities;
+      return Array.from(new Set(filtered.map(c => typeof c === 'string' ? c : c.name || c.city).filter(Boolean)));
     }
     const set = new Set();
     leads.forEach(l => {
+      if (activeCountry && activeCountry !== 'all' && l.country && l.country.toUpperCase() !== activeCountry.toUpperCase()) {
+        return;
+      }
       if (l.city && l.city.trim()) set.add(l.city.trim());
     });
-    return Array.from(set).slice(0, 25);
-  }, [stats, leads]);
+    return Array.from(set).slice(0, 30);
+  }, [stats, leads, activeCountry]);
 
   const allPageIds = useMemo(() => displayedLeads.map(l => l.id), [displayedLeads]);
   const isAllPageSelected = displayedLeads.length > 0 && allPageIds.every(id => selectedLeadIds.has(id));
@@ -740,15 +763,35 @@ export default function BoardLeadTable({
               <SelectItem id="phone_only" textValue="Phone Only">Phone Only</SelectItem>
             </Select>
 
-            {/* City Filter */}
+            {/* Country Filter */}
+            <Select
+              aria-label="Filter by country"
+              className="shrink-0"
+              popoverClassName="min-w-44"
+              selectedKey={activeCountry}
+              onSelectionChange={(k) => {
+                if (onCountryChange) onCountryChange(String(k));
+              }}
+            >
+              <SelectItem id="all" textValue="All Countries">All Countries</SelectItem>
+              {countryOptions.map((c) => (
+                <SelectItem key={c.code} id={c.code} textValue={c.name}>
+                  {c.name} ({c.count})
+                </SelectItem>
+              ))}
+            </Select>
+
+            {/* City Filter (Cascaded by selected Country) */}
             <Select
               aria-label="Filter by city"
               className="shrink-0"
-              popoverClassName="min-w-40"
+              popoverClassName="min-w-44"
               selectedKey={activeCity}
               onSelectionChange={(k) => onCityChange && onCityChange(String(k))}
             >
-              <SelectItem id="all" textValue="All Cities">All Cities</SelectItem>
+              <SelectItem id="all" textValue="All Cities">
+                {activeCountry !== 'all' ? `All ${activeCountry} Cities` : 'All Cities'}
+              </SelectItem>
               {cityOptions.map((c) => (
                 <SelectItem key={c} id={c} textValue={c}>{c}</SelectItem>
               ))}
@@ -759,6 +802,7 @@ export default function BoardLeadTable({
         {/* Active Filter Chips Bar (Shown when any filter is non-default) */}
         {Boolean(
           (activeNiche && activeNiche !== 'all') ||
+          (activeCountry && activeCountry !== 'all') ||
           (activeCity && activeCity !== 'all') ||
           (contactChannel && contactChannel !== 'all') ||
           (ratingFilter && ratingFilter !== 'all') ||
@@ -863,6 +907,22 @@ export default function BoardLeadTable({
                   onClick={() => onContactChannelChange && onContactChannelChange('all')}
                   className="text-text-tertiary hover:text-text-primary ml-0.5 cursor-pointer"
                   title="Remove channel filter"
+                >
+                  <RiCloseLine className="size-3" />
+                </button>
+              </span>
+            )}
+
+            {/* Country Chip */}
+            {activeCountry !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-background-secondary-default text-text-primary border border-separator-border">
+                <RiGlobalLine className="size-3 text-text-tertiary" />
+                <span>Country: {countryOptions.find((c) => c.code === activeCountry)?.name || activeCountry}</span>
+                <button
+                  type="button"
+                  onClick={() => onCountryChange && onCountryChange('all')}
+                  className="text-text-tertiary hover:text-text-primary ml-0.5 cursor-pointer"
+                  title="Remove country filter"
                 >
                   <RiCloseLine className="size-3" />
                 </button>

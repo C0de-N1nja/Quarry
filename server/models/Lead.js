@@ -6,7 +6,7 @@ const phoneService = require('../services/phone-service');
  * Lead Model: Encapsulates database queries and persistence for prospective clients.
  */
 class Lead {
-  static findAll({ status, search, category, tier, batchMode, contactChannel, city, ratingFilter, reviewsFilter, noteFilter, auditFilter, includeTest = false, limit = 100, offset = 0 } = {}) {
+  static findAll({ status, search, category, country, tier, batchMode, contactChannel, city, ratingFilter, reviewsFilter, noteFilter, auditFilter, includeTest = false, limit = 100, offset = 0 } = {}) {
     let query = `
       SELECT 
         l.*,
@@ -131,6 +131,11 @@ class Lead {
       params.push(category);
     }
 
+    if (country && country !== 'all') {
+      query += ' AND lower(TRIM(l.country)) = lower(TRIM(?))';
+      params.push(country);
+    }
+
     if (city && city !== 'all') {
       query += ' AND lower(TRIM(l.city)) = lower(TRIM(?))';
       params.push(city);
@@ -154,7 +159,7 @@ class Lead {
     return db.prepare(query).all(...params);
   }
 
-  static count({ status, search, category, tier, batchMode, contactChannel, city, ratingFilter, reviewsFilter, noteFilter, auditFilter, includeTest = false } = {}) {
+  static count({ status, search, category, country, tier, batchMode, contactChannel, city, ratingFilter, reviewsFilter, noteFilter, auditFilter, includeTest = false } = {}) {
     let query = `
       SELECT COUNT(*) as total 
       FROM leads l 
@@ -266,6 +271,11 @@ class Lead {
     if (category && category !== 'all') {
       query += ' AND lower(TRIM(l.category)) = lower(TRIM(?))';
       params.push(category);
+    }
+
+    if (country && country !== 'all') {
+      query += ' AND lower(TRIM(l.country)) = lower(TRIM(?))';
+      params.push(country);
     }
 
     if (city && city !== 'all') {
@@ -890,16 +900,40 @@ class Lead {
       count: c.count
     }));
 
+    // Dynamic countries breakdown
+    const COUNTRY_NAMES = {
+      US: 'United States',
+      GB: 'United Kingdom',
+      AU: 'Australia',
+      CA: 'Canada',
+      AE: 'United Arab Emirates'
+    };
+
+    const dynamicCountries = db.prepare(`
+      SELECT country, COUNT(*) as count 
+      FROM leads 
+      WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND country IS NOT NULL AND TRIM(country) != '' 
+      GROUP BY country 
+      ORDER BY count DESC, country ASC
+    `).all();
+
+    const countries = dynamicCountries.map(c => ({
+      code: c.country.toUpperCase(),
+      name: COUNTRY_NAMES[c.country.toUpperCase()] || c.country.toUpperCase(),
+      count: c.count
+    }));
+
     const dynamicCities = db.prepare(`
-      SELECT city, COUNT(*) as count 
+      SELECT city, country, COUNT(*) as count 
       FROM leads 
       WHERE (is_test = 0 OR is_test IS NULL) AND (status IS NULL OR status != 'archived') AND city IS NOT NULL AND TRIM(city) != '' 
-      GROUP BY city 
+      GROUP BY city, country 
       ORDER BY count DESC, city ASC
     `).all();
 
     const cities = dynamicCities.map(c => ({
       name: c.city,
+      country: c.country ? c.country.toUpperCase() : null,
       count: c.count
     }));
 
@@ -939,6 +973,7 @@ class Lead {
       followUpsOverdue,
       goldLeads: goldCount,
       collections,
+      countries,
       cities,
       niches: {
         roofing: roofingCount,

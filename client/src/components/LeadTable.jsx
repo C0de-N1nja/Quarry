@@ -29,6 +29,8 @@ export default function LeadTable({
   onPageChange,
   activeNiche = 'all',
   onNicheChange,
+  activeCountry = 'all',
+  onCountryChange,
   activeCity = 'all',
   onCityChange,
   contactChannel = 'all',
@@ -101,6 +103,8 @@ export default function LeadTable({
         onFilterChange={onFilterChange}
         activeNiche={activeNiche}
         onNicheChange={onNicheChange}
+        activeCountry={activeCountry}
+        onCountryChange={onCountryChange}
         activeCity={activeCity}
         onCityChange={onCityChange}
         contactChannel={contactChannel}

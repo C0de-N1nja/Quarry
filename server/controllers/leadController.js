@@ -12,7 +12,7 @@ class LeadController {
   async getLeads(req, res) {
     try {
       let {
-        status, search, category, tier, batchMode, contactChannel, city,
+        status, search, category, country, tier, batchMode, contactChannel, city,
         ratingFilter, reviewsFilter, noteFilter, auditFilter,
         limit, offset = 0
       } = req.query;
@@ -25,12 +25,12 @@ class LeadController {
       const parsedOffset = parseInt(offset, 10) || 0;
 
       const leads = Lead.findAll({
-        status, search, category, tier, batchMode, contactChannel, city,
+        status, search, category, country, tier, batchMode, contactChannel, city,
         ratingFilter, reviewsFilter, noteFilter, auditFilter,
         limit: parsedLimit, offset: parsedOffset
       });
       const total = Lead.count({
-        status, search, category, tier, batchMode, contactChannel, city,
+        status, search, category, country, tier, batchMode, contactChannel, city,
         ratingFilter, reviewsFilter, noteFilter, auditFilter
       });
 

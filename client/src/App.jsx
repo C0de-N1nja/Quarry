@@ -31,6 +31,7 @@ export default function App() {
   const [stats, setStats] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'no_website', 'discovered', etc.
   const [activeNiche, setActiveNiche] = useState('all'); // 'all' or collection name (e.g. 'Dental Clinic')
+  const [activeCountry, setActiveCountry] = useState('all'); // 'all' or country code (e.g. 'US', 'AU')
   const [activeCity, setActiveCity] = useState('all'); // 'all' or specific city
   const [contactChannel, setContactChannel] = useState('all'); // 'all', 'has_email', 'has_whatsapp', 'has_social', 'phone_only', 'social_all'
   const [ratingFilter, setRatingFilter] = useState('all'); // 'all', '4.5', '4.0', 'under_4', 'unrated'
@@ -207,6 +208,9 @@ export default function App() {
       if (activeNiche && activeNiche !== 'all') {
         url += `&category=${encodeURIComponent(activeNiche)}`;
       }
+      if (activeCountry && activeCountry !== 'all') {
+        url += `&country=${encodeURIComponent(activeCountry)}`;
+      }
       if (activeCity && activeCity !== 'all') {
         url += `&city=${encodeURIComponent(activeCity)}`;
       }
@@ -267,22 +271,23 @@ export default function App() {
     }
   };
 
-  // Reset to page 1 when filter/niche/city/search/focus/contactChannel/rating/reviews/notes changes
+  // Reset to page 1 when filter/niche/country/city/search/focus/contactChannel/rating/reviews/notes changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeFilter, debouncedSearch, activeNiche, activeCity, focusTier, contactChannel, ratingFilter, reviewsFilter, noteFilter, pageSize]);
+  }, [activeFilter, debouncedSearch, activeNiche, activeCountry, activeCity, focusTier, contactChannel, ratingFilter, reviewsFilter, noteFilter, pageSize]);
 
   useEffect(() => {
     fetchLeads();
-  }, [activeFilter, debouncedSearch, activeNiche, activeCity, focusTier, contactChannel, ratingFilter, reviewsFilter, noteFilter, pageSize, currentPage]);
+  }, [activeFilter, debouncedSearch, activeNiche, activeCountry, activeCity, focusTier, contactChannel, ratingFilter, reviewsFilter, noteFilter, pageSize, currentPage]);
 
   useEffect(() => {
     fetchStats();
-  }, [activeFilter, activeNiche, activeCity, focusTier, contactChannel, ratingFilter, reviewsFilter, noteFilter]);
+  }, [activeFilter, activeNiche, activeCountry, activeCity, focusTier, contactChannel, ratingFilter, reviewsFilter, noteFilter]);
 
   const handleResetAllFilters = () => {
     setActiveFilter('all');
     setActiveNiche('all');
+    setActiveCountry('all');
     setActiveCity('all');
     setContactChannel('all');
     setFocusTier('vault');
@@ -597,6 +602,11 @@ export default function App() {
           onPageChange={setCurrentPage}
           activeNiche={activeNiche}
           onNicheChange={setActiveNiche}
+          activeCountry={activeCountry}
+          onCountryChange={(newCountry) => {
+            setActiveCountry(newCountry);
+            setActiveCity('all'); // Automatically cascade-reset city when country changes
+          }}
           activeCity={activeCity}
           onCityChange={setActiveCity}
           contactChannel={contactChannel}
