@@ -57,7 +57,12 @@ export default function App() {
   const [osintCategory, setOsintCategory] = useState('all');
   const [osintParams, setOsintParams] = useState(null);
   const [osintJobId, setOsintJobId] = useState(null);
-  const [activeModal, setActiveModal] = useState(null); // 'search', 'csv', 'settings', 'osint', 'drawer'
+  const [activeModal, setActiveModal] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const m = params.get('modal');
+    if (m && ['search', 'csv', 'settings', 'osint', 'drawer'].includes(m)) return m;
+    return null;
+  }); // 'search', 'csv', 'settings', 'osint', 'drawer'
   const [viewMode, setViewMode] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     const viewParam = params.get('view');
@@ -70,7 +75,10 @@ export default function App() {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
-  const [isLiveJobsOpen, setIsLiveJobsOpen] = useState(false);
+  const [isLiveJobsOpen, setIsLiveJobsOpen] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('drawer') === 'jobs' || params.get('modal') === 'jobs' || params.get('jobs') === 'true';
+  });
 
   // Intelligently detect first-time user vs. normal/returning user
   useEffect(() => {
