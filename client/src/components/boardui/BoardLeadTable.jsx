@@ -29,7 +29,9 @@ import {
   RiTwitterXLine,
   RiTiktokLine,
   RiYoutubeFill,
-  RiLinksLine
+  RiLinksLine,
+  RiFlashlightFill,
+  RiSparklingLine
 } from '@remixicon/react';
 import ClientAuditReportModal from '../audit/ClientAuditReportModal';
 
@@ -658,6 +660,90 @@ export default function BoardLeadTable({
           </div>
         </div>
 
+        {/* Tier 1.5: 4-Step Client Acquisition Workflow Stepper */}
+        <div className="flex flex-wrap items-center gap-2 py-2 px-3 my-2.5 rounded-xl bg-background-secondary-default/60 border border-separator-border text-xs">
+          <span className="text-[11px] font-mono uppercase tracking-wider text-text-tertiary font-bold flex items-center gap-1 shrink-0 mr-1">
+            <RiSpeedUpLine className="size-3.5 text-accent-500" />
+            Workflow:
+          </span>
+
+          {/* Step 1: Discover Leads */}
+          <button
+            type="button"
+            onClick={() => onOpenSearch && onOpenSearch('search')}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-background-primary-default border border-separator-border hover:border-accent-500/50 text-text-secondary hover:text-text-primary transition-all cursor-pointer shadow-2xs button-press-motion"
+            title="Step 1: Scrape local businesses or upload CSV"
+          >
+            <span className="flex size-4 items-center justify-center rounded-full bg-accent-500/15 text-accent-500 font-mono text-[10px] font-bold">1</span>
+            <span className="font-medium">Discover</span>
+            <span className="font-mono text-[10px] text-text-tertiary">({(stats?.totalLeads || totalCount || leads.length).toLocaleString()})</span>
+          </button>
+
+          <span className="text-text-tertiary font-mono">→</span>
+
+          {/* Step 2: Find Contacts */}
+          <button
+            type="button"
+            onClick={() => {
+              if (onFilterChange) onFilterChange('discovered');
+              setOsintScopeChoice(selectedLeadIds.size > 0 ? 'selected' : 'filter');
+            }}
+            className={cx(
+              "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all cursor-pointer shadow-2xs button-press-motion",
+              activeFilter === 'discovered'
+                ? "bg-amber-500/15 border-amber-500/50 text-amber-500 font-semibold ring-1 ring-amber-500/30"
+                : "bg-background-primary-default border-separator-border hover:border-amber-500/50 text-text-secondary hover:text-text-primary"
+            )}
+            title="Step 2: Find business owners, verified phones and emails"
+          >
+            <span className="flex size-4 items-center justify-center rounded-full bg-amber-500/20 text-amber-500 font-mono text-[10px] font-bold">2</span>
+            <span className="font-medium">Find Contacts</span>
+            <span className="font-mono text-[10px] text-amber-500/80">({(stats?.discovered || 0).toLocaleString()} pending)</span>
+          </button>
+
+          <span className="text-text-tertiary font-mono">→</span>
+
+          {/* Step 3: Audit Sites */}
+          <button
+            type="button"
+            onClick={() => {
+              if (onFilterChange) onFilterChange('outside_local_pack');
+            }}
+            className={cx(
+              "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all cursor-pointer shadow-2xs button-press-motion",
+              activeFilter === 'outside_local_pack'
+                ? "bg-sky-500/15 border-sky-500/50 text-sky-500 font-semibold ring-1 ring-sky-500/30"
+                : "bg-background-primary-default border-separator-border hover:border-sky-500/50 text-text-secondary hover:text-text-primary"
+            )}
+            title="Step 3: Audit website speed, mobile & SEO flaws to prove value"
+          >
+            <span className="flex size-4 items-center justify-center rounded-full bg-sky-500/20 text-sky-500 font-mono text-[10px] font-bold">3</span>
+            <span className="font-medium">Audit Sites</span>
+            <span className="font-mono text-[10px] text-sky-500/80">({(stats?.withWebsites || 0).toLocaleString()} with sites)</span>
+          </button>
+
+          <span className="text-text-tertiary font-mono">→</span>
+
+          {/* Step 4: Ready to Pitch */}
+          <button
+            type="button"
+            onClick={() => {
+              if (onFilterChange) onFilterChange('enriched');
+            }}
+            className={cx(
+              "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all cursor-pointer shadow-2xs button-press-motion",
+              activeFilter === 'enriched'
+                ? "bg-emerald-500/15 border-emerald-500/50 text-emerald-500 font-semibold ring-1 ring-emerald-500/30"
+                : "bg-background-primary-default border-separator-border hover:border-emerald-500/50 text-text-secondary hover:text-text-primary"
+            )}
+            title="Step 4: Contact verified leads with personalized pitches"
+          >
+            <span className="flex size-4 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-500 font-mono text-[10px] font-bold">4</span>
+            <span className="font-medium">Ready to Pitch</span>
+            <span className="font-mono text-[10px] text-emerald-500/80 font-bold">({(stats?.enriched || 0).toLocaleString()} ready)</span>
+          </button>
+        </div>
+
         {/* Tier 2: SearchField + BoardUI Select Dropdowns */}
         <div className="flex w-full flex-col items-start gap-2.5 py-2.5 sm:flex-row sm:items-center sm:justify-between border-b border-separator-border/60">
           
@@ -1084,9 +1170,9 @@ export default function BoardLeadTable({
               {/* Actions Column (Sticky Right) */}
               <TableColumn 
                 id="actions" 
-                className="w-[160px] px-4 py-3 text-right sticky top-0 right-0 z-30 bg-background-primary-default border-l border-separator-border/60"
+                className="w-[170px] px-4 py-3 text-right sticky top-0 right-0 z-30 bg-background-primary-default border-l border-separator-border/60"
               >
-                <span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">Actions</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">Next Step</span>
               </TableColumn>
             </TableHeader>
 
@@ -1362,30 +1448,93 @@ export default function BoardLeadTable({
                       </div>
                     </TableCell>
 
-                    {/* Actions Column (Sticky Right, solid background, 1 Pitch + ⋯ Menu) */}
+                    {/* Actions Column (Sticky Right, solid background, Next Step Smart Button + ⋯ Menu) */}
                     <TableCell 
-                      className="w-[160px] px-4 py-2 text-right sticky right-0 z-10 bg-background-primary-default border-l border-separator-border/60"
+                      className="w-[170px] px-3 py-2 text-right sticky right-0 z-10 bg-background-primary-default border-l border-separator-border/60"
                     >
                       <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
                         
-                        {/* 1 Visible Pitch Button (BoardUI Button) */}
-                        <Button
-                          size="small"
-                          variant="secondary"
-                          disabled={isOptedOut}
-                          onClick={() => {
-                            if (isOptedOut) return;
-                            onOpenLeadDrawer ? onOpenLeadDrawer({ ...lead, initialTab: 'osint' }) : onSelectLead(lead);
-                          }}
-                          className={cx(
-                            "text-xs font-semibold px-2.5",
-                            !isOptedOut && "border-accent-500/40 text-accent-600 dark:text-accent-400 hover:bg-accent-500 hover:text-white dark:hover:text-slate-950"
-                          )}
-                          title={isOptedOut ? "Lead opted out of outreach" : "Open pitch composer"}
-                          aria-label={isOptedOut ? "Pitch disabled (opted out)" : `Pitch ${businessName}`}
-                        >
-                          Pitch
-                        </Button>
+                        {/* State-Driven Next Step Action Button */}
+                        {(() => {
+                          // 1. Follow-up state (already contacted or negotiating)
+                          if (['contacted', 'in_conversation', 'meeting', 'won'].includes(lead.status)) {
+                            return (
+                              <Button
+                                size="small"
+                                variant="secondary"
+                                leadingIcon={RiCalendarCheckLine}
+                                onClick={() => onOpenLeadDrawer ? onOpenLeadDrawer({ ...lead, initialTab: 'activity' }) : onSelectLead(lead)}
+                                className="text-xs font-semibold px-2 border-blue-500/40 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:text-white"
+                                title="Log interaction or schedule follow-up"
+                              >
+                                Follow Up
+                              </Button>
+                            );
+                          }
+
+                          // 2. Ready to pitch state (enriched or has verified contact data)
+                          if (lead.status === 'enriched' || lead.contact_name || lead.email || lead.whatsapp) {
+                            return (
+                              <Button
+                                size="small"
+                                variant="secondary"
+                                leadingIcon={RiSparklingLine}
+                                disabled={isOptedOut}
+                                onClick={() => {
+                                  if (isOptedOut) return;
+                                  onOpenLeadDrawer ? onOpenLeadDrawer({ ...lead, initialTab: 'osint' }) : onSelectLead(lead);
+                                }}
+                                className={cx(
+                                  "text-xs font-bold px-2.5",
+                                  !isOptedOut
+                                    ? "border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white dark:hover:text-slate-950"
+                                    : "opacity-50"
+                                )}
+                                title={isOptedOut ? "Lead opted out" : "Open pitch composer with generated script"}
+                                aria-label={isOptedOut ? "Pitch disabled (opted out)" : `Pitch ${businessName}`}
+                              >
+                                Pitch
+                              </Button>
+                            );
+                          }
+
+                          // 3. Needs Website Audit state (has real site, but not audited yet)
+                          const hasRealWebsite = lead.website && !isNoWebsite;
+                          if (hasRealWebsite && lead.audit_status !== 'audited') {
+                            return (
+                              <Button
+                                size="small"
+                                variant="secondary"
+                                leadingIcon={RiShieldCheckLine}
+                                onClick={() => {
+                                  if (onOpenAudit) {
+                                    onOpenAudit(lead.id);
+                                  } else {
+                                    setClientAuditLead(lead);
+                                  }
+                                }}
+                                className="text-xs font-semibold px-2 border-sky-500/50 text-sky-600 dark:text-sky-400 hover:bg-sky-500 hover:text-white dark:hover:text-slate-950"
+                                title="Audit site speed, SEO and mobile flaws for pitch proof"
+                              >
+                                Audit Site
+                              </Button>
+                            );
+                          }
+
+                          // 4. Needs Contact/Owner Research state (no site or audited site without contacts)
+                          return (
+                            <Button
+                              size="small"
+                              variant="secondary"
+                              leadingIcon={RiFlashlightFill}
+                              onClick={() => onRunOsint ? onRunOsint(lead.id) : (onOpenLeadDrawer ? onOpenLeadDrawer(lead) : onSelectLead(lead))}
+                              className="text-xs font-semibold px-2 border-amber-500/50 text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-white dark:hover:text-slate-950"
+                              title="Find business owner, emails and verified numbers"
+                            >
+                              Find Owner
+                            </Button>
+                          );
+                        })()}
 
                         {/* ⋯ Overflow Dropdown Menu (BoardUI Dropdown) */}
                         <Dropdown>
