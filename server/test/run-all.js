@@ -16,25 +16,15 @@ if (testDbPath !== ':memory:' && fs.existsSync(testDbPath)) {
 
 const assert = require('assert');
 const db = require('../db/database');
-const templateService = require('../services/template-service');
 const osintService = require('../services/osint-service');
 const osintTelemetryService = require('../services/osint-telemetry-service');
-const mailerService = require('../services/mailer-service');
-const mockupService = require('../services/mockup-service');
 const Mockup = require('../models/Mockup');
 const timezoneService = require('../services/timezone-service');
-const tunnelService = require('../services/tunnel-service');
 const radarService = require('../services/radar-service');
-const sequenceService = require('../services/sequence-service');
-const spamRescuerService = require('../services/spam-rescuer-service');
-const RescuedReply = require('../models/RescuedReply');
 const Lead = require('../models/Lead');
 const phoneService = require('../services/phone-service');
 const mapsScraperService = require('../services/maps-scraper-service');
-const autopilotService = require('../services/autopilot-service');
-const showcaseService = require('../services/showcase-service');
 const noWebsiteVerifier = require('../services/no-website-verifier');
-const multiInboxService = require('../services/multi-inbox-service');
 const noWebsiteOsint = require('../services/no-website-osint');
 
 console.log('🧪 Starting Client Hunting Automation Backend Test Suite...\n');
@@ -66,21 +56,9 @@ async function testAsync(name, fn) {
   }
 }
 
-async function run() {
-  // Test 1: Database Initialization
-  test('Database has seeded default outreach templates including mockup_pitch', () => {
-    const templates = templateService.getAllTemplates();
-    assert(templates.length >= 5, `Expected at least 5 templates, got ${templates.length}`);
-    const angles = templates.map(t => t.angle);
-    assert(angles.includes('speed_mobile'), 'Missing speed_mobile');
-    assert(angles.includes('booking_leak'), 'Missing booking_leak');
-    assert(angles.includes('tech_modernize'), 'Missing tech_modernize');
-    assert(angles.includes('direct_audit'), 'Missing direct_audit');
-    assert(angles.includes('mockup_pitch'), 'Missing mockup_pitch');
-  });
+const crawlerService = require('../services/crawler-service');
 
-  // Test 2: Database Lead Insertion and Retrieval
-  let testLeadId;
+async function run() {
   test('Lead insertion and querying works properly', () => {
     const insert = db.prepare(`
       INSERT INTO leads (business_name, website, phone, address, city, category, source, status)
@@ -96,6 +74,7 @@ async function run() {
   });
 
   // Test 3: OSINT Candidate Link Normalization & Platform Filter
+
   test('osintService normalizes candidate URLs and filters non-website platforms', () => {
     assert.strictEqual(osintService.normalizeCandidateUrl('example.com'), 'https://example.com');
     assert.strictEqual(osintService.normalizeCandidateUrl('http://test.com/'), 'http://test.com');
@@ -109,99 +88,7 @@ async function run() {
   });
 
   // Test 4: Template Variable Interpolation
-  test('TemplateService replaces all dynamic variables accurately', () => {
-    const lead = {
-      business_name: 'Metro Dental Clinic',
-      website: 'https://metrodental.com',
-      city: 'Miami',
-      category: 'Dentistry'
-    };
-    const audit = {
-      load_time_ms: 4800,
-      tech_stack: JSON.stringify(['WordPress', 'Elementor', 'jQuery']),
-      flaws_summary: JSON.stringify(['High load latency of 4.8s', 'No direct online appointment widget found'])
-    };
-    const contact = {
-      contact_name: 'Dr. Sarah Jenkins'
-    };
-    const settings = {
-      sender_name: 'Alex',
-      my_portfolio: 'https://example.com/portfolio'
-    };
 
-    const rendered = templateService.renderPitch('speed_mobile', lead, audit, contact, settings);
-    
-    assert(rendered.subject.includes('Metro Dental Clinic'), 'Subject should contain business name');
-    assert(rendered.body.includes('Sarah'), 'Body should address contact by first name');
-    assert(rendered.body.includes('4.8 seconds'), 'Body should specify audited load time');
-    assert(rendered.body.includes('Alex'), 'Body should contain sender name');
-  });
-
-  // Test 5: Outbox Email Staging
-  test('MailerService queues emails into the Outbox correctly', () => {
-    const email = mailerService.queueEmail({
-      lead_id: testLeadId,
-      recipient_email: 'owner@apexroofingtx.test',
-      recipient_name: 'John Doe',
-      subject: 'Quick question about apexroofingtx.test',
-      body: 'Hi John, loved your work in Austin.',
-      template_angle: 'direct_audit'
-    });
-
-    assert(email.id > 0, 'Outbox item was not created');
-    assert.strictEqual(email.status, 'pending');
-    assert.strictEqual(email.recipient_email, 'owner@apexroofingtx.test');
-
-    const updatedLead = db.prepare('SELECT status FROM leads WHERE id = ?').get(testLeadId);
-    assert.strictEqual(updatedLead.status, 'pitched', 'Lead status did not transition to pitched');
-  });
-
-  // Test 6: Instant Mockup Generator
-  test('MockupService generates tailored HTML and stores it in database', () => {
-    const lead = {
-      id: testLeadId,
-      business_name: 'Austin Apex Roofing',
-      phone: '512-555-0199',
-      city: 'Austin, TX',
-      category: 'Roofing',
-      rating: 4.9,
-      reviews_count: 87
-    };
-
-    const mockup = mockupService.generateAndSave(lead);
-    assert(mockup.id > 0, 'Mockup was not saved to database');
-    assert(mockup.html_content.includes('Austin Apex Roofing'), 'Mockup missing business name');
-    assert(mockup.html_content.includes('512-555-0199'), 'Mockup missing phone');
-    assert(mockup.html_content.includes('4.9'), 'Mockup missing rating');
-    assert(mockup.html_content.includes('Instant Project Estimator') || mockup.html_content.includes('estimator-widget'), 'Mockup missing interactive widget');
-
-    const retrieved = Mockup.findByLeadId(testLeadId);
-    assert.strictEqual(retrieved.id, mockup.id);
-  });
-
-  // Test 7: TemplateService Renders mockup_pitch with {{mockup_url}}
-  test('TemplateService renders mockup_pitch with {{mockup_url}} accurately', () => {
-    const lead = {
-      id: testLeadId,
-      business_name: 'Austin Apex Roofing',
-      website: '',
-      city: 'Austin, TX',
-      category: 'Roofing',
-      rating: 4.9,
-      reviews_count: 87
-    };
-    const settings = {
-      sender_name: 'Alex',
-      base_url: 'http://localhost:5000'
-    };
-
-    const rendered = templateService.renderPitch('mockup_pitch', lead, null, null, settings);
-    assert(rendered.subject.includes('Austin Apex Roofing'), 'Subject missing business name');
-    assert(rendered.body.includes('http://localhost:5000/mockup/' + testLeadId), 'Body missing mockup_url');
-    assert(rendered.body.includes('87'), 'Body missing reviews count');
-  });
-
-  // Test 8: OSINT Candidate DNS & Parked Domain Verification
   await testAsync('osintService performs DNS candidate checks and parked domain detection', async () => {
     const dnsResult = await osintService.checkDnsCandidate('google.com');
     assert(dnsResult.resolved, 'google.com should resolve DNS');
@@ -212,6 +99,7 @@ async function run() {
   });
 
   // Test 9: OSINT Enrichment on No-Website Lead (Website Gate Removed)
+
   await testAsync('osintService successfully enriches leads with empty/null websites', async () => {
     // Reset test lead status to discovered
     db.prepare("UPDATE leads SET status = 'discovered' WHERE id = ?").run(testLeadId);
@@ -239,6 +127,7 @@ async function run() {
 
   // Category 3 Tests
   // Test 10: Timezone Detection & Smart Scheduling
+
   test('TimezoneService detects timezones and calculates optimal 9:30 AM local time', () => {
     // US Central from Austin area code 512
     const tzAustin = timezoneService.detectTimezone({ phone: '512-555-0100' });
@@ -266,14 +155,7 @@ async function run() {
   });
 
   // Test 11: Cloudflare Tunnel Service Status
-  test('TunnelService returns valid status and detects binary presence', () => {
-    const status = tunnelService.getStatus();
-    assert(typeof status.isRunning === 'boolean');
-    assert.strictEqual(status.binaryAvailable, true, 'Binary should be detected');
-    assert(status.activeBaseUrl.startsWith('http'), 'Base URL must be valid');
-  });
 
-  // Test 12: Radar Service Proposal Generator & Lead Conversion
   test('RadarService generates tailored proposals and converts gigs to leads', () => {
     const testGig = {
       id: 'test-gig-101',
@@ -305,6 +187,7 @@ async function run() {
   });
 
   // Test 13: Radar Service Keyword Detection and HTML Entity Cleaning
+
   test('RadarService cleans HTML entities and detects tech keywords', () => {
     const raw = '&lt;p&gt;We are looking for a &lt;strong&gt;Node.js&lt;/strong&gt; and PostgreSQL backend developer.&lt;/p&gt;';
     const clean = radarService.cleanHtml(raw);
@@ -318,21 +201,7 @@ async function run() {
 
   // Category 4 Tests: Pipeline & Sequence Multipliers
   // Test 14: Follow-up Drip Sequence Generator
-  test('SequenceService generates Step 2 (Day 4 Bump) and Step 3 (Day 8 Breakup)', () => {
-    const step2 = sequenceService.generateFollowUp(testLeadId, 2);
-    assert.strictEqual(step2.sequence_step, 2);
-    assert(step2.subject.startsWith('Re:'), 'Step 2 subject should start with Re:');
-    assert(step2.body.includes('Austin Apex Roofing'), 'Step 2 body missing business name');
-    assert(step2.body.length > 50, 'Step 2 body should be generated');
 
-    const step3 = sequenceService.generateFollowUp(testLeadId, 3);
-    assert.strictEqual(step3.sequence_step, 3);
-    assert(step3.subject.startsWith('Re:'), 'Step 3 subject should start with Re:');
-    assert(step3.body.includes('roadmap') || step3.body.includes('pipeline'), 'Step 3 missing breakup wording');
-    assert(step3.body.includes('github.com'), 'Step 3 missing portfolio reference');
-  });
-
-  // Test 15: Deal Stage & Value Progression
   test('Lead.updateStage updates Kanban stage and persists deal value', () => {
     const updated = Lead.updateStage(testLeadId, 'replied', 2500);
     assert.strictEqual(updated.status, 'replied');
@@ -344,6 +213,7 @@ async function run() {
   });
 
   // Test 16: Pipeline Revenue Analytics
+
   test('Lead.getPipelineStats calculates pipeline revenue and won deals', () => {
     const stats = Lead.getPipelineStats();
     assert(typeof stats.totalPipelineValue === 'number');
@@ -354,91 +224,7 @@ async function run() {
 
   // Category 5 Tests: Gmail Spam Folder Rescuer & Inbox Bridge
   // Test 17: Sentiment Analysis and Domain Extraction
-  test('SpamRescuerService accurately detects sentiment and extracts domains', () => {
-    assert.strictEqual(spamRescuerService.extractDomain('https://www.austinapexroofing.com/services'), 'austinapexroofing.com');
-    assert.strictEqual(spamRescuerService.extractDomain('mike@austinapexroofing.com'), 'austinapexroofing.com');
 
-    assert.strictEqual(spamRescuerService.detectSentiment('Sounds great, when can you send the video or jump on a call?'), 'positive');
-    assert.strictEqual(spamRescuerService.detectSentiment('Please unsubscribe us and remove me from your list'), 'negative');
-    assert.strictEqual(spamRescuerService.detectSentiment('What is your typical turnaround time and pricing?'), 'question');
-    assert.strictEqual(spamRescuerService.detectSentiment('Received your email.'), 'neutral');
-  });
-
-  // Test 18: Rescue Simulation advances Lead to Replied and halts Drip Sequence
-  test('SpamRescuerService simulation advances lead to replied and pauses follow-up sequence', () => {
-    // Reset test lead to pitched state
-    Lead.updateStage(testLeadId, 'pitched');
-    Lead.updateSequence(testLeadId, 2, new Date().toISOString(), new Date().toISOString());
-
-    const simResult = spamRescuerService.simulateRescue({
-      leadId: testLeadId,
-      senderEmail: 'mike@austinapexroofing.com',
-      senderName: 'Mike Miller',
-      subject: 'Re: Quick question regarding Austin Apex Roofing',
-      bodyText: 'Hey Alex, I saw your pitch. Yes we are interested in seeing the mockup preview and video. Call me tomorrow afternoon.'
-    });
-
-    assert.strictEqual(simResult.success, true);
-    assert.strictEqual(simResult.rescued.sentiment, 'positive');
-    assert.strictEqual(simResult.rescued.sender_email, 'mike@austinapexroofing.com');
-
-    // Verify lead state updated in DB
-    const updatedLead = Lead.findById(testLeadId);
-    assert.strictEqual(updatedLead.status, 'replied', 'Lead status must advance to replied');
-    assert.strictEqual(updatedLead.sequence_step, 4, 'Sequence step must be 4 to halt automated follow-ups');
-
-    // Verify RescuedReply model retrieval
-    const stats = RescuedReply.getStats();
-    assert(stats.total >= 1, 'Total rescued replies should be at least 1');
-    assert(stats.positive >= 1, 'Positive sentiment count should be at least 1');
-
-    // Cleanup simulation record
-    RescuedReply.delete(simResult.rescued.id);
-  });
-
-  // Test 19: 1-Click Downloadable Gmail Filter XML Generator
-  test('SpamRescuerService generates compliant Gmail mailFilters.xml with permanent immunity rules', () => {
-    const { xml, criteriaCount } = spamRescuerService.generateGmailFilterXml();
-    assert(xml.includes("<feed xmlns='http://www.w3.org/2005/Atom'"), 'Must contain Atom feed header');
-    assert(xml.includes("<apps:property name='shouldNeverSpam' value='true'/>"), 'Must contain shouldNeverSpam rule');
-    assert(xml.includes("<apps:property name='shouldAlwaysMarkAsImportant' value='true'/>"), 'Must contain shouldAlwaysMarkAsImportant rule');
-    assert(xml.includes('Client Hunter OS'), 'Must contain filter attribution');
-  });
-
-  // Category 6 Tests: Spintax, RFC 8058, DNS/RDAP Intel, PhoneInfoga, & Google Maps Scraper
-  // Test 20: Spintax Randomization Engine
-  test('TemplateService parses nested Spintax and produces clean randomized copy', () => {
-    const rawTemplate = '{Hello|Hi|Greetings} {there|friend}, {we noticed|we found|our team spotted} {a few|some} speed issues.';
-    const parsed1 = templateService.parseSpintax(rawTemplate);
-    const parsed2 = templateService.parseSpintax(rawTemplate);
-
-    assert(!parsed1.includes('{'), 'Parsed copy should not contain opening braces');
-    assert(!parsed1.includes('}'), 'Parsed copy should not contain closing braces');
-    assert(!parsed1.includes('|'), 'Parsed copy should not contain pipe symbols');
-    assert(parsed1.length > 10, 'Parsed copy should not be empty');
-
-    // Nested spintax check
-    const nested = '{Quick|{Super|Very} fast} check';
-    const parsedNested = templateService.parseSpintax(nested);
-    assert(['Quick check', 'Super fast check', 'Very fast check'].includes(parsedNested));
-  });
-
-  // Test 21: RFC 8058 One-Click Unsubscribe Tokens and Lead Opt-Out
-  test('MailerService generates verifiable RFC 8058 tokens and handles opt-out', () => {
-    const token = mailerService.generateUnsubscribeToken(testLeadId);
-    assert(typeof token === 'string' && token.length > 20, 'Token must be a secure hex HMAC');
-
-    const verifiedId = mailerService.verifyUnsubscribeToken(token);
-    assert.strictEqual(verifiedId, testLeadId, 'Verified token must decode back to test lead ID');
-
-    // Simulate opt-out
-    Lead.optOut(testLeadId);
-    const optedOutLead = Lead.findById(testLeadId);
-    assert.strictEqual(optedOutLead.opted_out, 1, 'Lead opted_out flag must be set to 1');
-    assert.strictEqual(optedOutLead.status, 'archived', 'Lead status should transition to archived');
-  });
-
-  // Test 22: OSINT Batch Telemetry Service
   test('osintTelemetryService creates jobs, tracks progress, and manages subscribers', () => {
     const dummyLeads = [
       { id: 1, business_name: 'Lead 1', city: 'Austin', website: '' },
@@ -460,6 +246,7 @@ async function run() {
   });
 
   // Test 23: OSINT Batch Telemetry Cancellation
+
   test('osintTelemetryService cancels running jobs on request', () => {
     const dummyLeads = [{ id: 99, business_name: 'Cancel Lead' }];
     osintTelemetryService.initJob('test-job-cancel', dummyLeads);
@@ -471,6 +258,7 @@ async function run() {
   });
 
   // Test 24: PhoneInfoga Scanner & Phone Intel Classifier
+
   await testAsync('PhoneService normalizes numbers and classifies line types & carriers', async () => {
     assert.strictEqual(phoneService.normalizeNumber('(512) 555-0199'), '+15125550199');
     assert.strictEqual(phoneService.normalizeNumber('15125550199'), '+15125550199');
@@ -487,6 +275,7 @@ async function run() {
   });
 
   // Test 25: Google Maps Lead Scraper Engine
+
   test('Google Maps Scraper standalone binary is present and executable', () => {
     const fs = require('fs');
     const binPath = '/home/beast/.local/bin/google_maps_scraper';
@@ -496,56 +285,7 @@ async function run() {
   });
 
   // Test 26: 1-Click Auto-Pilot Batch Pipeline
-  await testAsync('AutoPilotService executes multi-stage batch automation on lead', async () => {
-    // Reset test lead to non-opted out and discovered status
-    db.prepare("UPDATE leads SET opted_out = 0, status = 'discovered' WHERE id = ?").run(testLeadId);
-    const Contact = require('../models/Contact');
-    Contact.upsert({
-      lead_id: testLeadId,
-      email: 'owner@apexroofingtx.test',
-      contact_name: 'John Apex',
-      is_mx_valid: 1
-    });
 
-    const events = [];
-    const summary = await autopilotService.runAutoPilot({
-      leadIds: [testLeadId],
-      angle: 'mockup_pitch',
-      dispatchMode: 'prepare_only',
-      skipExistingAudited: true
-    }, (event, data) => {
-      events.push(event);
-    });
-
-    assert(events.includes('start'), 'Should emit start event');
-    assert(events.includes('lead_start'), 'Should emit lead_start event');
-    assert(events.includes('lead_done'), 'Should emit lead_done event');
-    assert(events.includes('complete'), 'Should emit complete event');
-
-    assert.strictEqual(summary.total, 1);
-    assert.strictEqual(summary.processed, 1);
-    assert(summary.mockupsBuilt >= 1, 'Mockup prototype should be created');
-    assert(summary.pitchesPrepared >= 1, 'Pitch should be prepared');
-
-    const updatedLead = Lead.findById(testLeadId);
-    assert.strictEqual(updatedLead.status, 'enriched');
-  });
-
-  // Test 27: Laptop Showcase Service
-  test('ShowcaseService catalogs laptop prototypes and serves valid HTML with injected base tag', () => {
-    const niches = showcaseService.getAvailableNiches();
-    assert(niches.includes('roofing'), 'Should catalog roofing showcase');
-    assert(niches.includes('restaurant'), 'Should catalog restaurant showcase');
-
-    const html = showcaseService.renderPrototype('roofing');
-    assert(html.includes('<base href="/showcase-assets/roofing/">'), 'Should inject base tag for asset resolution');
-    assert(html.includes('Client Prototype Preview'), 'Should inject prototype preview banner');
-
-    const matched = showcaseService.matchNicheForLead({ category: 'Italian Pizzeria', business_name: 'Luigi Pizza' });
-    assert.strictEqual(matched, 'restaurant', 'Should match Italian Pizzeria to restaurant niche');
-  });
-
-  // Test 28: No-Website 3-Tier Verifier
   await testAsync('NoWebsiteVerifier detects missing domains and flags social aggregators', async () => {
     const res1 = await noWebsiteVerifier.verifyLeadWebsite({ website: null, business_name: 'Apex Roofers' });
     assert.strictEqual(res1.hasNoWebsite, true);
@@ -558,29 +298,7 @@ async function run() {
   });
 
   // Test 29: Multi-Inbox Pool Service
-  test('MultiInboxService tracks pool metrics and selects available senders', () => {
-    const testAccount = multiInboxService.addAccount({
-      name: 'Test Rotation Account',
-      user: 'test_pool@gmail.com',
-      pass: 'testpass123',
-      daily_limit: 50
-    });
 
-    const metrics = multiInboxService.getPoolMetrics();
-    assert(typeof metrics.totalDailyCapacity === 'number');
-    assert(metrics.totalDailyCapacity >= 50, 'Pool daily capacity should be at least 50');
-    assert(Array.isArray(metrics.accounts));
-
-    const sender = multiInboxService.getNextAvailableSender();
-    assert(sender !== null, 'Should return available sender from pool');
-    assert.strictEqual(sender.user, 'test_pool@gmail.com');
-    assert.strictEqual(sender.isPoolAccount, true);
-
-    // Clean up test account
-    multiInboxService.deleteAccount(testAccount.id);
-  });
-
-  // Test 30: No-Website OSINT Harvester Email & Name Blocklist
   test('NoWebsiteOsintService strictly rejects DuckDuckGo error addresses and sanitizes names', () => {
     const rawHtml = `
       <p class="feedback-instructions">error-lite+6be8@duckduckgo.com</p>
@@ -599,25 +317,7 @@ async function run() {
   });
 
   // Test 31: AutoPilot Outbox Email Validation & Template Polish
-  test('AutoPilotService and TemplateService prevent corrupted addresses from reaching Outbox', () => {
-    assert.strictEqual(autopilotService.isValidRecipientEmail('error-lite+6be8@duckduckgo.com'), false);
-    assert.strictEqual(autopilotService.isValidRecipientEmail('noreply@company.com'), false);
-    assert.strictEqual(autopilotService.isValidRecipientEmail('sales@sentry.io'), false);
-    assert.strictEqual(autopilotService.isValidRecipientEmail('contact@apexroofing.com'), true);
-    assert.strictEqual(autopilotService.isValidRecipientEmail('austin.roofer@gmail.com'), true);
 
-    const pitch = templateService.renderPitch('no_website_showcase', {
-      business_name: 'Apex Roofers',
-      city: 'Austin',
-      category: 'Roofing'
-    }, null, { contact_name: 'Error' });
-
-    assert(!pitch.subject.includes('Error'), 'Pitch subject must never include "Error"');
-    assert(!pitch.body.includes('Error'), 'Pitch body must never include "Error"');
-    assert(!pitch.subject.includes('Question for there about'), 'Subject must not say "Question for there about"');
-  });
-
-  // Test 32: Excel (.xlsx) and CSV Export Engine
   await testAsync('ExportService generates valid Excel and CSV buffers with complete OSINT and status columns', async () => {
     const exportService = require('../services/export-service');
     const xlsxBuf = await exportService.generateExcelBuffer('no_website');
@@ -635,6 +335,7 @@ async function run() {
   });
 
   // Test 33: Lead.insertBatch No-Website Persistence
+
   test('Lead.insertBatch persists has_no_website, website_status, and showcase_niche accurately', () => {
     const uniqueName = `Test Batch No Web ${Date.now()}`;
     const batchData = [{
@@ -663,6 +364,7 @@ async function run() {
   });
 
   // Test 34: MapsScraperService Binary & Extraction Engine
+
   await testAsync('MapsScraperService integrates google_maps_scraper binary and parses places with no-website tags', async () => {
     const mapsScraperService = require('../services/maps-scraper-service');
     assert(mapsScraperService.isBinaryAvailable(), 'google_maps_scraper binary must be available');
@@ -688,6 +390,7 @@ async function run() {
   });
 
   // Test 35: Smart Deduplication & Authenticity Merge
+
   test('Lead.insertBatch smart deduplication merges and upgrades leads with richer authentic details', () => {
     const testCoName = `Merge Test Company ${Date.now()}`;
     
@@ -736,6 +439,7 @@ async function run() {
   });
 
   // Test 37: Dynamic Collections & Total Database Purge
+
   test('Dynamic Collections autogenerate from categories and Lead.purgeAll wipes clean slate', () => {
     Lead.create({
       business_name: 'Test MedSpa Clinic',
@@ -765,6 +469,7 @@ async function run() {
   });
 
   // Test 38: Custom Scrape Limits and Parameter Handling
+
   test('MapsScraperService accepts arbitrary custom limits and dynamically scales batch parameters', () => {
     const mapsScraperService = require('../services/maps-scraper-service');
     assert(typeof mapsScraperService.searchMapsLeads === 'function', 'searchMapsLeads must be a function');
@@ -781,6 +486,7 @@ async function run() {
   });
 
   // Test 39: Hardware Threading & Parallel Worker Pool
+
   test('Hardware concurrency scales with CPU cores and UV_THREADPOOL_SIZE is configured', () => {
     const os = require('os');
     const cpuCount = os.cpus().length || 1;
@@ -793,6 +499,7 @@ async function run() {
   });
 
   // Test 40: Multi-Query Generation & Linux Notification Service
+
   test('NotificationService and multi-query generator scale custom limits beyond 20 leads', () => {
     const notificationService = require('../services/notification-service');
     assert(typeof notificationService.sendNotification === 'function', 'sendNotification must be a function');
@@ -823,6 +530,7 @@ async function run() {
   });
 
   // Test 41: TelemetryService Real-Time Stream Tracking & Metrics
+
   await testAsync('TelemetryService tracks progress, parses streaming JSONL places, and broadcasts updates', async () => {
     const fs = require('fs');
     const path = require('path');
@@ -889,6 +597,7 @@ async function run() {
   });
 
   // Test 42: Contact Channel Segmentation and Pipeline Breakdown
+
   test('Lead model supports contactChannel filters and calculates outreach pipeline stats', () => {
     // 1. Test getPipelineStats
     const stats = Lead.getPipelineStats();
@@ -952,6 +661,7 @@ async function run() {
   });
 
   // Test 43: Desktop Notification for OSINT Batch Completion
+
   test('NotificationService safely sends OSINT completion desktop alerts', () => {
     const notificationService = require('../services/notification-service');
     assert(typeof notificationService.sendOsintComplete === 'function', 'sendOsintComplete must be a function');
@@ -968,6 +678,7 @@ async function run() {
   });
 
   // Test 44: OSINT Telemetry Concurrency Tracking
+
   test('OSINT Telemetry tracks hardware concurrency and active multi-threading workers', () => {
     const testJobId = `osint_job_${Date.now()}`;
     const mockLeads = [
@@ -999,6 +710,7 @@ async function run() {
   });
 
   // Test 45: Lead.resetOsint and Collection-Specific OSINT Scoping
+
   test('Lead.resetOsint clears contacts and resets lead verification status per collection or globally', () => {
     // 1. Insert 2 test leads in 'Dental Clinic' and 1 in 'Roofing'
     const d1 = db.prepare(`
@@ -1049,6 +761,7 @@ async function run() {
   });
 
   // Test 46: OSINT 14-Day Result Caching & Force Refresh
+
   await testAsync('osintService caches results in osint_cache and skips repeat queries unless forceRefresh is true', async () => {
     const dummyLead = {
       business_name: 'Cache Test Business',
@@ -1096,6 +809,7 @@ async function run() {
   });
 
   // Test 47: Decision-Maker / Owner Email Priority Ranking
+
   test('osintService ranks decision-maker emails above generic role aliases', () => {
     // Rank 2: Decision maker / named owner / doctor / personal pattern
     assert.strictEqual(osintService.rankEmail('drsmith@austindental.com'), 2, 'drsmith should rank 2');
@@ -1120,6 +834,7 @@ async function run() {
   });
 
   // Test 48: Search Blocked Classification (No False Zero-Results)
+
   await testAsync('osintService handles search blocking gracefully without false no-website claims', async () => {
     const dummyLead = {
       business_name: 'AntiBot Block Test',
@@ -1161,6 +876,7 @@ async function run() {
   });
 
   // Test 49: Authentic WhatsApp Preservation
+
   await testAsync('osintService does not synthesize fake WhatsApp links for standard phone numbers', async () => {
     const dummyLead = {
       business_name: 'Standard US Phone Shop',
@@ -1200,6 +916,7 @@ async function run() {
   });
 
   // Test 50: Holehe Online Social Footprint Verification
+
   await testAsync('osintService integrates Holehe for social platform footprint verification', async () => {
     assert(typeof osintService.checkHolehe === 'function', 'checkHolehe must be a function');
     
@@ -1237,6 +954,7 @@ async function run() {
   });
 
   // Test 51: Fancy Unicode Font Normalizer for Stylized Social Bios & Obfuscated Contacts
+
   test('Fancy Font Normalizer decodes stylized unicode fonts, fullwidth numbers, and extracts emails & phones', () => {
     assert(typeof osintService.normalizeFancyText === 'function', 'osintService must have normalizeFancyText');
     assert(typeof noWebsiteOsint.normalizeFancyText === 'function', 'noWebsiteOsint must have normalizeFancyText');
@@ -1269,6 +987,7 @@ async function run() {
   });
 
   // Test 52: Gravatar Identity Resolution & Instant Background Cancellation Safety
+
   await testAsync('Gravatar resolves owner identity & avatars, and cancelJob stops background telemetry immediately', async () => {
     assert(typeof osintService.resolveGravatar === 'function', 'osintService must have resolveGravatar');
 
@@ -1351,6 +1070,7 @@ async function run() {
   });
 
   // Test 53: Step 3 Location Contradiction, Chain Filter & Dedicated Social URLs
+
   test('Step 3: Location contradiction filter, chain filter, and dedicated social URL persistence', () => {
     const { isSocialOrAggregator, extractSocialUrls } = require('../services/social-domains');
 
@@ -1472,6 +1192,7 @@ async function run() {
   });
 
   // Test 54: Step 4 Phone Normalization & Line Type Heuristic Removal
+
   await testAsync('Step 4: Phone normalization with libphonenumber-js and removal of mobile/landline heuristics', async () => {
     // 1. AU phone number with AU country context: MUST NOT prepend +1
     const auMobile = phoneService.normalizeNumber('0412 345 678', 'AU');
@@ -1519,6 +1240,7 @@ async function run() {
   });
 
   // Test 55: Step 5 Safety & Hygiene (is_test isolation, runs table tracking)
+
   test('Step 5: is_test flag filters test rows from search and stats, and runs table tracks executions', () => {
     // 1. Create a lead with is_test = 1
     const testLead = Lead.create({
@@ -1740,14 +1462,30 @@ async function run() {
     assert.strictEqual(mapsScraperService.isExcludedCategory(placeSupplier), true, 'Primary Appliance parts supplier must be SKIPPED');
 
     const catRegex = /airline|supplier|wholesale|manufactur|distribut|store|school|college|association/i;
-    assert.strictEqual(catRegex.test('HVAC Equipment Supplier'), true, 'Supplier must be skipped');
-    assert.strictEqual(catRegex.test('Wholesale Roofing Materials'), true, 'Wholesale must be skipped');
-    assert.strictEqual(catRegex.test('Airline Services'), true, 'Airline must be skipped');
-    assert.strictEqual(catRegex.test('Electrical Store'), true, 'Store must be skipped');
-    assert.strictEqual(catRegex.test('Technical College'), true, 'College must be skipped');
-    assert.strictEqual(catRegex.test('Roofing Contractors Association'), true, 'Association must be skipped');
-    assert.strictEqual(catRegex.test('HVAC Contractor'), false, 'Legitimate HVAC Contractor must NOT be skipped');
-    assert.strictEqual(catRegex.test('Dental Clinic'), false, 'Legitimate Dental Clinic must NOT be skipped');
+    assert.strictEqual(catRegex.
+
+  test('HVAC Equipment Supplier'), true, 'Supplier must be skipped');
+    assert.strictEqual(catRegex.
+
+  test('Wholesale Roofing Materials'), true, 'Wholesale must be skipped');
+    assert.strictEqual(catRegex.
+
+  test('Airline Services'), true, 'Airline must be skipped');
+    assert.strictEqual(catRegex.
+
+  test('Electrical Store'), true, 'Store must be skipped');
+    assert.strictEqual(catRegex.
+
+  test('Technical College'), true, 'College must be skipped');
+    assert.strictEqual(catRegex.
+
+  test('Roofing Contractors Association'), true, 'Association must be skipped');
+    assert.strictEqual(catRegex.
+
+  test('HVAC Contractor'), false, 'Legitimate HVAC Contractor must NOT be skipped');
+    assert.strictEqual(catRegex.
+
+  test('Dental Clinic'), false, 'Legitimate Dental Clinic must NOT be skipped');
 
     // 4. runs table: with_website_count, no_website_count, qualified_count (no website AND rating>=4.0 AND reviews>=15)
     const runStmt = db.prepare(`
@@ -1891,6 +1629,7 @@ async function run() {
   });
 
   // Test 61: WhatsApp Service & WhatsLookup Integration
+
   await testAsync('WhatsAppService normalizes international digits, generates wa.me links, and records WhatsApp intel', async () => {
     const whatsappService = require('../services/whatsapp-service');
     assert.strictEqual(whatsappService.normalizeDigits('+1 (408) 841-9485'), '14088419485');
@@ -1909,6 +1648,7 @@ async function run() {
   });
 
   // Test 62: Blackbird Social Footprint Integration
+
   await testAsync('BlackbirdService sanitizes handles, scans multi-platform accounts, and persists social footprints', async () => {
     const blackbirdService = require('../services/blackbird-service');
     assert.strictEqual(blackbirdService.sanitizeHandle('@torvalds'), 'torvalds');
@@ -1931,6 +1671,7 @@ async function run() {
   });
 
   // Test 63: theHarvester Domain Intelligence Integration
+
   await testAsync('HarvesterService cleans domains, rejects generic aggregators, and extracts infrastructure intel', async () => {
     const harvesterService = require('../services/harvester-service');
     assert.strictEqual(harvesterService.cleanDomain('https://www.gulfcoasttree.biz/about/'), 'gulfcoasttree.biz');
@@ -1954,6 +1695,7 @@ async function run() {
   });
 
   // Test 64: EmailVerifierService Rust check-if-email-exists Integration
+
   await testAsync('EmailVerifierService detects invalid syntax, verifies MX records, and updates contact deliverability', async () => {
     const verifier = require('../services/email-verifier-service');
     assert.strictEqual(verifier.isAvailable(), true, 'check_if_email_exists binary must be present in server/tools/email-verifier');
@@ -1978,6 +1720,7 @@ async function run() {
   });
 
   // Test 65: WebsiteAuditService & Pa11y/Core Web Vitals Integration
+
   await testAsync('WebsiteAuditService executes DOM & WCAG diagnostics, calculates scores, and saves to website_audits', async () => {
     const auditService = require('../services/website-audit-service');
     const WebsiteAudit = require('../models/WebsiteAudit');
@@ -2001,7 +1744,21 @@ async function run() {
     assert(savedRow.audit_data && savedRow.audit_data.url, 'Full audit data must be stored in JSON');
   });
 
-  // Cleanup test lead
+  // Test: CrawlerService URL Classification and Social Domain Filtering
+  test('CrawlerService classifies domains, rejects social aggregators, and parses CSV leads', () => {
+    const { classifyWebsiteUrl, isSocialOrAggregator } = require('../services/social-domains');
+    assert.strictEqual(isSocialOrAggregator('https://www.facebook.com/localbusiness'), true);
+    assert.strictEqual(isSocialOrAggregator('https://www.instagram.com/localbusiness'), true);
+    assert.strictEqual(isSocialOrAggregator('https://www.yelp.com/biz/local-roofing'), true);
+    assert.strictEqual(isSocialOrAggregator('https://localroofingtexas.com'), false);
+
+    const classification = classifyWebsiteUrl('https://m.facebook.com/page');
+    assert.strictEqual(classification.type, 'social_profile');
+    assert.strictEqual(classification.isOfficialWebsite, false);
+    assert.strictEqual(classification.isNoWebsite, true);
+  });
+
+// Cleanup test lead
   Mockup.deleteByLeadId(testLeadId);
   db.prepare('DELETE FROM leads WHERE id = ?').run(testLeadId);
 

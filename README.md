@@ -89,6 +89,20 @@ npm run dev
 
 ---
 
+## Open Source Credits & Tool Attribution
+
+Quarry leverages and integrates several battle-tested open source OSINT engines and developer utilities:
+
+- **[Blackbird](https://github.com/p1ngul1n0/blackbird)**: Social account footprinting across 500+ networks.
+- **[check-if-email-exists](https://github.com/reacherhq/check-if-email-exists)**: High-performance email MX deliverability verification binary by ReacherHQ.
+- **[theHarvester](https://github.com/laramies/theHarvester)**: Passive domain infrastructure reconnaissance and subdomain discovery.
+- **[WhatsLookup](https://github.com)**: WhatsApp presence and business metadata verification.
+- **[Scrapling](https://github.com/D4Vinci/Scrapling)**: Stealth web scraping and anti-bot HTTP parsing.
+
+All third-party tools retain their respective open-source licenses and copyrights.
+
+---
+
 ## License
 
 This project is licensed under the **MIT License**. Free to use and customize.
