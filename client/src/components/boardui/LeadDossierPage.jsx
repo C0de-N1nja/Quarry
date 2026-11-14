@@ -806,8 +806,9 @@ export default function LeadDossierPage({
   const primaryPhone = contact?.phone || currentLead.phone;
   const primaryEmail = contact?.email || currentLead.email;
   const hasWhatsApp = Boolean(contact?.whatsapp || currentLead.whatsapp || (parsedOsint && parsedOsint.whatsapp_intel && parsedOsint.whatsapp_intel.is_whatsapp_registered));
+  const locationString = currentLead.address || [currentLead.city, currentLead.country].filter(Boolean).join(', ') || '';
   const mapsUrl = currentLead.maps_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    `${currentLead.business_name} ${currentLead.city || 'Austin'}`
+    [currentLead.business_name, locationString].filter(Boolean).join(' ')
   )}`;
   const cleanDomain = getCleanDomain(currentLead.website);
 
@@ -2104,7 +2105,7 @@ export default function LeadDossierPage({
                   <iframe
                     title="Google Maps Location"
                     src={`https://maps.google.com/maps?q=${encodeURIComponent(
-                      currentLead.address || `${currentLead.business_name}, ${currentLead.city || 'Austin'}`
+                      currentLead.address || [currentLead.business_name, currentLead.city, currentLead.country].filter(Boolean).join(', ')
                     )}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
                     className="w-full h-full border-0 filter contrast-[0.95] dark:invert-[0.9] dark:hue-rotate-180"
                     loading="lazy"
@@ -2123,7 +2124,7 @@ export default function LeadDossierPage({
                 <div>
                   <span className="text-[10px] uppercase font-mono text-text-tertiary block">Commercial Address</span>
                   <span className="text-xs font-bold text-text-primary block mt-0.5">
-                    {currentLead.address || `${currentLead.city || 'Austin'}, United States`}
+                    {currentLead.address || [currentLead.city, currentLead.country].filter(Boolean).join(', ') || 'Address not listed'}
                   </span>
                 </div>
 

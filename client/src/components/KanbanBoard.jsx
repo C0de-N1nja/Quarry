@@ -150,7 +150,7 @@ export default function KanbanBoard({ leads = [], isLoading = false, stats, onSe
       <div className="flex gap-4 overflow-x-auto pb-4 items-start no-scrollbar">
         {STAGES.map((stage) => {
           const stageLeads = getLeadsForStage(stage);
-          const stageValue = stageLeads.reduce((acc, l) => acc + (l.deal_value || 1000), 0);
+          const stageValue = stageLeads.reduce((acc, l) => acc + (Number(l.deal_value) || 0), 0);
           const isExpanded = expandedStages.has(stage.id);
           const visibleLeads = isExpanded ? stageLeads : stageLeads.slice(0, 30);
           const isTargeted = dragOverStage === stage.id;

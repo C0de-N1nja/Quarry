@@ -206,16 +206,28 @@ export default function SplitView({
     const digits = phone.replace(/[^\d]/g, '');
     if (!digits) return '#';
     const cleanDigits = digits.length === 10 ? `1${digits}` : digits;
+    const reputationNote = (Number(lead.rating) > 0 && Number(lead.reviews_count) > 0)
+      ? `noticed your ${lead.rating} rating on Google Maps`
+      : `came across ${lead.business_name || 'your business'} on Google Maps`;
     const msg = encodeURIComponent(
-      `Hi ${lead.business_name || 'there'}! I noticed your excellent local rating (${lead.rating || '5.0'} / 5.0) in ${lead.city || 'your area'}, but saw you don't have an active website yet. We created a free modern website concept for your business. Would you like me to send you the preview link?`
+      `Hi ${lead.business_name || 'there'}! I ${reputationNote} in ${lead.city || 'your area'}, but saw you don't have an active website yet. We created a free modern website concept for your business. Would you like me to send you the preview link?`
     );
     return `https://wa.me/${cleanDigits}?text=${msg}`;
+  };
+
+  const getPitchText = (lead) => {
+    if (!lead) return '';
+    const hasReviews = Number(lead.rating) > 0 && Number(lead.reviews_count) > 0;
+    const proofText = hasReviews
+      ? `saw your established reputation (${lead.rating} / 5.0 with ${lead.reviews_count} verified reviews)`
+      : `came across your local service listing on Google`;
+    return `Hi ${lead.business_name} Team,\n\nI was researching businesses in ${lead.city || 'your area'} and ${proofText}.\n\nI noticed you don't currently have a dedicated commercial website, meaning you could be losing high-value local customers searching Google directly to competitors.\n\nWe put together a clean, mobile-optimized website prototype designed specifically for ${lead.business_name}. Would you be open to checking out a quick 30-second live preview?`;
   };
 
   // Copy quick pitch text
   const handleCopyPitch = (lead) => {
     if (!lead) return;
-    const text = `Hi ${lead.business_name} Team,\n\nI was researching top-rated businesses in ${lead.city || 'your area'} and saw your stellar reputation (${lead.rating || '5.0'} / 5.0 with ${lead.reviews_count || 'many'} reviews).\n\nI noticed you don't currently have a dedicated website, meaning you could be losing high-value local customers searching Google directly to competitors.\n\nWe put together a clean, mobile-optimized website prototype designed specifically for ${lead.business_name}. Would you be open to checking out a quick 30-second live preview?`;
+    const text = getPitchText(lead);
     navigator.clipboard.writeText(text);
     setCopiedPitch(true);
     setTimeout(() => setCopiedPitch(false), 2000);
@@ -718,7 +730,7 @@ export default function SplitView({
                   </Button>
                 </div>
                 <div className="p-3 rounded-lg bg-background-primary-default border border-separator-border font-sans text-caption-1-regular text-text-secondary leading-relaxed whitespace-pre-line">
-                  {`Hi ${currentLead.business_name} Team,\n\nI was researching top-rated businesses in ${currentLead.city || 'your area'} and saw your stellar reputation (${currentLead.rating || '5.0'} / 5.0 with ${currentLead.reviews_count || 'many'} reviews).\n\nI noticed you don't currently have a dedicated website, meaning you could be losing high-value local customers searching Google directly to competitors.\n\nWe put together a clean, mobile-optimized website prototype designed specifically for ${currentLead.business_name}. Would you be open to checking out a quick 30-second live preview?`}
+                  {getPitchText(currentLead)}
                 </div>
               </div>
 

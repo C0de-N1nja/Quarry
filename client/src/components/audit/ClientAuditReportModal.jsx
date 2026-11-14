@@ -57,7 +57,7 @@ export default function ClientAuditReportModal({
   const showSkeleton = isLoading || fetchingAudit;
 
   const businessName = lead.business_name || lead.company_name || 'Prospect';
-  const city = lead.city || 'Austin';
+  const city = lead.city || (lead.country ? lead.country : 'Local Area');
   const category = lead.category || lead.niche || 'Local Service';
   const website = lead.website && lead.website !== 'None' ? lead.website : null;
   const rating = lead.rating || null;

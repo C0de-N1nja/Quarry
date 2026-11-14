@@ -201,7 +201,7 @@ function BoardTicket({
               className="w-16 px-1.5 py-0.5 rounded bg-background-secondary-default border border-border-focus-ring text-caption-1-semibold font-mono text-text-primary outline-hidden"
             />
           </div>
-        ) : (
+        ) : lead.deal_value ? (
           <div
             onClick={(e) => {
               e.stopPropagation();
@@ -211,9 +211,20 @@ function BoardTicket({
             className="cursor-pointer inline-flex items-center"
           >
             <Chip variant="subtle" color="lime" className="font-mono font-bold hover:opacity-80">
-              ${(lead.deal_value || 1000).toLocaleString()}
+              ${Number(lead.deal_value).toLocaleString()}
             </Chip>
           </div>
+        ) : (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsEditingDeal(true);
+            }}
+            title="Set deal value"
+            className="text-[10px] text-text-tertiary hover:text-text-secondary font-mono border border-dashed border-separator-border px-1.5 py-0.5 rounded"
+          >
+            + Value
+          </button>
         )}
 
         {/* Sequence / Stage Step Info */}

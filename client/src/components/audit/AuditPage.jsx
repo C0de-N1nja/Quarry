@@ -214,6 +214,68 @@ export default function AuditPage({ leadId, onBack, onOpenPitch }) {
     );
   }
 
+  const hasNoWebsite = lead && (lead.has_no_website === 1 || !lead.website || lead.website === 'None');
+
+  if (hasNoWebsite) {
+    return (
+      <div className="min-h-screen bg-background-primary-default text-text-primary flex flex-col font-sans">
+        <header className="sticky top-0 z-40 bg-background-primary-default/90 backdrop-blur-md border-b border-separator-border px-6 py-4">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={onBack}
+                leadingIcon={RiArrowLeftLine}
+              >
+                Back to Dashboard
+              </Button>
+              <div>
+                <h1 className="text-lg font-bold tracking-tight text-text-primary">
+                  {lead?.business_name || 'Prospect'}
+                </h1>
+                <p className="text-xs text-text-secondary">
+                  {lead?.category} · {lead?.city || lead?.country || 'Local Business'}
+                </p>
+              </div>
+            </div>
+            <Chip variant="subtle" color="amber" size="sm">
+              No Official Website
+            </Chip>
+          </div>
+        </header>
+
+        <main className="max-w-2xl w-full mx-auto p-6 my-auto text-center space-y-5">
+          <div className="p-8 rounded-3xl bg-background-secondary-default border border-separator-border shadow-md space-y-4">
+            <div className="size-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 mx-auto">
+              <RiSmartphoneLine className="size-6" />
+            </div>
+            <h2 className="text-lg font-bold text-text-primary">
+              No Website Detected for {lead?.business_name}
+            </h2>
+            <p className="text-xs text-text-secondary leading-relaxed max-w-md mx-auto">
+              This business is listed on Google Maps but does not have a dedicated website. Technical performance, SSL, and Core Web Vitals audits can only be run on active domains.
+            </p>
+            <div className="p-4 rounded-xl bg-background-primary-default border border-separator-border text-left space-y-2">
+              <span className="text-[11px] font-bold text-text-primary uppercase tracking-wider block">Recommended Strategy:</span>
+              <p className="text-xs text-text-secondary leading-relaxed">
+                Pitch a modern, mobile-optimized starter website or booking page to capture customers searching for {lead?.category || 'their service'} in {lead?.city || 'their area'}.
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <Button variant="secondary" onClick={onBack}>
+                Back to Dashboard
+              </Button>
+              <Button variant="primary" onClick={() => onOpenPitch ? onOpenPitch(lead) : onBack()}>
+                View Prospect Dossier
+              </Button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   const perfScore = audit?.performance_score || 0;
   const a11yScore = audit?.accessibility_score || 0;
   const seoScore = audit?.seo_score || 0;
