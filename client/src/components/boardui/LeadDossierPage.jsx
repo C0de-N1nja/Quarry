@@ -108,6 +108,7 @@ export default function LeadDossierPage({
 
   // Findings show all toggle & map error state
   const [showAllFlaws, setShowAllFlaws] = useState(false);
+  const [showAccessibilityDetails, setShowAccessibilityDetails] = useState(false);
   const [mapError, setMapError] = useState(false);
   const [auditSubTab, setAuditSubTab] = useState('signals'); // 'signals' | 'tech'
   const [signalsFilter, setSignalsFilter] = useState('problems'); // 'problems' | 'all'
@@ -234,6 +235,7 @@ export default function LeadDossierPage({
       setIsGold(localStorage.getItem(`quarry_gold_${lead.id}`) === 'true' || (lead.rating >= 4.5 && lead.reviews_count >= 10));
       setHasOpenedGmail(false);
       setShowAllFlaws(false);
+      setShowAccessibilityDetails(false);
       setMapError(false);
       setAuditSubTab('signals');
       setSignalsFilter('problems');
@@ -372,13 +374,69 @@ export default function LeadDossierPage({
   const isMobileFriendly = audit?.mobile_friendly !== false && audit?.seo?.has_viewport !== false;
   const isHttps = Boolean(audit?.ssl_valid ?? (currentLead.website && currentLead.website.startsWith('https')));
 
+  // Sanitized flaw helper (removes lawsuit threats & unmeasured rankings)
+  const sanitizeFlaw = (flaw) => {
+    const raw = typeof flaw === 'string' ? flaw : (flaw?.message || flaw?.title || JSON.stringify(flaw));
+    return raw
+      .replace(/\(Title III lawsuit exposure\)/gi, '')
+      .replace(/ADA \/ WCAG 2\.1 accessibility violation\(s\) found/gi, 'Accessibility issue(s) detected')
+      .replace(/exceeds Google's 3\.0s mobile abandonment threshold/gi, 'exceeds Google 3.0s guideline')
+      .trim();
+  };
+
+  // Robust Flaws Extractor: Guarantees 2-3 findings are always present for audited leads
+  const flaws = (() => {
+    if (audit?.flaws_summary) {
+      if (Array.isArray(audit.flaws_summary) && audit.flaws_summary.length > 0) {
+        return audit.flaws_summary;
+      }
+      if (typeof audit.flaws_summary === 'string') {
+        try {
+          const parsed = JSON.parse(audit.flaws_summary);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (_) {}
+      }
+    }
+    if (audit?.audit_data?.flaws_summary && Array.isArray(audit.audit_data.flaws_summary) && audit.audit_data.flaws_summary.length > 0) {
+      return audit.audit_data.flaws_summary;
+    }
+    if (currentLead?.audit_summary) {
+      try {
+        const sum = typeof currentLead.audit_summary === 'string' ? JSON.parse(currentLead.audit_summary) : currentLead.audit_summary;
+        if (sum?.flaws_summary && Array.isArray(sum.flaws_summary) && sum.flaws_summary.length > 0) {
+          return sum.flaws_summary;
+        }
+      } catch (_) {}
+    }
+    // Fallback: Generate clean findings from actual metrics if lead was audited
+    if (hasAudit) {
+      const list = [];
+      const loadSecVal = (loadTimeMs / 1000).toFixed(1);
+      if (loadTimeMs > 3000) {
+        list.push(`Mobile load speed is ${loadSecVal}s (exceeds Google 3.0s guideline)`);
+      }
+      list.push(`${audit?.violations_count || 1} accessibility issue(s) detected (contrast, labels, or structure)`);
+      list.push('Missing meta description tag in Google search engine snippets');
+      return list;
+    }
+    return [];
+  })();
+
+  const displayedFlaws = showAllFlaws ? flaws : flaws.slice(0, 3);
+
   // WarmReach-Style 26 Commercial Signals & 9-Point Tech Stack
   const auditDataObj = audit?.audit_data || audit || {};
   const auditSignals = auditDataObj.signals || audit?.signals || {};
   const auditTechStack = auditDataObj.tech_stack || audit?.tech_stack || {};
   const signalsList = Object.values(auditSignals);
   const problemsFound = signalsList.filter(s => s.status === 'problem');
-  const problemsCount = auditDataObj.problems_count !== undefined ? auditDataObj.problems_count : problemsFound.length;
+  const accessibilityIssues = auditDataObj.accessibility_issues || audit?.accessibility_issues || [];
+  const violationsCount = audit?.violations_count ?? auditDataObj.violations_count ?? accessibilityIssues.length ?? 0;
+
+  // Commercial signals problems count if present, otherwise audit flaws count (or accessibility violations)
+  const problemsCount = signalsList.length > 0
+    ? (auditDataObj.problems_count !== undefined ? auditDataObj.problems_count : problemsFound.length)
+    : (flaws.length > 0 ? flaws.length : (violationsCount > 0 ? 1 : 0));
 
   // Update Lead Stage
   const handleUpdateStage = async (newStatus, newValue = dealValue) => {
@@ -810,56 +868,6 @@ export default function LeadDossierPage({
     [currentLead.business_name, locationString].filter(Boolean).join(' ')
   )}`;
   const cleanDomain = getCleanDomain(currentLead.website);
-
-  // Sanitized flaw helper (removes lawsuit threats & unmeasured rankings)
-  const sanitizeFlaw = (flaw) => {
-    const raw = typeof flaw === 'string' ? flaw : (flaw?.message || flaw?.title || JSON.stringify(flaw));
-    return raw
-      .replace(/\(Title III lawsuit exposure\)/gi, '')
-      .replace(/ADA \/ WCAG 2\.1 accessibility violation\(s\) found/gi, 'Accessibility issue(s) detected')
-      .replace(/exceeds Google's 3\.0s mobile abandonment threshold/gi, 'exceeds Google 3.0s guideline')
-      .trim();
-  };
-
-  // Robust Flaws Extractor: Guarantees 2-3 findings are always present for audited leads
-  const flaws = (() => {
-    if (audit?.flaws_summary) {
-      if (Array.isArray(audit.flaws_summary) && audit.flaws_summary.length > 0) {
-        return audit.flaws_summary;
-      }
-      if (typeof audit.flaws_summary === 'string') {
-        try {
-          const parsed = JSON.parse(audit.flaws_summary);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        } catch (_) {}
-      }
-    }
-    if (audit?.audit_data?.flaws_summary && Array.isArray(audit.audit_data.flaws_summary) && audit.audit_data.flaws_summary.length > 0) {
-      return audit.audit_data.flaws_summary;
-    }
-    if (currentLead?.audit_summary) {
-      try {
-        const sum = typeof currentLead.audit_summary === 'string' ? JSON.parse(currentLead.audit_summary) : currentLead.audit_summary;
-        if (sum?.flaws_summary && Array.isArray(sum.flaws_summary) && sum.flaws_summary.length > 0) {
-          return sum.flaws_summary;
-        }
-      } catch (_) {}
-    }
-    // Fallback: Generate clean findings from actual metrics if lead was audited
-    if (hasAudit) {
-      const list = [];
-      const loadSecVal = (loadTimeMs / 1000).toFixed(1);
-      if (loadTimeMs > 3000) {
-        list.push(`Mobile load speed is ${loadSecVal}s (exceeds Google 3.0s guideline)`);
-      }
-      list.push(`${audit?.violations_count || 1} accessibility issue(s) detected (contrast, labels, or structure)`);
-      list.push('Missing meta description tag in Google search engine snippets');
-      return list;
-    }
-    return [];
-  })();
-
-  const displayedFlaws = showAllFlaws ? flaws : flaws.slice(0, 3);
 
   // Phone type badge (Not checked yet until scanner has run)
   const phoneTypeChip = (() => {
@@ -1611,12 +1619,19 @@ export default function LeadDossierPage({
                           </div>
                         </div>
                       ) : (
-                        /* Fallback: Legacy Findings List */
+                        /* Fallback: Audit Findings List */
                         flaws.length > 0 && (
-                          <div className="space-y-2 pt-2 border-t border-separator-border/60">
-                            <div className="text-xs font-mono uppercase tracking-wider text-text-tertiary flex items-center gap-1.5">
-                              <RiAlertLine className="size-3.5 text-amber-400" />
-                              Key Audit Findings ({flaws.length})
+                          <div className="space-y-3 pt-2 border-t border-separator-border/60">
+                            <div className="text-xs font-mono uppercase tracking-wider text-text-tertiary flex items-center justify-between">
+                              <span className="flex items-center gap-1.5">
+                                <RiAlertLine className="size-3.5 text-amber-400" />
+                                Key Audit Findings ({flaws.length})
+                              </span>
+                              {violationsCount > 0 && (
+                                <span className="text-[11px] text-amber-500 font-sans font-medium">
+                                  {violationsCount} accessibility {violationsCount === 1 ? 'issue' : 'issues'} detected
+                                </span>
+                              )}
                             </div>
 
                             <div className="grid grid-cols-1 gap-2">
@@ -1638,6 +1653,52 @@ export default function LeadDossierPage({
                               >
                                 {showAllFlaws ? 'Show less' : `+ Show all (${flaws.length})`}
                               </button>
+                            )}
+
+                            {/* Detailed Accessibility Violations (WCAG 2.1 AA) when detected */}
+                            {accessibilityIssues.length > 0 && (
+                              <div className="pt-2 border-t border-separator-border/40 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-mono uppercase tracking-wider text-text-tertiary flex items-center gap-1.5">
+                                    <RiShieldCheckLine className="size-3.5 text-blue-400" />
+                                    Accessibility Issues ({accessibilityIssues.length})
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowAccessibilityDetails(p => !p)}
+                                    className="text-xs text-accent-500 hover:underline cursor-pointer font-medium"
+                                  >
+                                    {showAccessibilityDetails ? 'Hide details' : `View all ${accessibilityIssues.length} issues`}
+                                  </button>
+                                </div>
+
+                                {showAccessibilityDetails && (
+                                  <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                                    {accessibilityIssues.map((issue, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="p-2.5 rounded-xl bg-background-secondary-default border border-separator-border space-y-1.5 text-xs"
+                                      >
+                                        <div className="flex items-center justify-between gap-2">
+                                          <span className="font-mono text-[11px] text-text-primary flex items-center gap-1.5 truncate">
+                                            <span className={`size-1.5 rounded-full shrink-0 ${issue.type === 'error' ? 'bg-rose-500' : 'bg-amber-500'}`} />
+                                            <code className="truncate">{issue.code}</code>
+                                          </span>
+                                          <Chip variant="subtle" color={issue.type === 'error' ? 'rose' : 'amber'} size="sm">
+                                            {issue.type ? issue.type.toUpperCase() : 'ISSUE'}
+                                          </Chip>
+                                        </div>
+                                        <p className="text-[11px] text-text-secondary leading-relaxed">{issue.message}</p>
+                                        {issue.selector && (
+                                          <div className="text-[10px] text-text-tertiary font-mono bg-background-primary-default p-1.5 rounded border border-separator-border overflow-x-auto">
+                                            Selector: {issue.selector}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                             )}
                           </div>
                         )

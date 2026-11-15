@@ -136,7 +136,7 @@ function getStageBadge(lead, isOptedOut) {
     case 'new':
       return {
         label: 'New',
-        chipColor: 'neutral',
+        chipColor: 'blue',
         variant: 'subtle',
         dotColor: 'blue'
       };
@@ -178,9 +178,9 @@ function getStageBadge(lead, isOptedOut) {
     default:
       return {
         label: getStageLabel(status),
-        chipColor: 'neutral',
+        chipColor: 'blue',
         variant: 'subtle',
-        dotColor: 'neutral'
+        dotColor: 'blue'
       };
   }
 }
