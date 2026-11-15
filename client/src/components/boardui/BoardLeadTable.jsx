@@ -50,6 +50,10 @@ import { PillTabList, PillTab } from '@/components/base/tabs/pill-tab';
 import { Dropdown, DropdownTrigger, DropdownPopover, DropdownGroup, DropdownItem, DropdownDivider } from '@/components/base/dropdown/dropdown';
 import { isSocialOrAggregator } from '@/utils/is-social';
 import { cx } from '@/utils/cx';
+import NextActionButton from './NextActionButton';
+import WhatsAppModal from './WhatsAppModal';
+import { canCheckWebsite } from '@/utils/nextAction';
+import { toast } from '@/components/base/toast/toast';
 
 function getInitials(name = '') {
   const parts = name.trim().split(/\s+/).slice(0, 2);
@@ -145,35 +149,35 @@ function getStageBadge(lead, isOptedOut) {
         label: 'Contact found',
         chipColor: 'cyan',
         variant: 'subtle',
-        dotColor: 'purple'
+        dotColor: 'cyan'
       };
     case 'messaged':
       return {
         label: 'Messaged',
         chipColor: 'purple',
         variant: 'subtle',
-        dotColor: 'yellow'
+        dotColor: 'purple'
       };
     case 'replied':
       return {
         label: 'Replied',
-        chipColor: 'lime',
-        variant: 'bold',
-        dotColor: 'green'
+        chipColor: 'yellow',
+        variant: 'subtle',
+        dotColor: 'yellow'
       };
     case 'won':
       return {
         label: 'Won',
         chipColor: 'lime',
-        variant: 'bold',
-        dotColor: null
+        variant: 'subtle',
+        dotColor: 'lime'
       };
     case 'lost':
       return {
         label: 'Lost',
-        chipColor: 'soft',
+        chipColor: 'rose',
         variant: 'subtle',
-        dotColor: null
+        dotColor: 'rose'
       };
     default:
       return {
@@ -321,7 +325,56 @@ export default function BoardLeadTable({
   const [leadToDelete, setLeadToDelete] = useState(null); // single lead to delete
   const [isResetOsintConfirmOpen, setIsResetOsintConfirmOpen] = useState(false);
   const [clientAuditLead, setClientAuditLead] = useState(null);
+  const [whatsAppModalLead, setWhatsAppModalLead] = useState(null);
   const [settings, setSettings] = useState({});
+
+  const handleWhatsAppAction = (lead) => {
+    setWhatsAppModalLead(lead);
+  };
+
+  const handleEmailAction = async (lead) => {
+    if (!lead?.email) return;
+    const subject = encodeURIComponent(`Question regarding ${lead.business_name || 'your business'}`);
+    window.location.href = `mailto:${lead.email}?subject=${subject}`;
+    try {
+      await fetch(`/api/leads/${lead.id}/contacted`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channel: 'email', note: 'Email pitch dispatched' })
+      });
+      if (onRefresh) onRefresh();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleMarkWonAction = async (lead) => {
+    try {
+      await fetch(`/api/leads/${lead.id}/stage`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'won' })
+      });
+      toast.success(`${lead.business_name} marked as Won!`);
+      if (onRefresh) onRefresh();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleLogReplyAction = async (lead) => {
+    try {
+      await fetch(`/api/leads/${lead.id}/stage`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'replied' })
+      });
+      toast.success(`${lead.business_name} marked as Replied!`);
+      if (onRefresh) onRefresh();
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   useEffect(() => {
     fetch('/api/settings')
@@ -1503,87 +1556,15 @@ export default function BoardLeadTable({
                     >
                       <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
                         
-                        {/* State-Driven Next Step Action Button */}
-                        {(() => {
-                          // 1. Follow-up state (already messaged or negotiating)
-                          if (['messaged', 'contacted', 'replied', 'won'].includes(normalizeStage(lead.status))) {
-                            return (
-                              <Button
-                                size="small"
-                                variant="secondary"
-                                leadingIcon={RiCalendarCheckLine}
-                                onClick={() => onOpenLeadDrawer ? onOpenLeadDrawer({ ...lead, initialTab: 'activity' }) : onSelectLead(lead)}
-                                className="text-xs font-semibold px-2 border-blue-500/40 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:text-white"
-                                title="Log interaction or schedule follow-up"
-                              >
-                                Follow Up
-                              </Button>
-                            );
-                          }
-
-                          // 2. Ready to pitch state (contact found or has verified contact data)
-                          if (normalizeStage(lead.status) === 'contact_found' || lead.contact_name || lead.email || lead.whatsapp) {
-                            return (
-                              <Button
-                                size="small"
-                                variant="secondary"
-                                leadingIcon={RiSparklingLine}
-                                disabled={isOptedOut}
-                                onClick={() => {
-                                  if (isOptedOut) return;
-                                  onOpenLeadDrawer ? onOpenLeadDrawer({ ...lead, initialTab: 'osint' }) : onSelectLead(lead);
-                                }}
-                                className={cx(
-                                  "text-xs font-bold px-2.5",
-                                  !isOptedOut
-                                    ? "border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white dark:hover:text-slate-950"
-                                    : "opacity-50"
-                                )}
-                                title={isOptedOut ? "Lead opted out" : "Open pitch composer with generated script"}
-                                aria-label={isOptedOut ? "Pitch disabled (opted out)" : `Pitch ${businessName}`}
-                              >
-                                Pitch
-                              </Button>
-                            );
-                          }
-
-                          // 3. Needs Website Audit state (has real site, but not audited yet)
-                          const hasRealWebsite = lead.website && !isNoWebsite;
-                          if (hasRealWebsite && lead.audit_status !== 'audited') {
-                            return (
-                              <Button
-                                size="small"
-                                variant="secondary"
-                                leadingIcon={RiShieldCheckLine}
-                                onClick={() => {
-                                  if (onOpenAudit) {
-                                    onOpenAudit(lead.id);
-                                  } else {
-                                    setClientAuditLead(lead);
-                                  }
-                                }}
-                                className="text-xs font-semibold px-2 border-sky-500/50 text-sky-600 dark:text-sky-400 hover:bg-sky-500 hover:text-white dark:hover:text-slate-950"
-                                title="Audit site speed, SEO and mobile flaws for pitch proof"
-                              >
-                                Audit Site
-                              </Button>
-                            );
-                          }
-
-                          // 4. Needs Contact/Owner Research state (no site or audited site without contacts)
-                          return (
-                            <Button
-                              size="small"
-                              variant="secondary"
-                              leadingIcon={RiFlashlightFill}
-                              onClick={() => onRunOsint ? onRunOsint(lead.id) : (onOpenLeadDrawer ? onOpenLeadDrawer(lead) : onSelectLead(lead))}
-                              className="text-xs font-semibold px-2 border-amber-500/50 text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-white dark:hover:text-slate-950"
-                              title="Find business owner, emails and verified numbers"
-                            >
-                              Find Owner
-                            </Button>
-                          );
-                        })()}
+                        {/* State-Driven Single Next Step Action Button */}
+                        <NextActionButton
+                          lead={lead}
+                          onFindContact={(l) => onRunOsint ? onRunOsint(l.id) : (onOpenLeadDrawer ? onOpenLeadDrawer(l) : onSelectLead(l))}
+                          onWhatsApp={handleWhatsAppAction}
+                          onEmail={handleEmailAction}
+                          onFollowUp={(l) => onOpenLeadDrawer ? onOpenLeadDrawer({ ...l, initialTab: 'activity' }) : onSelectLead(l)}
+                          onMarkWon={handleMarkWonAction}
+                        />
 
                         {/* ⋯ Overflow Dropdown Menu (BoardUI Dropdown) */}
                         <Dropdown>
@@ -1598,22 +1579,50 @@ export default function BoardLeadTable({
                             <DropdownGroup>
                               <DropdownItem onSelect={() => onOpenLeadDrawer ? onOpenLeadDrawer(lead) : onSelectLead(lead)} className="px-2.5 py-2 rounded-lg text-body-medium">
                                 <RiEditLine className="size-4 text-text-secondary" />
-                                <span>Edit</span>
+                                <span>Edit Dossier</span>
                               </DropdownItem>
+
+                              <DropdownItem 
+                                onSelect={() => onOpenLeadDrawer ? onOpenLeadDrawer({ ...lead, initialTab: 'osint' }) : onSelectLead(lead)} 
+                                className="px-2.5 py-2 rounded-lg text-body-medium text-emerald-500 hover:bg-emerald-500/10"
+                              >
+                                <RiSparklingLine className="size-4 text-emerald-500" />
+                                <span>Pitch Composer</span>
+                              </DropdownItem>
+
+                              {canCheckWebsite(lead) && (
+                                <DropdownItem 
+                                  onSelect={() => onOpenAudit ? onOpenAudit(lead.id) : setClientAuditLead(lead)} 
+                                  className="px-2.5 py-2 rounded-lg text-body-medium text-sky-500 hover:bg-sky-500/10"
+                                >
+                                  <RiShieldCheckLine className="size-4 text-sky-500" />
+                                  <span>Check website</span>
+                                </DropdownItem>
+                              )}
+
+                              {normalizeStage(lead.status) === 'messaged' && (
+                                <DropdownItem 
+                                  onSelect={() => handleLogReplyAction(lead)} 
+                                  className="px-2.5 py-2 rounded-lg text-body-medium text-amber-500 hover:bg-amber-500/10"
+                                >
+                                  <RiCalendarCheckLine className="size-4 text-amber-500" />
+                                  <span>Log reply</span>
+                                </DropdownItem>
+                              )}
 
                               <DropdownItem 
                                 onSelect={() => handleQuickContacted(lead)} 
                                 className="px-2.5 py-2 rounded-lg text-body-medium text-blue-500 hover:bg-blue-500/10"
                               >
                                 <RiCalendarCheckLine className="size-4 text-blue-500" />
-                                <span>Mark Contacted (+3d)</span>
+                                <span>Schedule Follow-up (+3d)</span>
                               </DropdownItem>
 
                               <DropdownItem 
                                 onSelect={() => setClientAuditLead(lead)} 
-                                className="px-2.5 py-2 rounded-lg text-body-medium text-emerald-500 hover:bg-emerald-500/10"
+                                className="px-2.5 py-2 rounded-lg text-body-medium"
                               >
-                                <RiPrinterLine className="size-4 text-emerald-500" />
+                                <RiPrinterLine className="size-4 text-text-secondary" />
                                 <span>1-Page PDF Client Audit</span>
                               </DropdownItem>
 
@@ -1891,6 +1900,16 @@ export default function BoardLeadTable({
           audit={null}
           settings={settings}
           onClose={() => setClientAuditLead(null)}
+        />
+      )}
+
+      {/* WhatsApp Pitch Modal */}
+      {whatsAppModalLead && (
+        <WhatsAppModal
+          isOpen={Boolean(whatsAppModalLead)}
+          lead={whatsAppModalLead}
+          onClose={() => setWhatsAppModalLead(null)}
+          onSuccess={() => onRefresh && onRefresh()}
         />
       )}
     </div>

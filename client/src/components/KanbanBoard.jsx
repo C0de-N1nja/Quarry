@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   RiCopperCoinLine, 
@@ -6,7 +6,8 @@ import {
   RiShieldCheckLine, 
   RiKanbanView, 
   RiUserStarLine, 
-  RiCoinsLine 
+  RiCoinsLine,
+  RiLoader4Line
 } from '@remixicon/react';
 import { Chip } from '@/components/base/badges/chip';
 import { StatusDot } from '@/components/base/badges/status-dot';
@@ -14,6 +15,7 @@ import { SearchField } from '@/components/base/search-field/search-field';
 import { Button } from '@/components/base/buttons/button';
 import { STAGE_CONFIG, normalizeStage, getNextStage } from '@shared/stages';
 import BoardTicket from './boardui/BoardTicket';
+import WhatsAppModal from './boardui/WhatsAppModal';
 
 const STAGES = STAGE_CONFIG;
 
@@ -39,24 +41,59 @@ function KanbanTicketSkeleton({ index }) {
   );
 }
 
-export default function KanbanBoard({ leads = [], isLoading = false, stats, onSelectLead, onStageChange, onRefresh }) {
+export default function KanbanBoard({ 
+  leads = [], 
+  isLoading: initialLoading = false, 
+  stats, 
+  onSelectLead, 
+  onStageChange, 
+  onRefresh 
+}) {
   const [boardSearch, setBoardSearch] = useState('');
-  const [expandedStages, setExpandedStages] = useState(new Set());
   const [dragOverStage, setDragOverStage] = useState(null);
+  const [whatsAppModalLead, setWhatsAppModalLead] = useState(null);
 
-  const filteredLeads = useMemo(() => {
-    if (!boardSearch.trim()) return leads;
-    const term = boardSearch.toLowerCase();
-    return leads.filter(l => (
-      (l.business_name && l.business_name.toLowerCase().includes(term)) ||
-      (l.category && l.category.toLowerCase().includes(term)) ||
-      (l.city && l.city.toLowerCase().includes(term)) ||
-      (l.decision_maker_name && l.decision_maker_name.toLowerCase().includes(term))
-    ));
-  }, [leads, boardSearch]);
+  // Stage-specific leads state for accurate per-stage loading (up to 100 per column + load more)
+  const [stageLeadsMap, setStageLeadsMap] = useState({});
+  const [loadingStages, setLoadingStages] = useState({});
 
-  const getLeadsForStage = (stage) => {
-    return filteredLeads.filter(l => normalizeStage(l.status) === stage.id);
+  const fetchStageLeads = useCallback(async (stageId, append = false) => {
+    try {
+      setLoadingStages(prev => ({ ...prev, [stageId]: true }));
+      const currentLeads = append ? (stageLeadsMap[stageId]?.leads || []) : [];
+      const offset = currentLeads.length;
+      const res = await fetch(`/api/leads?status=${stageId}&limit=100&offset=${offset}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.success) {
+        setStageLeadsMap(prev => ({
+          ...prev,
+          [stageId]: {
+            leads: append ? [...currentLeads, ...(data.leads || [])] : (data.leads || []),
+            total: typeof data.total === 'number' ? data.total : (data.leads?.length || 0)
+          }
+        }));
+      }
+    } catch (err) {
+      console.error(`Failed to fetch leads for stage ${stageId}:`, err);
+    } finally {
+      setLoadingStages(prev => ({ ...prev, [stageId]: false }));
+    }
+  }, [stageLeadsMap]);
+
+  const fetchAllStages = useCallback(() => {
+    STAGES.forEach(stage => {
+      fetchStageLeads(stage.id, false);
+    });
+  }, [fetchStageLeads]);
+
+  // Initial fetch for each column on mount
+  useEffect(() => {
+    fetchAllStages();
+  }, []);
+
+  const handleLoadMore = (stageId) => {
+    fetchStageLeads(stageId, true);
   };
 
   const getNextStageId = (currentStatus) => {
@@ -72,6 +109,7 @@ export default function KanbanBoard({ leads = [], isLoading = false, stats, onSe
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: targetStage })
       });
+      fetchAllStages();
       if (onRefresh) onRefresh();
     } catch (err) {
       console.error('Failed to update stage on drop', err);
@@ -88,6 +126,7 @@ export default function KanbanBoard({ leads = [], isLoading = false, stats, onSe
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: next })
       });
+      fetchAllStages();
       if (onRefresh) onRefresh();
     } catch (err) {
       console.error('Failed to advance stage', err);
@@ -101,20 +140,55 @@ export default function KanbanBoard({ leads = [], isLoading = false, stats, onSe
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ deal_value: val })
       });
+      fetchAllStages();
       if (onRefresh) onRefresh();
     } catch (err) {
       console.error(err);
     }
   };
 
-  const toggleExpandStage = (stageId) => {
-    setExpandedStages(prev => {
-      const next = new Set(prev);
-      if (next.has(stageId)) next.delete(stageId);
-      else next.add(stageId);
-      return next;
-    });
+  const handleWhatsApp = (lead) => {
+    setWhatsAppModalLead(lead);
   };
+
+  const handleEmail = (lead) => {
+    if (!lead?.email) return;
+    const subject = encodeURIComponent(`Question regarding ${lead.business_name || 'your business'}`);
+    window.open(`mailto:${lead.email}?subject=${subject}`, '_blank');
+  };
+
+  const handleMarkWon = async (lead) => {
+    try {
+      await fetch(`/api/leads/${lead.id}/stage`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'won' })
+      });
+      fetchAllStages();
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error('Failed to mark won', err);
+    }
+  };
+
+  // Calculate loaded and total counts across stages
+  const totalInDb = useMemo(() => {
+    if (stats?.totalLeads) return stats.totalLeads;
+    return STAGES.reduce((sum, s) => {
+      const serverCount = stats?.[s.id];
+      if (typeof serverCount === 'number') return sum + serverCount;
+      return sum + (stageLeadsMap[s.id]?.total || 0);
+    }, 0);
+  }, [stats, stageLeadsMap]);
+
+  const totalLoaded = useMemo(() => {
+    return STAGES.reduce((sum, s) => {
+      const stageLeads = stageLeadsMap[s.id]?.leads || leads.filter(l => normalizeStage(l.status) === s.id);
+      return sum + stageLeads.length;
+    }, 0);
+  }, [stageLeadsMap, leads]);
+
+  const searchTerm = boardSearch.trim().toLowerCase();
 
   return (
     <div className="space-y-3.5">
@@ -131,18 +205,31 @@ export default function KanbanBoard({ leads = [], isLoading = false, stats, onSe
           />
         </div>
         <Chip variant="subtle" color="neutral">
-          Showing {filteredLeads.length} of {leads.length} leads
+          Showing {totalLoaded} of {totalInDb || 1508} leads
         </Chip>
       </div>
 
       {/* 6-Column Unified Kanban Board with comfortable column widths and drag-and-drop */}
       <div className="flex gap-2.5 overflow-x-auto pb-4 items-start">
         {STAGES.map((stage) => {
-          const stageLeads = getLeadsForStage(stage);
-          const stageValue = stageLeads.reduce((acc, l) => acc + (Number(l.deal_value) || 0), 0);
-          const isExpanded = expandedStages.has(stage.id);
-          const visibleLeads = isExpanded ? stageLeads : stageLeads.slice(0, 30);
+          // Get leads from per-stage state, fallback to filtered leads prop
+          const rawStageLeads = stageLeadsMap[stage.id]?.leads || leads.filter(l => normalizeStage(l.status) === stage.id);
+          const stageTotal = stats?.[stage.id] ?? stageLeadsMap[stage.id]?.total ?? rawStageLeads.length;
+          
+          const filteredLeads = searchTerm 
+            ? rawStageLeads.filter(l => (
+                (l.business_name && l.business_name.toLowerCase().includes(searchTerm)) ||
+                (l.category && l.category.toLowerCase().includes(searchTerm)) ||
+                (l.city && l.city.toLowerCase().includes(searchTerm)) ||
+                (l.decision_maker_name && l.decision_maker_name.toLowerCase().includes(searchTerm))
+              ))
+            : rawStageLeads;
+
+          const stageValue = rawStageLeads.reduce((acc, l) => acc + (Number(l.deal_value) || 0), 0);
           const isTargeted = dragOverStage === stage.id;
+          const isStageLoading = loadingStages[stage.id] || (initialLoading && !stageLeadsMap[stage.id]);
+          const hasMore = !searchTerm && rawStageLeads.length < stageTotal;
+          const remainingCount = Math.max(0, stageTotal - rawStageLeads.length);
 
           return (
             <div 
@@ -179,19 +266,19 @@ export default function KanbanBoard({ leads = [], isLoading = false, stats, onSe
                   </div>
                 </div>
                 <Chip variant="bold" color={stage.chipColor}>
-                  {stageLeads.length}
+                  {stageTotal}
                 </Chip>
               </div>
 
               {/* Cards Container */}
               <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5">
-                {isLoading ? (
+                {isStageLoading && rawStageLeads.length === 0 ? (
                   Array.from({ length: 3 }).map((_, idx) => (
                     <KanbanTicketSkeleton key={`skeleton-ticket-${stage.id}-${idx}`} index={idx} />
                   ))
                 ) : (
                   <AnimatePresence>
-                    {stageLeads.length === 0 ? (
+                    {filteredLeads.length === 0 ? (
                       <motion.div 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -202,29 +289,38 @@ export default function KanbanBoard({ leads = [], isLoading = false, stats, onSe
                         <span>No leads in stage</span>
                       </motion.div>
                     ) : (
-                      visibleLeads.map((lead) => (
+                      filteredLeads.map((lead) => (
                         <BoardTicket
                           key={lead.id}
                           lead={lead}
                           onSelect={onSelectLead}
                           onAdvance={handleQuickAdvance}
                           onSaveDealValue={handleSaveDealValue}
+                          onWhatsApp={handleWhatsApp}
+                          onEmail={handleEmail}
+                          onFindContact={onSelectLead}
+                          onFollowUp={onSelectLead}
+                          onMarkWon={handleMarkWon}
                         />
                       ))
                     )}
                   </AnimatePresence>
                 )}
 
-                {/* Show More toggle if stage has more than 30 cards */}
-                {stageLeads.length > 30 && (
+                {/* Load More Button when column has remaining leads */}
+                {hasMore && (
                   <div className="pt-2 text-center">
                     <Button
                       size="xs"
                       variant="ghost"
-                      onClick={() => toggleExpandStage(stage.id)}
-                      className="w-full text-text-tertiary hover:text-text-primary"
+                      onClick={() => handleLoadMore(stage.id)}
+                      disabled={loadingStages[stage.id]}
+                      leadingIcon={loadingStages[stage.id] ? RiLoader4Line : undefined}
+                      className="w-full text-text-tertiary hover:text-text-primary text-[11px]"
                     >
-                      {isExpanded ? 'Show top 30' : `Show all ${stageLeads.length} leads`}
+                      {loadingStages[stage.id] 
+                        ? 'Loading...' 
+                        : `Load more (${remainingCount} remaining)`}
                     </Button>
                   </div>
                 )}
@@ -233,6 +329,19 @@ export default function KanbanBoard({ leads = [], isLoading = false, stats, onSe
           );
         })}
       </div>
+
+      {/* WhatsApp Outreach Modal */}
+      {whatsAppModalLead && (
+        <WhatsAppModal
+          isOpen={Boolean(whatsAppModalLead)}
+          lead={whatsAppModalLead}
+          onClose={() => setWhatsAppModalLead(null)}
+          onSuccess={() => {
+            fetchAllStages();
+            if (onRefresh) onRefresh();
+          }}
+        />
+      )}
     </div>
   );
 }

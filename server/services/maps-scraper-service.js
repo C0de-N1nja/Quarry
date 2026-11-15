@@ -930,7 +930,7 @@ class MapsScraperService {
           is_unclaimed: isUnclaimed,
           source: 'maps',
           status: 'new',
-          deal_value: 1000,
+          deal_value: null,
           sequence_step: 1,
           has_no_website: isSocialOrNone ? 1 : 0,
           website_status: isSocialOrNone ? (!rawWeb ? 'no_website' : 'social_only') : 'active',

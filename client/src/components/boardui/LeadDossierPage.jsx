@@ -37,10 +37,15 @@ import { Chip } from '@/components/base/badges/chip';
 import { StatusDot } from '@/components/base/badges/status-dot';
 import { Avatar } from '@/components/base/avatar/avatar';
 import { PillTabList, PillTab } from '@/components/base/tabs/pill-tab';
+import { Dropdown, DropdownTrigger, DropdownPopover, DropdownGroup, DropdownItem, DropdownDivider } from '@/components/base/dropdown/dropdown';
+import { RiMoreFill, RiChatCheckLine } from '@remixicon/react';
 import { toast } from '@/components/base/toast/toast';
 import { cx } from '@/utils/cx';
 import { PITCH_ANGLES, generatePitchDraft, determineOptimalAngle, formatLocation, inferCountry } from '@/utils/pitchGenerator';
 import ClientAuditReportModal from '../audit/ClientAuditReportModal';
+import NextActionButton from './NextActionButton';
+import WhatsAppModal from './WhatsAppModal';
+import { canCheckWebsite } from '@/utils/nextAction';
 
 // Friendly Step-by-Step Research Stages
 const RECON_STEPS = [
@@ -92,6 +97,7 @@ export default function LeadDossierPage({
   // App Settings (Sender Profile & Defaults)
   const [settings, setSettings] = useState({});
   const [showClientAuditModal, setShowClientAuditModal] = useState(false);
+  const [whatsAppModalLead, setWhatsAppModalLead] = useState(null);
 
   // Email Suggestion & Compose State
   const [pitchAngle, setPitchAngle] = useState('auto');
@@ -243,8 +249,16 @@ export default function LeadDossierPage({
     }
   }, [lead?.id]);
 
-  const currentLead = detail?.lead || lead;
   const contact = detail?.contact || {};
+  const currentLead = React.useMemo(() => {
+    const base = detail?.lead || lead || {};
+    return {
+      ...base,
+      email: base.email || contact?.email,
+      whatsapp: base.whatsapp || contact?.whatsapp,
+      contact
+    };
+  }, [detail, lead, contact]);
   const audit = detail?.audit || null;
   const hasAudit = Boolean(audit || currentLead.audit_status === 'audited');
 
@@ -992,16 +1006,89 @@ export default function LeadDossierPage({
               </div>
             )}
 
-            <Button
+            <NextActionButton
+              lead={currentLead}
               size="small"
-              variant={osintLoading ? "secondary" : "primary"}
-              leadingIcon={osintLoading ? RiLoader4Line : RiShieldCheckLine}
-              onClick={handleRunOsint}
-              disabled={osintLoading}
-              title="Find owner and verified contact info for this business"
-            >
-              {osintLoading ? `Researching (${Math.floor(scanElapsed)}s)...` : 'Find Contacts'}
-            </Button>
+              isLoading={osintLoading}
+              loadingText={`Researching (${Math.floor(scanElapsed)}s)...`}
+              onFindContact={handleRunOsint}
+              onWhatsApp={() => setWhatsAppModalLead(currentLead)}
+              onEmail={() => {
+                if (currentLead.email) {
+                  window.open(`mailto:${currentLead.email}?subject=${encodeURIComponent(`Website concept for ${currentLead.business_name}`)}`, '_blank');
+                }
+              }}
+              onFollowUp={() => {
+                const el = document.getElementById('follow-up-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              onMarkWon={() => handleUpdateStage('won')}
+            />
+
+            <Dropdown>
+              <DropdownTrigger asChild>
+                <IconButton
+                  size="small"
+                  icon={RiMoreFill}
+                  aria-label="More dossier options"
+                  className="cursor-pointer"
+                />
+              </DropdownTrigger>
+              <DropdownPopover align="end" className="w-52">
+                <DropdownGroup>
+                  {canCheckWebsite(currentLead) && (
+                    <DropdownItem
+                      onSelect={() => onOpenAudit ? onOpenAudit(currentLead.id) : handleRunAudit()}
+                      className="px-2.5 py-2 rounded-lg text-body-medium text-sky-500 hover:bg-sky-500/10"
+                    >
+                      <RiShieldCheckLine className="size-4 text-sky-500" />
+                      <span>Check website</span>
+                    </DropdownItem>
+                  )}
+
+                  {normalizeStage(currentStatus) === 'messaged' && (
+                    <DropdownItem
+                      onSelect={() => handleUpdateStage('replied')}
+                      className="px-2.5 py-2 rounded-lg text-body-medium text-amber-500 hover:bg-amber-500/10"
+                    >
+                      <RiChatCheckLine className="size-4 text-amber-500" />
+                      <span>Log reply</span>
+                    </DropdownItem>
+                  )}
+
+                  <DropdownItem
+                    onSelect={() => setShowClientAuditModal(true)}
+                    className="px-2.5 py-2 rounded-lg text-body-medium"
+                  >
+                    <RiFilePdfLine className="size-4 text-text-secondary" />
+                    <span>1-Page PDF Client Audit</span>
+                  </DropdownItem>
+
+                  {(currentLead.maps_link || currentLead.google_maps_url) && (
+                    <DropdownItem
+                      onSelect={() => window.open(currentLead.maps_link || currentLead.google_maps_url, '_blank')}
+                      className="px-2.5 py-2 rounded-lg text-body-medium"
+                    >
+                      <RiMapPinLine className="size-4 text-text-secondary" />
+                      <span>Google Maps</span>
+                    </DropdownItem>
+                  )}
+
+                  {onArchiveLead && (
+                    <>
+                      <DropdownDivider />
+                      <DropdownItem
+                        onSelect={() => onArchiveLead(currentLead.id)}
+                        className="px-2.5 py-2 rounded-lg text-body-medium text-rose-500 hover:bg-rose-500/10"
+                      >
+                        <RiArchiveLine className="size-4 text-rose-500" />
+                        <span>Archive Lead</span>
+                      </DropdownItem>
+                    </>
+                  )}
+                </DropdownGroup>
+              </DropdownPopover>
+            </Dropdown>
           </div>
         </div>
       </header>
@@ -1041,6 +1128,19 @@ export default function LeadDossierPage({
                   );
                 })}
               </PillTabList>
+
+              {normalizeStage(currentStatus) === 'messaged' && (
+                <Button
+                  size="small"
+                  variant="secondary"
+                  leadingIcon={RiChatCheckLine}
+                  onClick={() => handleUpdateStage('replied')}
+                  title="Log that prospect has replied"
+                  className="h-7 px-2 text-xs text-amber-500 border-amber-500/40 hover:bg-amber-500/10 ml-2"
+                >
+                  Log reply
+                </Button>
+              )}
             </div>
 
             {/* Follow-up Controls in same slim bar */}
@@ -2253,6 +2353,18 @@ export default function LeadDossierPage({
           audit={audit}
           settings={settings}
           onClose={() => setShowClientAuditModal(false)}
+        />
+      )}
+
+      {/* WhatsApp Outreach Modal */}
+      {whatsAppModalLead && (
+        <WhatsAppModal
+          isOpen={Boolean(whatsAppModalLead)}
+          lead={whatsAppModalLead}
+          onClose={() => setWhatsAppModalLead(null)}
+          onSuccess={() => {
+            if (onRefreshLead) onRefreshLead();
+          }}
         />
       )}
     </div>

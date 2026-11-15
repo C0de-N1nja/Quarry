@@ -17,7 +17,8 @@ export default function WhatsAppModal({
   isOpen, 
   onClose, 
   lead, 
-  prototypeUrl 
+  prototypeUrl,
+  onSuccess
 }) {
   if (!isOpen || !lead) return null;
 
@@ -67,13 +68,31 @@ export default function WhatsAppModal({
     setTimeout(() => setCopiedId(null), 2500);
   };
 
-  const handleLaunchWhatsApp = () => {
+  const handleLaunchWhatsApp = async () => {
     const encoded = encodeURIComponent(activeScript.text);
     const waUrl = rawPhone ? `https://wa.me/${rawPhone}?text=${encoded}` : `https://wa.me/?text=${encoded}`;
     window.open(waUrl, '_blank');
     toast.info('Opening WhatsApp Web...', {
       description: `Sending pre-filled message to ${lead.phone || 'recipient'}`
     });
+
+    try {
+      const res = await fetch(`/api/leads/${lead.id}/contacted`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel: 'whatsapp',
+          note: `Pitch sent via WhatsApp (${activeScript.title})`
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.lead) {
+        if (onSuccess) onSuccess(data.lead);
+      }
+    } catch (e) {
+      console.error('Failed to auto-update stage to messaged', e);
+    }
+
     onClose();
   };
 

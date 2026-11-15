@@ -36,7 +36,7 @@ const leadColumns = [
   'opted_out INTEGER DEFAULT 0',
   "source TEXT DEFAULT 'crawler'",
   "status TEXT DEFAULT 'new'",
-  'deal_value INTEGER DEFAULT 1000',
+  'deal_value INTEGER DEFAULT NULL',
   'sequence_step INTEGER DEFAULT 1',
   'last_sequence_sent_at DATETIME',
   'next_followup_date DATETIME',
@@ -69,7 +69,8 @@ const leadColumns = [
   'tags TEXT',
   'contacted_at DATETIME',
   'follow_up_at DATE',
-  'follow_up_note TEXT'
+  'follow_up_note TEXT',
+  'last_contact_channel TEXT'
 ];
 
 for (const col of leadColumns) {

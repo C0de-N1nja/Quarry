@@ -157,6 +157,20 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // Support direct URL opening of Lead Dossier via ?leadId= or ?lead=
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const leadParam = params.get('leadId') || params.get('lead');
+    if (leadParam) {
+      fetch(`/api/leads/${leadParam}`)
+        .then(r => r.json())
+        .then(d => {
+          if (d.success && d.lead) setSelectedLead(d.lead);
+        })
+        .catch(() => {});
+    }
+  }, []);
+
   const handleOpenAudit = (leadId) => {
     setAuditLeadId(leadId);
     window.history.pushState({}, '', '/audit/' + leadId);

@@ -229,6 +229,48 @@ async function run() {
     assert.strictEqual(getStageLabel('contact_found'), 'Contact found');
   });
 
+  test('Auto-stage rules: WhatsApp/Email send -> stage messaged + follow-up date, and never moves backwards', () => {
+    // 1. Create a fresh lead in stage 'contact_found'
+    const lead = Lead.create({
+      business_name: 'Auto Stage Test Co',
+      phone: '+61 451 899 683',
+      phone_type: 'mobile',
+      status: 'contact_found'
+    });
+
+    // Verify initial stage
+    assert.strictEqual(lead.status, 'contact_found');
+    assert.strictEqual(lead.follow_up_at, null);
+
+    // 2. Mark contacted via WhatsApp
+    const contactedLead = Lead.markContacted(lead.id, { channel: 'whatsapp', days: 3, note: 'WhatsApp pitch launched' });
+    assert.strictEqual(contactedLead.status, 'messaged');
+    assert(contactedLead.follow_up_at, 'follow_up_at must be populated');
+    assert.strictEqual(contactedLead.last_contact_channel, 'whatsapp');
+
+    const expectedDate = new Date();
+    expectedDate.setDate(expectedDate.getDate() + 3);
+    const expectedStr = expectedDate.toISOString().split('T')[0];
+    assert.strictEqual(contactedLead.follow_up_at, expectedStr);
+
+    // 3. If follow-up date is already set, subsequent messages do not overwrite it
+    const fixedDate = contactedLead.follow_up_at;
+    const secondMessage = Lead.markContacted(lead.id, { channel: 'whatsapp', days: 5 });
+    assert.strictEqual(secondMessage.follow_up_at, fixedDate, 'Existing follow_up_at must not be overwritten');
+
+    // 4. Move lead forward to 'replied'
+    Lead.updateStage(lead.id, 'replied');
+    const repliedLead = Lead.findById(lead.id);
+    assert.strictEqual(repliedLead.status, 'replied');
+
+    // 5. Sending another message must NEVER move a replied lead backwards to messaged
+    const stillReplied = Lead.markContacted(lead.id, { channel: 'email' });
+    assert.strictEqual(stillReplied.status, 'replied', 'Replied lead must never move backwards to messaged');
+
+    // Cleanup
+    db.prepare('DELETE FROM leads WHERE id = ?').run(lead.id);
+  });
+
   // Test 16: Pipeline Revenue Analytics
 
   test('Lead.getPipelineStats calculates pipeline revenue and won deals', () => {

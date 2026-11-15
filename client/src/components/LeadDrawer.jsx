@@ -136,7 +136,7 @@ export default function LeadDrawer({
   const [renderedPitch, setRenderedPitch] = useState({ subject: '', body: '' });
 
   const [currentLeadStatus, setCurrentLeadStatus] = useState(lead?.status ? normalizeStage(lead.status) : 'new');
-  const [dealValue, setDealValue] = useState(lead?.deal_value || 1000);
+  const [dealValue, setDealValue] = useState(lead?.deal_value || '');
 
   const [phoneScanning, setPhoneScanning] = useState(false);
   const [holeheScanning, setHoleheScanning] = useState(false);
@@ -587,9 +587,15 @@ export default function LeadDrawer({
               </select>
               <RiArrowDownSLine className="pointer-events-none absolute right-1 size-3 text-text-tertiary" />
             </div>
-            <Chip variant="bold" color="lime">
-              ${(dealValue || 1000).toLocaleString()}
-            </Chip>
+            {dealValue ? (
+              <Chip variant="bold" color="lime">
+                ${Number(dealValue).toLocaleString()}
+              </Chip>
+            ) : (
+              <span className="text-[10px] font-mono text-text-tertiary border border-dashed border-separator-border px-1.5 py-0.5 rounded">
+                + Value
+              </span>
+            )}
             <Chip 
               variant="bold" 
               color={readinessColor} 
@@ -2012,7 +2018,7 @@ export default function LeadDrawer({
                     size="small"
                     leadingIcon={RiSpeedUpLine}
                   >
-                    Open Full Audit Page ↗
+                    Open Full Audit Page
                   </Button>
                 ) : (
                   <Button

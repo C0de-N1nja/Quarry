@@ -18,15 +18,22 @@ import {
   RiBuildingLine, 
   RiGlobalLine, 
   RiFireLine,
-  RiArrowRightUpLine
+  RiArrowRightUpLine,
+  RiMoreFill,
+  RiCalendarCheckLine
 } from '@remixicon/react';
 import { Chip } from '@/components/base/badges/chip';
 import { StatusDot } from '@/components/base/badges/status-dot';
 import { Button, ButtonLink } from '@/components/base/buttons/button';
+import { IconButton } from '@/components/base/buttons/icon-button';
 import { ButtonGroup, ButtonGroupItem } from '@/components/base/buttons/button-group';
+import { Dropdown, DropdownTrigger, DropdownPopover, DropdownGroup, DropdownItem, DropdownDivider } from '@/components/base/dropdown/dropdown';
 import { Kbd } from '@/components/base/kbd/kbd';
 import { formatLocation } from '@/utils/pitchGenerator';
 import { STAGES, STAGE_CONFIG, normalizeStage, getStageLabel } from '@shared/stages';
+import NextActionButton from './boardui/NextActionButton';
+import WhatsAppModal from './boardui/WhatsAppModal';
+import { canCheckWebsite } from '@/utils/nextAction';
 
 function SplitQueueSkeleton({ index }) {
   return (
@@ -99,6 +106,7 @@ export default function SplitView({
   onOpenOsintRun,
   onDeleteLead,
   onOpenLeadDrawer,
+  onOpenAudit,
   activeFilter,
   stats
 }) {
@@ -107,7 +115,40 @@ export default function SplitView({
   const [updatingStage, setUpdatingStage] = useState(false);
   const [statusMsg, setStatusMsg] = useState(null);
   const [visibleQueueCount, setVisibleQueueCount] = useState(50);
+  const [whatsAppModalLead, setWhatsAppModalLead] = useState(null);
   const listRef = useRef(null);
+
+  const handleLogReplyAction = async (lead) => {
+    try {
+      await fetch(`/api/leads/${lead.id}/stage`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'replied' })
+      });
+      if (onRefreshLead) onRefreshLead();
+    } catch (err) {
+      console.error('Failed to log reply', err);
+    }
+  };
+
+  const handleMarkWonAction = async (lead) => {
+    try {
+      await fetch(`/api/leads/${lead.id}/stage`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'won' })
+      });
+      if (onRefreshLead) onRefreshLead();
+    } catch (err) {
+      console.error('Failed to mark won', err);
+    }
+  };
+
+  const handleEmailAction = (lead) => {
+    if (!lead?.email) return;
+    const subject = encodeURIComponent(`Website concept for ${lead.business_name || 'your business'}`);
+    window.open(`mailto:${lead.email}?subject=${subject}`, '_blank');
+  };
 
   // Sliced queue to ensure 60fps scrolling
   const visibleQueueLeads = leads.slice(0, visibleQueueCount);
@@ -402,11 +443,24 @@ export default function SplitView({
                             normalizeStage(lead.status) === 'replied' ? 'cyan' :
                             'neutral'
                           }
-                          className="uppercase font-mono"
+                          className="uppercase font-mono text-[10px]"
                         >
                           {getStageLabel(lead.status)}
                         </Chip>
                       </div>
+                    </div>
+
+                    {/* Single Next Action primary button or status text */}
+                    <div className="mt-2 pt-2 border-t border-separator-border/40 flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
+                      <NextActionButton
+                        lead={lead}
+                        size="xs"
+                        onFindContact={() => onOpenOsintRun ? onOpenOsintRun([lead.id], lead.google_category) : (onSelectLead && onSelectLead(lead))}
+                        onWhatsApp={() => setWhatsAppModalLead(lead)}
+                        onEmail={() => handleEmailAction(lead)}
+                        onFollowUp={() => onSelectLead && onSelectLead(lead)}
+                        onMarkWon={() => handleMarkWonAction(lead)}
+                      />
                     </div>
                   </div>
                 );
@@ -474,97 +528,99 @@ export default function SplitView({
                   </div>
                 </div>
 
-                {/* Primary Google Maps & Full Drawer Buttons */}
+                {/* Single Primary Action + Context Menu */}
                 <div className="flex items-center gap-2 shrink-0">
-                  {currentLead.maps_link && (
-                    <ButtonLink
-                      href={currentLead.maps_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      size="small"
-                      variant="google-subtle"
-                      leadingIcon={RiMapPinLine}
-                      trailingIcon={RiArrowRightUpLine}
-                      title="Open Google Maps Profile"
-                    >
-                      Google Maps
-                    </ButtonLink>
-                  )}
+                  <NextActionButton
+                    lead={currentLead}
+                    size="small"
+                    onFindContact={() => onOpenOsintRun ? onOpenOsintRun([currentLead.id], currentLead.google_category) : (onOpenLeadDrawer && onOpenLeadDrawer(currentLead))}
+                    onWhatsApp={() => setWhatsAppModalLead(currentLead)}
+                    onEmail={() => handleEmailAction(currentLead)}
+                    onFollowUp={() => onOpenLeadDrawer && onOpenLeadDrawer(currentLead)}
+                    onMarkWon={() => handleMarkWonAction(currentLead)}
+                  />
 
                   <Button
-                    onClick={() => onOpenLeadDrawer && onOpenLeadDrawer(currentLead)}
+                    onClick={() => handleCopyPitch(currentLead)}
                     size="small"
-                    variant="primary"
-                    leadingIcon={RiEyeLine}
-                    title="Open full detail & prototype drawer"
+                    variant="ghost"
+                    leadingIcon={copiedPitch ? RiCheckLine : RiFileCopyLine}
                   >
-                    Full Drawer
+                    {copiedPitch ? 'Copied Pitch!' : 'Copy Script'}
                   </Button>
+
+                  <Dropdown>
+                    <DropdownTrigger asChild>
+                      <IconButton
+                        size="small"
+                        icon={RiMoreFill}
+                        aria-label="More options"
+                        className="cursor-pointer"
+                      />
+                    </DropdownTrigger>
+                    <DropdownPopover align="end" className="w-52">
+                      <DropdownGroup>
+                        {canCheckWebsite(currentLead) && (
+                          <DropdownItem
+                            onSelect={() => onOpenAudit ? onOpenAudit(currentLead.id) : (onOpenLeadDrawer && onOpenLeadDrawer(currentLead))}
+                            className="px-2.5 py-2 rounded-lg text-body-medium text-sky-500 hover:bg-sky-500/10"
+                          >
+                            <RiShieldCheckLine className="size-4 text-sky-500" />
+                            <span>Check website</span>
+                          </DropdownItem>
+                        )}
+
+                        {normalizeStage(currentLead.status) === 'messaged' && (
+                          <DropdownItem
+                            onSelect={() => handleLogReplyAction(currentLead)}
+                            className="px-2.5 py-2 rounded-lg text-body-medium text-amber-500 hover:bg-amber-500/10"
+                          >
+                            <RiCalendarCheckLine className="size-4 text-amber-500" />
+                            <span>Log reply</span>
+                          </DropdownItem>
+                        )}
+
+                        {currentLead.phone && (
+                          <DropdownItem
+                            onSelect={() => window.open(`tel:${currentLead.phone}`)}
+                            className="px-2.5 py-2 rounded-lg text-body-medium"
+                          >
+                            <RiPhoneLine className="size-4 text-text-secondary" />
+                            <span>Call {currentLead.phone}</span>
+                          </DropdownItem>
+                        )}
+
+                        {currentLead.maps_link && (
+                          <DropdownItem
+                            onSelect={() => window.open(currentLead.maps_link, '_blank')}
+                            className="px-2.5 py-2 rounded-lg text-body-medium"
+                          >
+                            <RiMapPinLine className="size-4 text-text-secondary" />
+                            <span>Google Maps</span>
+                          </DropdownItem>
+                        )}
+
+                        <DropdownItem
+                          onSelect={() => onOpenLeadDrawer && onOpenLeadDrawer(currentLead)}
+                          className="px-2.5 py-2 rounded-lg text-body-medium"
+                        >
+                          <RiEyeLine className="size-4 text-text-secondary" />
+                          <span>Full Drawer</span>
+                        </DropdownItem>
+
+                        <DropdownDivider />
+
+                        <DropdownItem
+                          onSelect={() => onDeleteLead && onDeleteLead(currentLead.id)}
+                          className="px-2.5 py-2 rounded-lg text-body-medium text-rose-500 hover:bg-rose-500/10"
+                        >
+                          <RiDeleteBinLine className="size-4 text-rose-500" />
+                          <span>Delete Lead</span>
+                        </DropdownItem>
+                      </DropdownGroup>
+                    </DropdownPopover>
+                  </Dropdown>
                 </div>
-              </div>
-
-              {/* INSTANT 1-CLICK OUTREACH ACTION BAR */}
-              <div className="mt-4 pt-3 border-t border-separator-border flex items-center gap-2 flex-wrap">
-                {/* 1-Click WhatsApp Button */}
-                {(currentLead.whatsapp || currentLead.phone) && (
-                  <ButtonLink
-                    href={getWhatsAppUrl(currentLead)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    size="small"
-                    variant="whatsapp"
-                    leadingIcon={RiWhatsappLine}
-                    trailingIcon={RiArrowRightUpLine}
-                    title="Open 1-Click WhatsApp outreach chat with prefilled pitch"
-                  >
-                    WhatsApp Pitch
-                  </ButtonLink>
-                )}
-
-                {/* 1-Click Email Pitch */}
-                {currentLead.email ? (
-                  <ButtonLink
-                    href={`mailto:${currentLead.email}?subject=${encodeURIComponent(`Website concept for ${currentLead.business_name}`)}`}
-                    size="small"
-                    variant="primary"
-                    leadingIcon={RiMailLine}
-                    trailingIcon={RiArrowRightUpLine}
-                  >
-                    Email Pitch
-                  </ButtonLink>
-                ) : (
-                  <Button
-                    onClick={() => onOpenOsintRun && onOpenOsintRun([currentLead.id], currentLead.google_category)}
-                    size="small"
-                    variant="secondary"
-                    leadingIcon={RiShieldCheckLine}
-                  >
-                    Find Owner Email (OSINT)
-                  </Button>
-                )}
-
-                {/* Direct Call Button */}
-                {currentLead.phone && (
-                  <ButtonLink
-                    href={`tel:${currentLead.phone}`}
-                    size="small"
-                    variant="phone"
-                    leadingIcon={RiPhoneLine}
-                  >
-                    Call {currentLead.phone}
-                  </ButtonLink>
-                )}
-
-                {/* Copy Pitch Button */}
-                <Button
-                  onClick={() => handleCopyPitch(currentLead)}
-                  size="small"
-                  variant="ghost"
-                  leadingIcon={copiedPitch ? RiCheckLine : RiFileCopyLine}
-                  className="ml-auto"
-                >
-                  {copiedPitch ? 'Copied Pitch!' : 'Copy Script'}
-                </Button>
               </div>
             </div>
 
@@ -802,6 +858,15 @@ export default function SplitView({
           </div>
         )}
       </div>
+      {/* WhatsApp Pitch Modal */}
+      {whatsAppModalLead && (
+        <WhatsAppModal
+          isOpen={Boolean(whatsAppModalLead)}
+          lead={whatsAppModalLead}
+          onClose={() => setWhatsAppModalLead(null)}
+          onSuccess={() => onRefreshLead && onRefreshLead()}
+        />
+      )}
     </div>
   );
 }

@@ -78,6 +78,7 @@ export default function LeadTable({
           onOpenLeadDrawer={onOpenLeadDrawer || onSelectLead}
           activeFilter={activeFilter}
           stats={stats}
+          onOpenAudit={onOpenAudit}
         />
       </div>
     );

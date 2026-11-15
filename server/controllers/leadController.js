@@ -127,8 +127,10 @@ class LeadController {
   async markContacted(req, res) {
     try {
       const id = req.params.id;
-      const { days, followUpDate, note } = req.body || {};
-      const updated = Lead.markContacted(id, { days, followUpDate, note });
+      const Setting = require('../models/Setting');
+      const settingDays = parseInt(Setting.get('default_follow_up_days', Setting.get('followup_days', 3)), 10) || 3;
+      const { days = settingDays, followUpDate, note, channel } = req.body || {};
+      const updated = Lead.markContacted(id, { days: days || settingDays, followUpDate, note, channel });
       if (!updated) return res.status(404).json({ success: false, error: 'Lead not found' });
       res.json({ success: true, lead: updated });
     } catch (err) {

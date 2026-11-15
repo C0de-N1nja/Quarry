@@ -685,7 +685,7 @@ class Lead {
     return this.findById(id);
   }
 
-  static markContacted(id, { days = 3, followUpDate = null, note = null } = {}) {
+  static markContacted(id, { days = 3, followUpDate = null, note = null, channel = null } = {}) {
     let targetDate = followUpDate;
     if (!targetDate) {
       const d = new Date();
@@ -697,11 +697,12 @@ class Lead {
       UPDATE leads 
       SET status = CASE WHEN status IN ('new', 'contact_found') THEN 'messaged' ELSE status END,
           contacted_at = CURRENT_TIMESTAMP,
-          follow_up_at = ?,
+          follow_up_at = COALESCE(follow_up_at, ?),
           follow_up_note = COALESCE(?, follow_up_note),
+          last_contact_channel = COALESCE(?, last_contact_channel),
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(targetDate, note, id);
+    `).run(targetDate, note, channel, id);
 
     return this.findById(id);
   }

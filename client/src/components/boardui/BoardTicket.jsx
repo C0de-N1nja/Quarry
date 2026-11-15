@@ -14,6 +14,7 @@ import {
 import { Chip } from '@/components/base/badges/chip';
 import { IconButton } from '@/components/base/buttons/icon-button';
 import { normalizeStage, getStageLabel } from '@shared/stages';
+import NextActionButton from './NextActionButton';
 
 function normalizeNiche(niche = '') {
   if (!niche) return 'Local Business';
@@ -43,6 +44,11 @@ function BoardTicket({
   onSelect, 
   onAdvance, 
   onSaveDealValue, 
+  onWhatsApp,
+  onEmail,
+  onFindContact,
+  onFollowUp,
+  onMarkWon,
   isDragging = false 
 }) {
   const [isEditingDeal, setIsEditingDeal] = useState(false);
@@ -228,17 +234,17 @@ function BoardTicket({
           </button>
         )}
 
-        {/* Sequence / Stage Step Info */}
-        <div className="flex items-center gap-1">
-          {normalizeStage(lead.status) === 'replied' ? (
-            <Chip variant="caption" color="cyan">
-              Replied
-            </Chip>
-          ) : lead.sequence_step > 1 && lead.sequence_step < 4 ? (
-            <Chip variant="caption" color={isDue ? "rose" : "neutral"} className="font-mono">
-              Step {lead.sequence_step}/3 {isDue ? '• Due' : ''}
-            </Chip>
-          ) : null}
+        {/* Single Next Action Primary Button or text */}
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <NextActionButton
+            lead={lead}
+            size="xs"
+            onFindContact={() => onFindContact ? onFindContact(lead) : onSelect(lead)}
+            onWhatsApp={() => onWhatsApp && onWhatsApp(lead)}
+            onEmail={() => onEmail && onEmail(lead)}
+            onFollowUp={() => onFollowUp ? onFollowUp(lead) : onSelect(lead)}
+            onMarkWon={() => onMarkWon && onMarkWon(lead)}
+          />
         </div>
       </div>
     </motion.div>
