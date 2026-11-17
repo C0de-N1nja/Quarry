@@ -34,6 +34,12 @@ import { STAGES, STAGE_CONFIG, normalizeStage, getStageLabel } from '@shared/sta
 import NextActionButton from './boardui/NextActionButton';
 import WhatsAppModal from './boardui/WhatsAppModal';
 import { canCheckWebsite } from '@/utils/nextAction';
+import { toast } from '@/components/base/toast/toast';
+import { 
+  generateWhatsAppMessage, 
+  getWhatsAppWebUrl, 
+  normalizeWhatsAppPhone 
+} from '@/utils/whatsappHelper';
 
 function SplitQueueSkeleton({ index }) {
   return (
@@ -148,6 +154,45 @@ export default function SplitView({
     if (!lead?.email) return;
     const subject = encodeURIComponent(`Website concept for ${lead.business_name || 'your business'}`);
     window.open(`mailto:${lead.email}?subject=${subject}`, '_blank');
+  };
+
+  const handleLaunchWhatsAppDirect = async (lead) => {
+    const phone = lead?.phone || lead?.whatsapp;
+    if (!phone) {
+      toast.error('No phone number recorded for this lead');
+      return;
+    }
+    const message = generateWhatsAppMessage(lead);
+    const waUrl = getWhatsAppWebUrl(phone, message, lead?.country);
+    window.open(waUrl, '_blank');
+    toast.info('Opening WhatsApp Web...', {
+      description: `Message pre-filled for ${lead?.business_name || 'recipient'}. Press Enter in WhatsApp Web to send!`
+    });
+
+    try {
+      const res = await fetch(`/api/leads/${lead.id}/contacted`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel: 'whatsapp',
+          note: 'Direct WhatsApp Web outreach'
+        })
+      });
+      const data = await res.json();
+      if (data.success && onRefreshLead) {
+        onRefreshLead();
+      }
+    } catch (err) {
+      console.error('Failed to auto-advance stage on WhatsApp launch', err);
+    }
+  };
+
+  const handleCopyWhatsAppMessage = (lead) => {
+    const message = generateWhatsAppMessage(lead);
+    navigator.clipboard.writeText(message);
+    toast.success('WhatsApp pitch message copied!', {
+      description: 'Ready to paste into WhatsApp Web or mobile chat'
+    });
   };
 
   // Sliced queue to ensure 60fps scrolling
@@ -581,13 +626,29 @@ export default function SplitView({
                         )}
 
                         {currentLead.phone && (
-                          <DropdownItem
-                            onSelect={() => window.open(`tel:${currentLead.phone}`)}
-                            className="px-2.5 py-2 rounded-lg text-body-medium"
-                          >
-                            <RiPhoneLine className="size-4 text-text-secondary" />
-                            <span>Call {currentLead.phone}</span>
-                          </DropdownItem>
+                          <>
+                            <DropdownItem
+                              onSelect={() => handleLaunchWhatsAppDirect(currentLead)}
+                              className="px-2.5 py-2 rounded-lg text-body-medium text-emerald-400"
+                            >
+                              <RiWhatsappLine className="size-4 text-emerald-500" />
+                              <span>Open WhatsApp Web</span>
+                            </DropdownItem>
+                            <DropdownItem
+                              onSelect={() => handleCopyWhatsAppMessage(currentLead)}
+                              className="px-2.5 py-2 rounded-lg text-body-medium"
+                            >
+                              <RiFileCopyLine className="size-4 text-text-secondary" />
+                              <span>Copy WhatsApp Pitch</span>
+                            </DropdownItem>
+                            <DropdownItem
+                              onSelect={() => window.open(`tel:${currentLead.phone}`)}
+                              className="px-2.5 py-2 rounded-lg text-body-medium"
+                            >
+                              <RiPhoneLine className="size-4 text-text-secondary" />
+                              <span>Call {currentLead.phone}</span>
+                            </DropdownItem>
+                          </>
                         )}
 
                         {currentLead.maps_link && (
@@ -679,10 +740,17 @@ export default function SplitView({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-caption-1-regular">
                   {/* Phone Details */}
-                  <div className="p-3 rounded-lg bg-background-primary-default border border-separator-border space-y-1">
-                    <span className="text-caption-1-medium text-text-tertiary flex items-center gap-1">
-                      <RiPhoneLine className="size-3 text-status-lime-text" /> Direct Phone Line
-                    </span>
+                  <div className="p-3 rounded-lg bg-background-primary-default border border-separator-border space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-caption-1-medium text-text-tertiary flex items-center gap-1">
+                        <RiPhoneLine className="size-3 text-status-lime-text" /> Direct Phone Line
+                      </span>
+                      {currentLead.phone && (
+                        <span className="text-[10px] font-mono text-emerald-400">
+                          +{normalizeWhatsAppPhone(currentLead.phone, currentLead.country)}
+                        </span>
+                      )}
+                    </div>
                     <p className="font-mono text-body-medium font-semibold text-text-primary">
                       {currentLead.phone || 'No phone recorded'}
                     </p>
@@ -690,6 +758,30 @@ export default function SplitView({
                       <p className="text-caption-1-regular text-text-tertiary">
                         {currentLead.phone_type} {currentLead.carrier ? `• ${currentLead.carrier}` : ''}
                       </p>
+                    )}
+                    {currentLead.phone && (
+                      <div className="flex items-center gap-1.5 pt-1.5 border-t border-separator-border/60 flex-wrap">
+                        <Button
+                          size="small"
+                          variant="secondary"
+                          leadingIcon={RiFileCopyLine}
+                          onClick={() => handleCopyWhatsAppMessage(currentLead)}
+                          className="text-[11px] h-7 px-2"
+                          title="Copy tailored WhatsApp pitch"
+                        >
+                          Copy Pitch
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="primary"
+                          leadingIcon={RiWhatsappLine}
+                          onClick={() => handleLaunchWhatsAppDirect(currentLead)}
+                          className="text-[11px] h-7 px-2 bg-emerald-600 hover:bg-emerald-500 text-white border-0"
+                          title="Directly opens WhatsApp Web with message pre-filled. Press Enter to send!"
+                        >
+                          WhatsApp Web
+                        </Button>
+                      </div>
                     )}
                   </div>
 

@@ -46,6 +46,12 @@ import ClientAuditReportModal from '../audit/ClientAuditReportModal';
 import NextActionButton from './NextActionButton';
 import WhatsAppModal from './WhatsAppModal';
 import { canCheckWebsite } from '@/utils/nextAction';
+import { 
+  generateWhatsAppMessage, 
+  getWhatsAppWebUrl, 
+  WHATSAPP_HOOKS, 
+  normalizeWhatsAppPhone 
+} from '@/utils/whatsappHelper';
 
 // Friendly Step-by-Step Research Stages
 const RECON_STEPS = [
@@ -98,6 +104,11 @@ export default function LeadDossierPage({
   const [settings, setSettings] = useState({});
   const [showClientAuditModal, setShowClientAuditModal] = useState(false);
   const [whatsAppModalLead, setWhatsAppModalLead] = useState(null);
+
+  // WhatsApp Outreach Cockpit State
+  const [whatsAppHook, setWhatsAppHook] = useState('auto');
+  const [whatsAppMessageText, setWhatsAppMessageText] = useState('');
+  const [copiedWhatsApp, setCopiedWhatsApp] = useState(false);
 
   // Email Suggestion & Compose State
   const [pitchAngle, setPitchAngle] = useState('auto');
@@ -546,6 +557,58 @@ export default function LeadDossierPage({
       }
     } catch (err) {
       toast.error('Failed to mark as messaged');
+    }
+  };
+
+  // WhatsApp Outreach Handlers
+  useEffect(() => {
+    if (currentLead) {
+      setWhatsAppMessageText(generateWhatsAppMessage(currentLead, whatsAppHook));
+    }
+  }, [currentLead?.id, whatsAppHook]);
+
+  const handleWhatsAppHookChange = (hookId) => {
+    setWhatsAppHook(hookId);
+    setWhatsAppMessageText(generateWhatsAppMessage(currentLead, hookId));
+  };
+
+  const handleCopyWhatsAppMessage = (text = whatsAppMessageText) => {
+    navigator.clipboard.writeText(text);
+    setCopiedWhatsApp(true);
+    toast.success('WhatsApp outreach message copied to clipboard!', {
+      description: 'Ready to paste into WhatsApp Web or mobile chat'
+    });
+    setTimeout(() => setCopiedWhatsApp(false), 2500);
+  };
+
+  const handleLaunchWhatsAppWeb = async (phone = primaryPhone, text = whatsAppMessageText) => {
+    if (!phone) {
+      toast.error('No phone number recorded for this lead');
+      return;
+    }
+    const waUrl = getWhatsAppWebUrl(phone, text, currentLead?.country);
+    window.open(waUrl, '_blank');
+    toast.info('Opening WhatsApp Web...', {
+      description: `Message pre-filled for ${currentLead.business_name || 'recipient'}. Press Enter in WhatsApp Web to send!`
+    });
+
+    try {
+      const res = await fetch(`/api/leads/${currentLead.id}/contacted`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel: 'whatsapp',
+          note: `Pitch dispatched via WhatsApp Web (${whatsAppHook})`
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCurrentStatus('messaged');
+        if (data.lead) setDetail(prev => ({ ...prev, lead: data.lead }));
+        if (onRefreshLead) onRefreshLead();
+      }
+    } catch (err) {
+      console.error('Failed to auto-advance stage on WhatsApp launch', err);
     }
   };
 
@@ -1994,6 +2057,102 @@ export default function LeadDossierPage({
               </div>
             </section>
 
+            {/* CARD 2.5: WHATSAPP DIRECT OUTREACH (Pre-filled Web Pitch) */}
+            <section className="rounded-2xl border border-separator-border bg-background-primary-default p-4 sm:p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <RiWhatsappLine className="size-4 text-emerald-500" />
+                  <h2 className="text-xs font-mono uppercase tracking-wider text-text-tertiary">
+                    WhatsApp Outreach
+                  </h2>
+                  <Chip variant="subtle" color="emerald" size="sm">
+                    Pre-filled 1-Click
+                  </Chip>
+                </div>
+                {primaryPhone && (
+                  <span className="text-[11px] font-mono text-emerald-400 font-medium">
+                    +{normalizeWhatsAppPhone(primaryPhone, currentLead?.country)}
+                  </span>
+                )}
+              </div>
+
+              {/* Angle / Hook Selector */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-mono uppercase text-text-tertiary block">
+                  Select Hook Angle
+                </label>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {WHATSAPP_HOOKS.map((hook) => (
+                    <button
+                      key={hook.id}
+                      type="button"
+                      onClick={() => handleWhatsAppHookChange(hook.id)}
+                      className={cx(
+                        "px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer",
+                        whatsAppHook === hook.id
+                          ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400 font-semibold"
+                          : "bg-background-secondary-default border-separator-border text-text-secondary hover:text-text-primary hover:border-text-secondary"
+                      )}
+                    >
+                      {hook.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Message Preview & Edit Textarea */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-caption-1-medium text-text-secondary">
+                  <label className="font-mono uppercase text-text-tertiary text-[10px]">
+                    WhatsApp Message (Pre-filled on Web)
+                  </label>
+                  <span className="font-mono text-[10px] text-text-tertiary">
+                    {whatsAppMessageText.length} chars
+                  </span>
+                </div>
+                <textarea
+                  rows={4}
+                  value={whatsAppMessageText}
+                  onChange={(e) => setWhatsAppMessageText(e.target.value)}
+                  placeholder="Tailored WhatsApp message will appear here..."
+                  className="w-full text-xs font-sans p-3.5 rounded-xl bg-background-secondary-default text-text-primary border border-separator-border focus:border-text-primary focus:outline-none resize-none leading-relaxed placeholder:text-text-tertiary transition-colors shadow-2xs font-mono"
+                />
+              </div>
+
+              {/* Primary Actions: Open WhatsApp Web & Copy Message */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-separator-border">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <Button
+                    size="small"
+                    variant="primary"
+                    leadingIcon={RiExternalLinkLine}
+                    onClick={() => handleLaunchWhatsAppWeb(primaryPhone, whatsAppMessageText)}
+                    disabled={!primaryPhone}
+                    className="flex-1 sm:flex-none font-semibold bg-emerald-600 hover:bg-emerald-500 text-white border-0"
+                    title={primaryPhone ? "Directly opens WhatsApp Web with message pre-filled. Press Enter to send!" : "No phone number available"}
+                  >
+                    Open in WhatsApp Web
+                  </Button>
+
+                  <Button
+                    size="small"
+                    variant="secondary"
+                    leadingIcon={copiedWhatsApp ? RiCheckLine : RiFileCopyLine}
+                    onClick={() => handleCopyWhatsAppMessage(whatsAppMessageText)}
+                    title="Copy message to clipboard"
+                  >
+                    {copiedWhatsApp ? 'Copied' : 'Copy Message'}
+                  </Button>
+                </div>
+
+                {!primaryPhone && (
+                  <span className="text-[11px] text-amber-500/90 font-medium">
+                    No phone number recorded. Enrich lead to message via WhatsApp.
+                  </span>
+                )}
+              </div>
+            </section>
+
             {/* CARD 3: NOTES & TAGS (Moved to Left Column for perfect layout balance) */}
             <section className="rounded-2xl border border-separator-border bg-background-primary-default p-4 sm:p-5 shadow-xs space-y-3">
               <div className="flex items-center justify-between">
@@ -2102,7 +2261,7 @@ export default function LeadDossierPage({
                     <RiPhoneLine className="size-3.5 text-text-secondary" />
                     Phone
                   </span>
-                  <div className="flex items-center gap-1.5 min-w-0 justify-end">
+                  <div className="flex items-center gap-1.5 min-w-0 justify-end flex-wrap">
                     {primaryPhone ? (
                       <>
                         <span className="font-bold font-mono text-text-primary text-xs">{primaryPhone}</span>
@@ -2119,6 +2278,26 @@ export default function LeadDossierPage({
                           aria-label="Copy Phone"
                           className="size-6 text-text-tertiary hover:text-text-primary"
                         />
+                        <button
+                          type="button"
+                          onClick={() => handleCopyWhatsAppMessage(whatsAppMessageText)}
+                          title="Copy WhatsApp pitch message"
+                          aria-label="Copy WhatsApp Pitch"
+                          className="h-6 px-1.5 rounded text-[11px] font-medium bg-background-secondary-default hover:bg-background-tertiary-default text-text-secondary hover:text-text-primary border border-separator-border inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <RiFileCopyLine className="size-3" />
+                          <span>Copy Pitch</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleLaunchWhatsAppWeb(primaryPhone, whatsAppMessageText)}
+                          title="Open WhatsApp Web with pre-filled message. Press Enter to send!"
+                          aria-label="Open WhatsApp Web"
+                          className="h-6 px-2 rounded text-[11px] font-semibold bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-400 border border-emerald-500/30 inline-flex items-center gap-1 cursor-pointer transition-colors"
+                        >
+                          <RiWhatsappLine className="size-3" />
+                          <span>WhatsApp Web</span>
+                        </button>
                       </>
                     ) : (
                       <span className="text-text-tertiary">Not found yet</span>
@@ -2132,21 +2311,28 @@ export default function LeadDossierPage({
                     <RiWhatsappLine className="size-3.5 text-emerald-500" />
                     WhatsApp
                   </span>
-                  <div className="flex items-center gap-1.5 min-w-0 justify-end">
-                    {hasWhatsApp ? (
+                  <div className="flex items-center gap-1.5 min-w-0 justify-end flex-wrap">
+                    {primaryPhone ? (
                       <>
-                        <Chip variant="subtle" color="emerald" size="sm">Active</Chip>
+                        <Chip variant="subtle" color="emerald" size="sm">Available</Chip>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyWhatsAppMessage(whatsAppMessageText)}
+                          className="h-6 px-1.5 rounded text-[11px] font-medium text-text-secondary hover:text-text-primary cursor-pointer border border-separator-border inline-flex items-center gap-1"
+                          title="Copy WhatsApp Message"
+                        >
+                          <RiFileCopyLine className="size-3" />
+                          <span>Copy</span>
+                        </button>
                         <Button
                           size="small"
                           variant="ghost"
                           leadingIcon={RiExternalLinkLine}
-                          onClick={() => {
-                            const waPhone = (contact?.whatsapp || currentLead.whatsapp || primaryPhone || '').replace(/[^\d]/g, '');
-                            if (waPhone) window.open(`https://wa.me/${waPhone}`, '_blank');
-                          }}
-                          className="h-6 px-1.5 text-xs text-emerald-400 hover:text-emerald-300"
+                          onClick={() => handleLaunchWhatsAppWeb(primaryPhone, whatsAppMessageText)}
+                          className="h-6 px-2 text-xs text-emerald-400 hover:text-emerald-300 font-semibold"
+                          title="Open WhatsApp Web with pre-filled message"
                         >
-                          Chat
+                          Launch Web
                         </Button>
                       </>
                     ) : (

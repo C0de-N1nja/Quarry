@@ -24,6 +24,8 @@ import {
   RiBookmarkFill,
   RiCalendarCheckLine,
   RiPrinterLine,
+  RiFileCopyLine,
+  RiCheckLine,
   RiFacebookCircleFill,
   RiInstagramLine,
   RiLinkedinBoxFill,
@@ -54,6 +56,7 @@ import NextActionButton from './NextActionButton';
 import WhatsAppModal from './WhatsAppModal';
 import { canCheckWebsite } from '@/utils/nextAction';
 import { toast } from '@/components/base/toast/toast';
+import { generateWhatsAppMessage, getWhatsAppWebUrl } from '@/utils/whatsappHelper';
 
 function getInitials(name = '') {
   const parts = name.trim().split(/\s+/).slice(0, 2);
@@ -326,7 +329,43 @@ export default function BoardLeadTable({
   const [isResetOsintConfirmOpen, setIsResetOsintConfirmOpen] = useState(false);
   const [clientAuditLead, setClientAuditLead] = useState(null);
   const [whatsAppModalLead, setWhatsAppModalLead] = useState(null);
+  const [copiedWhatsAppLeadId, setCopiedWhatsAppLeadId] = useState(null);
   const [settings, setSettings] = useState({});
+
+  const handleCopyWhatsAppMessage = (lead, e) => {
+    e?.stopPropagation();
+    const msg = generateWhatsAppMessage(lead);
+    navigator.clipboard.writeText(msg);
+    setCopiedWhatsAppLeadId(lead.id);
+    toast.success(`WhatsApp message copied for ${lead.business_name || 'lead'}!`, {
+      description: 'Ready to paste into WhatsApp Web or mobile chat'
+    });
+    setTimeout(() => setCopiedWhatsAppLeadId(null), 2500);
+  };
+
+  const handleLaunchWhatsAppDirect = async (lead, e) => {
+    e?.stopPropagation();
+    const msg = generateWhatsAppMessage(lead);
+    const waUrl = getWhatsAppWebUrl(lead.phone || lead.whatsapp, msg, lead.country);
+    window.open(waUrl, '_blank');
+    toast.info('Opening WhatsApp Web...', {
+      description: `Message pre-filled for ${lead.business_name || 'recipient'}. Press Enter in WhatsApp Web to send!`
+    });
+
+    try {
+      await fetch(`/api/leads/${lead.id}/contacted`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel: 'whatsapp',
+          note: 'Direct WhatsApp Web launched with prefilled message'
+        })
+      });
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error('Failed to update stage on direct WhatsApp launch', err);
+    }
+  };
 
   const handleWhatsAppAction = (lead) => {
     setWhatsAppModalLead(lead);
@@ -1451,15 +1490,43 @@ export default function BoardLeadTable({
                         {/* Direct contact channels (Phone, Email, WhatsApp) */}
                         <div className="flex items-center gap-2 flex-wrap min-w-0">
                           {hasPhone && (
-                            <a
-                              href={`tel:${lead.phone}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-flex items-center gap-1 text-[11px] font-mono font-medium text-text-primary hover:text-accent-500 transition-colors shrink-0"
-                              title={`Phone: ${lead.phone}`}
-                            >
-                              <RiPhoneLine className="size-3 text-text-tertiary shrink-0" />
-                              <span>{lead.phone}</span>
-                            </a>
+                            <div className="inline-flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                              <a
+                                href={`tel:${lead.phone}`}
+                                className="inline-flex items-center gap-1 text-[11px] font-mono font-medium text-text-primary hover:text-accent-500 transition-colors"
+                                title={`Phone: ${lead.phone}`}
+                              >
+                                <RiPhoneLine className="size-3 text-text-tertiary shrink-0" />
+                                <span>{lead.phone}</span>
+                              </a>
+
+                              {/* 1-Click WhatsApp Web direct button */}
+                              <button
+                                type="button"
+                                onClick={(e) => handleLaunchWhatsAppDirect(lead, e)}
+                                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition-all cursor-pointer"
+                                title="Open WhatsApp Web with prefilled message (press Enter to send)"
+                                aria-label={`Open WhatsApp Web for ${lead.business_name}`}
+                              >
+                                <RiWhatsappLine className="size-3 shrink-0" />
+                                <span>WhatsApp</span>
+                              </button>
+
+                              {/* Copy WhatsApp message button */}
+                              <button
+                                type="button"
+                                onClick={(e) => handleCopyWhatsAppMessage(lead, e)}
+                                className="inline-flex items-center p-0.5 rounded text-text-tertiary hover:text-text-primary hover:bg-background-secondary-hover transition-colors cursor-pointer"
+                                title="Copy WhatsApp outreach message"
+                                aria-label={`Copy WhatsApp message for ${lead.business_name}`}
+                              >
+                                {copiedWhatsAppLeadId === lead.id ? (
+                                  <RiCheckLine className="size-3 text-emerald-500" />
+                                ) : (
+                                  <RiFileCopyLine className="size-3" />
+                                )}
+                              </button>
+                            </div>
                           )}
 
                           {hasEmail && (
@@ -1589,6 +1656,25 @@ export default function BoardLeadTable({
                                 <RiSparklingLine className="size-4 text-emerald-500" />
                                 <span>Pitch Composer</span>
                               </DropdownItem>
+
+                              {hasPhone && (
+                                <>
+                                  <DropdownItem 
+                                    onSelect={() => handleLaunchWhatsAppDirect(lead)} 
+                                    className="px-2.5 py-2 rounded-lg text-body-medium text-emerald-500 hover:bg-emerald-500/10"
+                                  >
+                                    <RiWhatsappLine className="size-4 text-emerald-500" />
+                                    <span>Open WhatsApp Web</span>
+                                  </DropdownItem>
+                                  <DropdownItem 
+                                    onSelect={() => handleCopyWhatsAppMessage(lead)} 
+                                    className="px-2.5 py-2 rounded-lg text-body-medium"
+                                  >
+                                    <RiFileCopyLine className="size-4 text-text-secondary" />
+                                    <span>Copy WhatsApp Pitch</span>
+                                  </DropdownItem>
+                                </>
+                              )}
 
                               {canCheckWebsite(lead) && (
                                 <DropdownItem 

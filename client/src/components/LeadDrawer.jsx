@@ -57,6 +57,11 @@ import AgentProgress from './boardui/AgentProgress';
 import WhatsAppModal from './boardui/WhatsAppModal';
 import { toast } from '@/components/base/toast/toast';
 import { STAGES, STAGE_CONFIG, normalizeStage, getStageLabel } from '@shared/stages';
+import { 
+  generateWhatsAppMessage, 
+  getWhatsAppWebUrl, 
+  normalizeWhatsAppPhone 
+} from '@/utils/whatsappHelper';
 
 const PITCH_TEMPLATES = {
   no_website_showcase: {
@@ -173,11 +178,23 @@ export default function LeadDrawer({
 
   const handleShareWhatsApp = () => {
     const phone = detail?.contact?.whatsapp || lead.whatsapp || lead.phone;
-    const cleanPhone = phone ? phone.replace(/[^\d]/g, '') : '';
-    const text = encodeURIComponent(renderedPitch.body || `Hi ${lead.business_name}, I saw your great reviews on Google Maps...`);
-    const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${text}` : `https://wa.me/?text=${text}`;
+    if (!phone) {
+      toast.error('No phone number recorded for this lead');
+      return;
+    }
+    const message = renderedPitch.body || generateWhatsAppMessage(lead);
+    const waUrl = getWhatsAppWebUrl(phone, message, lead?.country);
     window.open(waUrl, '_blank');
+    toast.info('Opening WhatsApp Web...', {
+      description: `Message pre-filled for ${lead.business_name || 'recipient'}. Press Enter in WhatsApp Web to send!`
+    });
     handleUpdateStage('messaged');
+  };
+
+  const handleCopyWhatsAppMessage = () => {
+    const message = renderedPitch.body || generateWhatsAppMessage(lead);
+    navigator.clipboard.writeText(message);
+    toast.success('WhatsApp pitch message copied to clipboard!');
   };
 
   const handleOpenMailto = () => {
@@ -1607,9 +1624,29 @@ export default function LeadDrawer({
                 </div>
 
                 {(contact?.phone || currentLead?.phone) && (
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between flex-wrap gap-2 py-1">
                     <span className="text-text-secondary">Direct Phone:</span>
-                    <span className="font-mono text-text-primary font-medium">{contact?.phone || currentLead.phone}</span>
+                    <div className="flex items-center gap-1.5 font-mono text-text-primary font-medium text-xs">
+                      <span>{contact?.phone || currentLead.phone}</span>
+                      <button
+                        type="button"
+                        onClick={handleCopyWhatsAppMessage}
+                        title="Copy WhatsApp pitch message"
+                        className="px-1.5 py-0.5 rounded text-[11px] font-medium bg-background-secondary-default hover:bg-background-tertiary-default text-text-secondary hover:text-text-primary border border-separator-border inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Copy className="size-3" />
+                        <span>Copy Pitch</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleShareWhatsApp}
+                        title="Open WhatsApp Web with pre-filled message"
+                        className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-400 border border-emerald-500/30 inline-flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <RiWhatsappLine className="size-3" />
+                        <span>WhatsApp Web</span>
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1628,29 +1665,38 @@ export default function LeadDrawer({
                       </Chip>
                     ) : (
                       <Chip variant="subtle" color="gray" size="sm">
-                        Unverified
+                        Direct Web Ready
                       </Chip>
                     )}
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <Button
                       type="button"
-                      onClick={handleVerifyWhatsApp}
-                      disabled={whatsappVerifying}
+                      onClick={handleCopyWhatsAppMessage}
                       variant="secondary"
                       size="small"
-                      leadingIcon={whatsappVerifying ? Loader2 : RefreshCw}
+                      leadingIcon={Copy}
+                      title="Copy WhatsApp pitch message"
                     >
-                      {isWhatsAppVerified ? 'Re-Verify (WhatsLookup)' : 'Verify (WhatsLookup)'}
+                      Copy Pitch
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleShareWhatsApp}
+                      variant="whatsapp"
+                      size="small"
+                      leadingIcon={ExternalLink}
+                      title="Open WhatsApp Web with pre-filled message"
+                    >
+                      WhatsApp Web
                     </Button>
                     <Button
                       type="button"
                       onClick={() => setIsWhatsAppModalOpen(true)}
-                      variant="whatsapp"
+                      variant="ghost"
                       size="small"
-                      leadingIcon={ExternalLink}
                     >
-                      WhatsApp Cockpit
+                      Cockpit
                     </Button>
                   </div>
                 </div>

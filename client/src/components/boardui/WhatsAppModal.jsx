@@ -12,6 +12,12 @@ import { Modal, ModalBody, ModalFooter } from '@/components/base/modal/modal';
 import { Button } from '@/components/base/buttons/button';
 import { Chip } from '@/components/base/badges/chip';
 import { toast } from '@/components/base/toast/toast';
+import { 
+  generateWhatsAppMessage, 
+  getWhatsAppWebUrl, 
+  getUniversalWhatsAppUrl, 
+  normalizeWhatsAppPhone 
+} from '@/utils/whatsappHelper';
 
 export default function WhatsAppModal({ 
   isOpen, 
@@ -22,35 +28,33 @@ export default function WhatsAppModal({
 }) {
   if (!isOpen || !lead) return null;
 
-  const rawPhone = lead.phone ? lead.phone.replace(/[^\d]/g, '') : '';
+  const phoneDigits = normalizeWhatsAppPhone(lead.phone, lead.country);
   const businessName = lead.business_name || 'Business Owner';
-  const ownerName = lead.decision_maker_name || lead.owner_name || '';
-  const greetingName = ownerName || businessName;
 
   const scripts = [
     {
-      id: 'no_website_hook',
+      id: 'no_website',
       title: 'No-Website Direct Hook',
       icon: RiSparklingLine,
       color: 'indigo',
       badge: 'Highest Reply Rate',
-      text: `Hi ${greetingName}, I saw your high rating on Google Maps for ${businessName} in ${lead.city || 'your area'} and noticed you don't have an official website linked. Are you currently taking on new clients this month? Most local competitors capture bookings directly through search.`
+      text: generateWhatsAppMessage(lead, 'no_website')
     },
     {
-      id: 'speed_audit_hook',
+      id: 'speed_audit',
       title: 'Mobile Speed & Audit Hook',
       icon: RiSpeedUpLine,
       color: 'emerald',
       badge: 'Audit Focused',
-      text: `Hi ${greetingName}, quick heads up — I ran a mobile audit on ${businessName} and noticed it takes several seconds to load on smartphones. Would you like me to send over a quick 2-minute breakdown of the fixes?`
+      text: generateWhatsAppMessage(lead, 'speed_audit')
     },
     {
-      id: 'casual_one_liner',
+      id: 'casual',
       title: 'Casual 1-Liner (Low Pressure)',
       icon: RiQuestionLine,
       color: 'yellow',
       badge: 'Direct & Simple',
-      text: `Hi ${greetingName}, quick question — are you currently taking new clients this month for ${businessName}? Had a quick observation regarding your local search visibility.`
+      text: generateWhatsAppMessage(lead, 'casual')
     }
   ];
 
@@ -62,18 +66,17 @@ export default function WhatsAppModal({
   const handleCopy = (script) => {
     navigator.clipboard.writeText(script.text);
     setCopiedId(script.id);
-    toast.success('WhatsApp script copied to clipboard!', {
-      description: 'Ready to paste into WhatsApp or SMS'
+    toast.success('WhatsApp message copied to clipboard!', {
+      description: 'Ready to paste into WhatsApp Web or mobile chat'
     });
     setTimeout(() => setCopiedId(null), 2500);
   };
 
   const handleLaunchWhatsApp = async () => {
-    const encoded = encodeURIComponent(activeScript.text);
-    const waUrl = rawPhone ? `https://wa.me/${rawPhone}?text=${encoded}` : `https://wa.me/?text=${encoded}`;
+    const waUrl = getWhatsAppWebUrl(lead.phone, activeScript.text, lead.country);
     window.open(waUrl, '_blank');
     toast.info('Opening WhatsApp Web...', {
-      description: `Sending pre-filled message to ${lead.phone || 'recipient'}`
+      description: `Message pre-filled for ${lead.phone || 'recipient'}. Just press Enter to send!`
     });
 
     try {
@@ -119,19 +122,35 @@ export default function WhatsAppModal({
               </Chip>
             </div>
             <p className="text-caption-1-regular text-text-secondary mt-0.5">
-              Select a high-converting message template tailored for {businessName}
+              Select or copy a tailored outreach message for {businessName}
             </p>
           </div>
         </div>
 
         {lead.phone && (
-          <span className="font-mono text-caption-1-medium text-text-secondary bg-background-tertiary-default px-2.5 py-1 rounded-lg border border-separator-border">
-            {lead.phone}
-          </span>
+          <div className="flex flex-col items-end">
+            <span className="font-mono text-caption-1-medium text-text-secondary bg-background-tertiary-default px-2.5 py-1 rounded-lg border border-separator-border">
+              {lead.phone}
+            </span>
+            {phoneDigits && (
+              <span className="text-[10px] font-mono text-text-tertiary mt-0.5">
+                +{phoneDigits}
+              </span>
+            )}
+          </div>
         )}
       </div>
 
       <ModalBody className="p-4 sm:p-5 space-y-4 max-h-[65vh] overflow-y-auto">
+        {/* Tip banner */}
+        <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20 text-xs text-text-secondary flex items-start gap-2.5">
+          <RiWhatsappLine className="size-4 text-emerald-500 shrink-0 mt-0.5" />
+          <div>
+            <span className="font-semibold text-text-primary">Direct 1-Click WhatsApp Delivery: </span>
+            When you click &quot;Open WhatsApp Web&quot;, Quarry navigates directly to WhatsApp Web with this message pre-filled. You only need to press Enter to send.
+          </div>
+        </div>
+
         {/* Script Selection Cards */}
         <div className="space-y-3">
           <label className="text-caption-2-medium uppercase tracking-wider text-text-tertiary font-mono">
@@ -160,7 +179,7 @@ export default function WhatsAppModal({
                       {script.badge}
                     </Chip>
                   </div>
-                  <p className="text-caption-1-regular text-text-secondary font-mono leading-relaxed bg-background-primary-default p-2.5 rounded-lg border border-separator-border">
+                  <p className="text-caption-1-regular text-text-secondary font-mono leading-relaxed bg-background-primary-default p-2.5 rounded-lg border border-separator-border select-text">
                     {script.text}
                   </p>
                 </div>
@@ -177,7 +196,7 @@ export default function WhatsAppModal({
           onClick={() => handleCopy(activeScript)}
           leadingIcon={copiedId === activeScript.id ? RiCheckLine : RiFileCopyLine}
         >
-          {copiedId === activeScript.id ? 'Copied!' : 'Copy Script Text'}
+          {copiedId === activeScript.id ? 'Copied!' : 'Copy WhatsApp Message'}
         </Button>
 
         <div className="flex items-center gap-2">
@@ -188,10 +207,10 @@ export default function WhatsAppModal({
             size="small"
             variant="primary"
             onClick={handleLaunchWhatsApp}
-            leadingIcon={RiExternalLinkLine}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white"
+            leadingIcon={RiWhatsappLine}
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium"
           >
-            Launch WhatsApp Web
+            Open WhatsApp Web
           </Button>
         </div>
       </ModalFooter>
