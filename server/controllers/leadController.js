@@ -162,6 +162,66 @@ class LeadController {
     }
   }
 
+  async getActivities(req, res) {
+    try {
+      const id = req.params.id;
+      const activities = Lead.getActivities(id);
+      res.json({ success: true, activities });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
+  async addActivity(req, res) {
+    try {
+      const id = req.params.id;
+      const { type = 'note', channel = 'system', title, details = '' } = req.body || {};
+      if (!title) return res.status(400).json({ success: false, error: 'Title is required' });
+      const activities = Lead.addActivity(id, { type, channel, title, details });
+      res.json({ success: true, activities });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
+  async advanceSequenceStep(req, res) {
+    try {
+      const id = req.params.id;
+      const { step = 1, channel = 'whatsapp', followUpDays = 3, note = null } = req.body || {};
+      const updated = Lead.advanceSequenceStep(id, { step, channel, followUpDays, note });
+      if (!updated) return res.status(404).json({ success: false, error: 'Lead not found' });
+      res.json({ success: true, lead: updated, activities: Lead.getActivities(id) });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
+  async getRankGrid(req, res) {
+    try {
+      const id = req.params.id;
+      const lead = Lead.findById(id);
+      if (!lead) return res.status(404).json({ success: false, error: 'Lead not found' });
+      const { calculateRankGrid } = require('../services/rankGridService');
+      const grid = calculateRankGrid(lead);
+      res.json({ success: true, grid });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
+  async updateBatchStage(req, res) {
+    try {
+      const { ids = [], status } = req.body || {};
+      if (!Array.isArray(ids) || ids.length === 0 || !status) {
+        return res.status(400).json({ success: false, error: 'ids array and status are required' });
+      }
+      const result = Lead.updateBatchStage(ids, status);
+      res.json({ success: true, ...result });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
   async getAuditReportHtml(req, res) {
     try {
       const id = req.params.id;

@@ -3,6 +3,8 @@ import assert from 'node:assert';
 import { 
   normalizeWhatsAppPhone, 
   generateWhatsAppMessage, 
+  generateSequenceMessage,
+  SEQUENCE_STEPS,
   getWhatsAppWebUrl, 
   getUniversalWhatsAppUrl 
 } from '../whatsappHelper.js';
@@ -68,5 +70,42 @@ describe('WhatsApp Helper (client/src/utils/whatsappHelper.js)', () => {
     const speedMsg = generateWhatsAppMessage(lead, 'speed_audit');
     assert(speedMsg.includes('phone') || speedMsg.includes('mobile'));
     assert(!/[\p{Extended_Pictographic}]/u.test(speedMsg));
+  });
+
+  it('7. Exports 3-step outreach sequence configuration with zero emojis', () => {
+    assert.strictEqual(SEQUENCE_STEPS.length, 3);
+    assert.strictEqual(SEQUENCE_STEPS[0].step, 1);
+    assert.strictEqual(SEQUENCE_STEPS[1].step, 2);
+    assert.strictEqual(SEQUENCE_STEPS[2].step, 3);
+    SEQUENCE_STEPS.forEach(s => {
+      assert(!/[\p{Extended_Pictographic}]/u.test(s.title));
+      assert(!/[\p{Extended_Pictographic}]/u.test(s.desc));
+    });
+  });
+
+  it('8. Generates tailored 3-touch sequence messages for Step 1, Step 2, and Step 3', () => {
+    const lead = {
+      business_name: 'Metro Tree Service',
+      decision_maker_name: 'John Miller',
+      city: 'Atlanta',
+      category: 'Tree Care'
+    };
+
+    const s1 = generateSequenceMessage(lead, 1, 'competitor_leak');
+    assert(s1.includes('John Miller'));
+    assert(s1.includes('Metro Tree Service'));
+    assert(!/[\p{Extended_Pictographic}]/u.test(s1));
+
+    const s2 = generateSequenceMessage(lead, 2);
+    assert(s2.includes('quick follow-up'));
+    assert(s2.includes('Metro Tree Service'));
+    assert(s2.includes('1-page visual summary'));
+    assert(!/[\p{Extended_Pictographic}]/u.test(s2));
+
+    const s3 = generateSequenceMessage(lead, 3);
+    assert(s3.includes('last note from me'));
+    assert(s3.includes('Metro Tree Service'));
+    assert(s3.includes('Atlanta'));
+    assert(!/[\p{Extended_Pictographic}]/u.test(s3));
   });
 });

@@ -167,6 +167,19 @@ db.exec(`
     FOREIGN KEY (lead_id) REFERENCES leads (id) ON DELETE CASCADE
   );
   CREATE INDEX IF NOT EXISTS idx_website_audits_lead_id ON website_audits (lead_id);
+
+  CREATE TABLE IF NOT EXISTS lead_activities (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    lead_id INTEGER NOT NULL,
+    type TEXT NOT NULL,
+    channel TEXT,
+    title TEXT NOT NULL,
+    details TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (lead_id) REFERENCES leads (id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_lead_activities_lead_id ON lead_activities (lead_id);
+  CREATE INDEX IF NOT EXISTS idx_lead_activities_created_at ON lead_activities (created_at);
 `);
 
 // Multi-Inbox Pool Table for 300+ Emails/Day Scale

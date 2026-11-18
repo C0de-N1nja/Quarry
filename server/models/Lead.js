@@ -704,6 +704,13 @@ class Lead {
       WHERE id = ?
     `).run(targetDate, note, channel, id);
 
+    this.addActivity(id, {
+      type: channel || 'outreach',
+      channel: channel || 'system',
+      title: `Outreach recorded via ${channel || 'system'}`,
+      details: note || `Scheduled follow-up reminder on ${targetDate}`
+    });
+
     return this.findById(id);
   }
 
@@ -742,7 +749,84 @@ class Lead {
     } else {
       db.prepare('UPDATE leads SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(norm, id);
     }
+    this.addActivity(id, {
+      type: 'stage_change',
+      channel: 'system',
+      title: `Pipeline stage updated to ${norm}`,
+      details: dealValue ? `Deal value set to $${dealValue}` : 'Stage updated'
+    });
     return this.findById(id);
+  }
+
+  static getActivities(leadId) {
+    try {
+      return db.prepare('SELECT * FROM lead_activities WHERE lead_id = ? ORDER BY created_at DESC, id DESC').all(leadId);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static addActivity(leadId, { type = 'note', channel = 'system', title, details = '' }) {
+    try {
+      db.prepare(`
+        INSERT INTO lead_activities (lead_id, type, channel, title, details, created_at)
+        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `).run(leadId, type, channel, title, details);
+      return this.getActivities(leadId);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static advanceSequenceStep(id, { step = 1, channel = 'whatsapp', followUpDays = 3, note = null } = {}) {
+    const nextStep = parseInt(step, 10) || 1;
+    const d = new Date();
+    d.setDate(d.getDate() + (parseInt(followUpDays, 10) || 3));
+    const nextFollowUp = d.toISOString().split('T')[0];
+
+    db.prepare(`
+      UPDATE leads 
+      SET sequence_step = ?,
+          last_sequence_sent_at = CURRENT_TIMESTAMP,
+          follow_up_at = ?,
+          follow_up_note = COALESCE(?, follow_up_note),
+          last_contact_channel = COALESCE(?, last_contact_channel),
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(nextStep, nextFollowUp, note || `Step ${nextStep} sent via ${channel}`, channel, id);
+
+    this.addActivity(id, {
+      type: 'sequence',
+      channel,
+      title: `Sequence Step ${nextStep} sent via ${channel}`,
+      details: note || `Scheduled next touch on ${nextFollowUp}`
+    });
+
+    return this.findById(id);
+  }
+
+  static updateBatchStage(ids = [], status) {
+    if (!Array.isArray(ids) || ids.length === 0) return { updated: 0 };
+    const norm = normalizeStage(status);
+    const placeholders = ids.map(() => '?').join(',');
+    const stmt = db.prepare(`
+      UPDATE leads
+      SET status = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id IN (${placeholders})
+    `);
+    const info = stmt.run(norm, ...ids);
+
+    for (const leadId of ids) {
+      this.addActivity(leadId, {
+        type: 'stage_change',
+        channel: 'system',
+        title: `Batch updated status to ${norm}`,
+        details: 'Changed via Batch Operations'
+      });
+    }
+
+    return { updated: info.changes };
   }
 
   static updateSequence(id, step, sentAt = null, nextDate = null) {

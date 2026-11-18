@@ -208,3 +208,51 @@ export function getUniversalWhatsAppUrl(rawPhone, message, country = 'US') {
   }
   return `https://wa.me/${digits}?text=${encoded}`;
 }
+
+export const SEQUENCE_STEPS = [
+  {
+    step: 1,
+    title: 'Step 1: Initial Hook',
+    cadence: 'Day 1',
+    desc: 'Point-to-point business angle highlighting lost calls or AI search gap'
+  },
+  {
+    step: 2,
+    title: 'Step 2: Proof & Value Add',
+    cadence: 'Day 3',
+    desc: 'Follow-up offering the 1-page breakdown or mobile concept preview'
+  },
+  {
+    step: 3,
+    title: 'Step 3: Polite Closeout',
+    cadence: 'Day 7',
+    desc: 'Respectful break-up message leaving the door open for future growth'
+  }
+];
+
+export function generateSequenceMessage(lead, step = 1, hookId = 'auto') {
+  if (!lead) return '';
+  const numStep = parseInt(step, 10) || 1;
+  if (numStep === 1) {
+    return generateWhatsAppMessage(lead, hookId);
+  }
+
+  const businessName = lead.business_name || lead.company_name || 'Business Owner';
+  const ownerName = lead.decision_maker_name || lead.owner_name || '';
+  const greetingName = ownerName || businessName;
+  const location = lead.city || formatLocation(lead) || 'your area';
+  const category = lead.category || lead.google_category || 'services';
+
+  if (numStep === 2) {
+    return `Hi ${greetingName}, quick follow-up regarding ${businessName}.
+
+I know you are busy managing active jobs on-site. I put together a quick 1-page visual summary of how local competitors in ${location} are capturing search inquiries from Google and ChatGPT, plus a clean mobile concept for ${businessName}.
+
+Would you like me to send over the link so you can check it out on your phone?`;
+  }
+
+  // Step 3: Polite closeout / break-up message
+  return `Hi ${greetingName}, last note from me — assuming your schedule for ${businessName} is completely booked out with client jobs this month, so I will not follow up again.
+
+If you ever want to get recommended first when clients search or ask ChatGPT for ${category} in ${location}, feel free to reach out anytime. All the best with your business!`;
+}

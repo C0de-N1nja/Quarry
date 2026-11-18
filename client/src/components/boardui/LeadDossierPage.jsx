@@ -45,9 +45,13 @@ import { PITCH_ANGLES, generatePitchDraft, determineOptimalAngle, formatLocation
 import ClientAuditReportModal from '../audit/ClientAuditReportModal';
 import NextActionButton from './NextActionButton';
 import WhatsAppModal from './WhatsAppModal';
+import LocalRankGridCard from './LocalRankGridCard';
+import ActivityLogCard from './ActivityLogCard';
 import { canCheckWebsite } from '@/utils/nextAction';
 import { 
   generateWhatsAppMessage, 
+  generateSequenceMessage,
+  SEQUENCE_STEPS,
   getWhatsAppWebUrl, 
   WHATSAPP_HOOKS, 
   normalizeWhatsAppPhone 
@@ -106,6 +110,7 @@ export default function LeadDossierPage({
   const [whatsAppModalLead, setWhatsAppModalLead] = useState(null);
 
   // WhatsApp Outreach Cockpit State
+  const [sequenceStep, setSequenceStep] = useState(lead?.sequence_step || 1);
   const [whatsAppHook, setWhatsAppHook] = useState('auto');
   const [whatsAppMessageText, setWhatsAppMessageText] = useState('');
   const [copiedWhatsApp, setCopiedWhatsApp] = useState(false);
@@ -563,14 +568,52 @@ export default function LeadDossierPage({
 
   // WhatsApp Outreach Handlers
   useEffect(() => {
-    if (currentLead) {
-      setWhatsAppMessageText(generateWhatsAppMessage(currentLead, whatsAppHook));
+    if (currentLead?.sequence_step) {
+      setSequenceStep(currentLead.sequence_step);
     }
-  }, [currentLead?.id, whatsAppHook]);
+  }, [currentLead?.id, currentLead?.sequence_step]);
+
+  useEffect(() => {
+    if (currentLead) {
+      setWhatsAppMessageText(generateSequenceMessage(currentLead, sequenceStep, whatsAppHook));
+    }
+  }, [currentLead?.id, sequenceStep, whatsAppHook]);
+
+  const handleSequenceStepChange = (step) => {
+    const nextStep = parseInt(step, 10) || 1;
+    setSequenceStep(nextStep);
+    setWhatsAppMessageText(generateSequenceMessage(currentLead, nextStep, whatsAppHook));
+  };
+
+  const handleAdvanceSequence = async (targetStep) => {
+    const nextStep = Math.min(3, Math.max(1, parseInt(targetStep, 10) || 1));
+    try {
+      const res = await fetch(`/api/leads/${currentLead.id}/sequence-step`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          step: nextStep,
+          channel: 'whatsapp',
+          followUpDays: 3,
+          note: `Advanced to sequence step ${nextStep} via WhatsApp outreach`
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.lead) {
+        setCurrentLead(data.lead);
+        setSequenceStep(data.lead.sequence_step || nextStep);
+        toast.success(`Advanced to Sequence Step ${nextStep}! Follow-up scheduled for 3 days.`);
+      } else {
+        toast.error(data.error || 'Failed to advance sequence');
+      }
+    } catch (err) {
+      toast.error('Failed to advance sequence step');
+    }
+  };
 
   const handleWhatsAppHookChange = (hookId) => {
     setWhatsAppHook(hookId);
-    setWhatsAppMessageText(generateWhatsAppMessage(currentLead, hookId));
+    setWhatsAppMessageText(generateSequenceMessage(currentLead, sequenceStep, hookId));
   };
 
   const handleCopyWhatsAppMessage = (text = whatsAppMessageText) => {
@@ -2046,7 +2089,7 @@ export default function LeadDossierPage({
                 <div className="flex items-center gap-2">
                   <RiWhatsappLine className="size-4 text-emerald-500" />
                   <h2 className="text-xs font-mono uppercase tracking-wider text-text-tertiary">
-                    WhatsApp Outreach
+                    WhatsApp Outreach Cockpit
                   </h2>
                   <Chip variant="subtle" color="emerald" size="sm">
                     Pre-filled 1-Click
@@ -2059,29 +2102,67 @@ export default function LeadDossierPage({
                 )}
               </div>
 
-              {/* Angle / Hook Selector */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-mono uppercase text-text-tertiary block">
-                  Select Hook Angle
-                </label>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {WHATSAPP_HOOKS.map((hook) => (
-                    <button
-                      key={hook.id}
-                      type="button"
-                      onClick={() => handleWhatsAppHookChange(hook.id)}
-                      className={cx(
-                        "px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer",
-                        whatsAppHook === hook.id
-                          ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400 font-semibold"
-                          : "bg-background-secondary-default border-separator-border text-text-secondary hover:text-text-primary hover:border-text-secondary"
-                      )}
-                    >
-                      {hook.title || hook.label}
-                    </button>
-                  ))}
+              {/* Multi-Touch Cadence Engine (Upgrade 3) */}
+              <div className="space-y-1.5 p-3 rounded-xl bg-background-secondary-default border border-separator-border">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-mono uppercase text-text-tertiary block">
+                    Outreach Sequence Step
+                  </label>
+                  <span className="text-[11px] font-mono text-emerald-400 font-medium">
+                    {SEQUENCE_STEPS.find(s => s.step === sequenceStep)?.cadence || 'Step 1'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {SEQUENCE_STEPS.map((s) => {
+                    const isCurrent = sequenceStep === s.step;
+                    return (
+                      <button
+                        key={s.step}
+                        type="button"
+                        onClick={() => handleSequenceStepChange(s.step)}
+                        className={cx(
+                          "p-2.5 rounded-lg text-left border transition-all cursor-pointer",
+                          isCurrent
+                            ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400 font-medium shadow-2xs"
+                            : "bg-background-primary-default border-separator-border text-text-secondary hover:text-text-primary hover:border-text-secondary"
+                        )}
+                      >
+                        <div className="flex items-center justify-between text-xs font-semibold">
+                          <span>{s.title}</span>
+                          <span className="text-[10px] font-mono opacity-80">{s.cadence}</span>
+                        </div>
+                        <p className="text-[10px] text-text-tertiary mt-1 line-clamp-1">{s.desc}</p>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
+
+              {/* Angle / Hook Selector (Shown for Step 1) */}
+              {sequenceStep === 1 && (
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-mono uppercase text-text-tertiary block">
+                    Select Hook Angle
+                  </label>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {WHATSAPP_HOOKS.map((hook) => (
+                      <button
+                        key={hook.id}
+                        type="button"
+                        onClick={() => handleWhatsAppHookChange(hook.id)}
+                        className={cx(
+                          "px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer",
+                          whatsAppHook === hook.id
+                            ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400 font-semibold"
+                            : "bg-background-secondary-default border-separator-border text-text-secondary hover:text-text-primary hover:border-text-secondary"
+                        )}
+                      >
+                        {hook.title || hook.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Message Preview & Edit Textarea */}
               <div className="space-y-1.5">
@@ -2102,9 +2183,9 @@ export default function LeadDossierPage({
                 />
               </div>
 
-              {/* Primary Actions: Open WhatsApp Web & Copy Message */}
+              {/* Primary Actions: Open WhatsApp Web & Copy Message & Advance Step */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-separator-border">
-                <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
                   <Button
                     size="small"
                     variant="primary"
@@ -2125,6 +2206,16 @@ export default function LeadDossierPage({
                     title="Copy message to clipboard"
                   >
                     {copiedWhatsApp ? 'Copied' : 'Copy Message'}
+                  </Button>
+
+                  <Button
+                    size="small"
+                    variant="secondary"
+                    leadingIcon={RiArrowRightSLine}
+                    onClick={() => handleAdvanceSequence(sequenceStep >= 3 ? 3 : sequenceStep + 1)}
+                    title="Advance to next cadence touchpoint and set follow-up"
+                  >
+                    Advance Step (+3d)
                   </Button>
                 </div>
 
@@ -2154,6 +2245,9 @@ export default function LeadDossierPage({
                 )}
               </div>
             </section>
+
+            {/* CARD 2.7: LOCAL SEO GEO-GRID RANK TRACKER (Upgrade 5) */}
+            <LocalRankGridCard lead={currentLead} />
 
             {/* CARD 3: NOTES & TAGS (Moved to Left Column for perfect layout balance) */}
             <section className="rounded-2xl border border-separator-border bg-background-primary-default p-4 sm:p-5 shadow-xs space-y-3">
@@ -2202,6 +2296,9 @@ export default function LeadDossierPage({
                 className="w-full text-xs font-sans p-3 rounded-xl bg-background-secondary-default text-text-primary border border-separator-border focus:border-text-primary focus:outline-none resize-none leading-relaxed placeholder:text-text-tertiary transition-colors"
               />
             </section>
+
+            {/* CARD 3.5: MASTER ACTIVITY & INTERACTION STREAM (Upgrade 4) */}
+            <ActivityLogCard leadId={currentLead.id} />
 
           </div>
 

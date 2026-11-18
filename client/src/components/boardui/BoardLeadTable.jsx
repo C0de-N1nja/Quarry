@@ -54,9 +54,11 @@ import { isSocialOrAggregator } from '@/utils/is-social';
 import { cx } from '@/utils/cx';
 import NextActionButton from './NextActionButton';
 import WhatsAppModal from './WhatsAppModal';
+import BatchWhatsAppQueueModal from './BatchWhatsAppQueueModal';
 import { canCheckWebsite } from '@/utils/nextAction';
 import { toast } from '@/components/base/toast/toast';
-import { generateWhatsAppMessage, getWhatsAppWebUrl } from '@/utils/whatsappHelper';
+import { generateWhatsAppMessage, generateSequenceMessage, getWhatsAppWebUrl } from '@/utils/whatsappHelper';
+import { generatePitchDraft } from '@/utils/pitchGenerator';
 
 function getInitials(name = '') {
   const parts = name.trim().split(/\s+/).slice(0, 2);
@@ -331,6 +333,110 @@ export default function BoardLeadTable({
   const [whatsAppModalLead, setWhatsAppModalLead] = useState(null);
   const [copiedWhatsAppLeadId, setCopiedWhatsAppLeadId] = useState(null);
   const [settings, setSettings] = useState({});
+  const [isBatchQueueOpen, setIsBatchQueueOpen] = useState(false);
+
+  const selectedLeadsList = useMemo(() => {
+    if (isAllMatchingSelected) return leads;
+    return leads.filter(l => selectedLeadIds.has(l.id));
+  }, [isAllMatchingSelected, leads, selectedLeadIds]);
+
+  const handleBatchStageChange = async (newStage) => {
+    const idsToUpdate = isAllMatchingSelected
+      ? leads.map(l => l.id)
+      : Array.from(selectedLeadIds);
+
+    if (!idsToUpdate.length) return;
+
+    try {
+      const res = await fetch('/api/leads/batch-stage', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: idsToUpdate, status: newStage })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Updated ${data.updatedCount || idsToUpdate.length} leads to ${getStageLabel(newStage)}`);
+        if (onRefresh) onRefresh();
+        setSelectedLeadIds(new Set());
+        setIsAllMatchingSelected(false);
+      } else {
+        toast.error(data.error || 'Failed to update lead stages');
+      }
+    } catch (err) {
+      toast.error('Network error updating stages');
+    }
+  };
+
+  const handleBatchExportCsv = () => {
+    const leadsToExport = selectedLeadsList;
+
+    if (!leadsToExport.length) {
+      toast.error('No leads selected to export');
+      return;
+    }
+
+    const headers = [
+      'Business Name',
+      'Category',
+      'Stage',
+      'City',
+      'Phone',
+      'Email',
+      'Website',
+      'Rating',
+      'Reviews Count',
+      'Tailored WhatsApp Message',
+      'Tailored Email Subject',
+      'Tailored Email Body'
+    ];
+
+    const escapeCsv = (val) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    };
+
+    const rows = leadsToExport.map(l => {
+      const waMsg = generateSequenceMessage(l, 1, 'auto');
+      let emailSubj = '';
+      let emailBody = '';
+      try {
+        const draft = generatePitchDraft({ lead: l, angle: 'auto' });
+        emailSubj = draft?.subject || '';
+        emailBody = draft?.body || '';
+      } catch (_) {}
+
+      return [
+        escapeCsv(l.business_name || l.company_name || ''),
+        escapeCsv(l.category || l.google_category || ''),
+        escapeCsv(getStageLabel(l.status || l.stage || 'new')),
+        escapeCsv(l.city || ''),
+        escapeCsv(l.phone || l.normalized_phone || ''),
+        escapeCsv(l.email || ''),
+        escapeCsv(l.website || ''),
+        escapeCsv(l.rating || ''),
+        escapeCsv(l.reviews_count || l.review_count || ''),
+        escapeCsv(waMsg),
+        escapeCsv(emailSubj),
+        escapeCsv(emailBody)
+      ].join(',');
+    });
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `quarry_campaign_leads_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success(`Exported ${leadsToExport.length} leads with tailored pitches!`, {
+      description: 'Includes WhatsApp copy and email templates for outreach campaigns.'
+    });
+  };
 
   const handleCopyWhatsAppMessage = (lead, e) => {
     e?.stopPropagation();
@@ -1220,7 +1326,49 @@ export default function BoardLeadTable({
               )}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                size="small"
+                variant="primary"
+                leadingIcon={RiWhatsappLine}
+                onClick={() => setIsBatchQueueOpen(true)}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs border-0"
+              >
+                Run WhatsApp Queue
+              </Button>
+
+              <Button
+                size="small"
+                variant="secondary"
+                leadingIcon={RiDownload2Line}
+                onClick={handleBatchExportCsv}
+                className="text-xs"
+              >
+                Batch CSV with Pitches
+              </Button>
+
+              <Dropdown>
+                <DropdownTrigger>
+                  <Button
+                    size="small"
+                    variant="secondary"
+                    trailingIcon={RiArrowDownSLine}
+                    className="text-xs"
+                  >
+                    Change Stage
+                  </Button>
+                </DropdownTrigger>
+                <DropdownPopover>
+                  <DropdownGroup>
+                    {STAGES.map(s => (
+                      <DropdownItem key={s} onAction={() => handleBatchStageChange(s)}>
+                        {getStageLabel(s)}
+                      </DropdownItem>
+                    ))}
+                  </DropdownGroup>
+                </DropdownPopover>
+              </Dropdown>
+
               <Button
                 size="small"
                 variant="secondary"
@@ -1232,20 +1380,6 @@ export default function BoardLeadTable({
                 className="text-xs"
               >
                 Find Contacts
-              </Button>
-
-              <Button
-                size="small"
-                variant="secondary"
-                leadingIcon={RiCheckDoubleLine}
-                onClick={() => {
-                  const firstId = Array.from(selectedLeadIds)[0];
-                  const targetLead = leads.find(l => l.id === firstId);
-                  if (targetLead && onOpenLeadDrawer) onOpenLeadDrawer(targetLead);
-                }}
-                className="text-xs"
-              >
-                Pitch
               </Button>
 
               <Button
@@ -2038,6 +2172,17 @@ export default function BoardLeadTable({
           onSuccess={() => onRefresh && onRefresh()}
         />
       )}
+
+      {/* Batch WhatsApp Queue Runner Modal (Upgrade 6) */}
+      <BatchWhatsAppQueueModal
+        isOpen={isBatchQueueOpen}
+        onClose={() => setIsBatchQueueOpen(false)}
+        selectedLeads={selectedLeadsList}
+        onUpdateLeadStage={(id, stage) => {
+          handleQuickUpdateStage(id, stage);
+        }}
+        onRefresh={onRefresh}
+      />
     </div>
   );
 }
