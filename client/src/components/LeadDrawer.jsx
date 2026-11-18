@@ -186,9 +186,8 @@ export default function LeadDrawer({
     const waUrl = getWhatsAppWebUrl(phone, message, lead?.country);
     window.open(waUrl, '_blank');
     toast.info('Opening WhatsApp Web...', {
-      description: `Message pre-filled for ${lead.business_name || 'recipient'}. Press Enter in WhatsApp Web to send!`
+      description: `Message pre-filled for ${lead.business_name || 'recipient'}. Press Enter in WhatsApp Web to send, then toggle status when sent.`
     });
-    handleUpdateStage('messaged');
   };
 
   const handleCopyWhatsAppMessage = () => {

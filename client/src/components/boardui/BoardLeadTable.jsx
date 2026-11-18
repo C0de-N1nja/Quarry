@@ -349,21 +349,27 @@ export default function BoardLeadTable({
     const waUrl = getWhatsAppWebUrl(lead.phone || lead.whatsapp, msg, lead.country);
     window.open(waUrl, '_blank');
     toast.info('Opening WhatsApp Web...', {
-      description: `Message pre-filled for ${lead.business_name || 'recipient'}. Press Enter in WhatsApp Web to send!`
+      description: `Message pre-filled for ${lead.business_name || 'recipient'}. Press Enter in WhatsApp Web to send, then toggle status when sent.`
     });
+  };
 
+  const handleQuickUpdateStage = async (leadId, newStage, e) => {
+    e?.stopPropagation();
     try {
-      await fetch(`/api/leads/${lead.id}/contacted`, {
-        method: 'POST',
+      const res = await fetch(`/api/leads/${leadId}/stage`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          channel: 'whatsapp',
-          note: 'Direct WhatsApp Web launched with prefilled message'
-        })
+        body: JSON.stringify({ status: newStage })
       });
-      if (onRefresh) onRefresh();
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Pipeline status updated to ${getStageLabel(newStage)}`);
+        if (onRefresh) onRefresh();
+      } else {
+        toast.error('Failed to update stage');
+      }
     } catch (err) {
-      console.error('Failed to update stage on direct WhatsApp launch', err);
+      toast.error('Failed to update stage');
     }
   };
 
@@ -1585,13 +1591,47 @@ export default function BoardLeadTable({
                       </div>
                     </TableCell>
 
-                    {/* Stage Column (BoardUI Chip with StatusDot & Follow-up status) */}
-                    <TableCell className="w-[150px] px-4 py-2" onClick={() => onSelectLead && onSelectLead(lead)}>
+                    {/* Stage Column (Interactive 1-Click Dropdown with StatusDot & Follow-up status) */}
+                    <TableCell className="w-[150px] px-4 py-2" onClick={(e) => e.stopPropagation()}>
                       <div className="flex flex-col gap-1 items-start">
-                        <Chip variant={stage.variant} color={stage.chipColor} className="gap-1.5 font-medium">
-                          {stage.dotColor && <StatusDot color={stage.dotColor} />}
-                          <span>{stage.label}</span>
-                        </Chip>
+                        <Dropdown>
+                          <DropdownTrigger asChild>
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-1.5 cursor-pointer rounded-full p-0.5 hover:opacity-80 transition-opacity"
+                              title="Click to toggle pipeline status"
+                            >
+                              <Chip variant={stage.variant} color={stage.chipColor} className="gap-1.5 font-medium pointer-events-none">
+                                {stage.dotColor && <StatusDot color={stage.dotColor} />}
+                                <span>{stage.label}</span>
+                                <RiArrowDownSLine className="size-2.5 opacity-60 ml-0.5" />
+                              </Chip>
+                            </button>
+                          </DropdownTrigger>
+                          <DropdownPopover align="start" className="w-44 p-1">
+                            <DropdownGroup>
+                              {STAGE_CONFIG.map((s) => {
+                                const isCurrent = normalizeStage(lead.status) === s.id;
+                                return (
+                                  <DropdownItem
+                                    key={s.id}
+                                    onSelect={() => handleQuickUpdateStage(lead.id, s.id)}
+                                    className={cx(
+                                      "px-2.5 py-1.5 rounded-md text-xs flex items-center justify-between cursor-pointer",
+                                      isCurrent && "font-bold bg-background-secondary-default text-text-primary"
+                                    )}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <StatusDot color={s.color} className="size-2" />
+                                      <span>{s.label}</span>
+                                    </div>
+                                    {isCurrent && <RiCheckLine className="size-3.5 text-blue-500" />}
+                                  </DropdownItem>
+                                );
+                              })}
+                            </DropdownGroup>
+                          </DropdownPopover>
+                        </Dropdown>
 
                         {lead.follow_up_at && !['replied', 'won', 'lost', 'archived'].includes(normalizeStage(lead.status)) && (() => {
                           const today = new Date().toISOString().split('T')[0];

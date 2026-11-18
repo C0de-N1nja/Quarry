@@ -109,6 +109,7 @@ export default function LeadDossierPage({
   const [whatsAppHook, setWhatsAppHook] = useState('auto');
   const [whatsAppMessageText, setWhatsAppMessageText] = useState('');
   const [copiedWhatsApp, setCopiedWhatsApp] = useState(false);
+  const [hasOpenedWhatsApp, setHasOpenedWhatsApp] = useState(false);
 
   // Email Suggestion & Compose State
   const [pitchAngle, setPitchAngle] = useState('auto');
@@ -581,35 +582,17 @@ export default function LeadDossierPage({
     setTimeout(() => setCopiedWhatsApp(false), 2500);
   };
 
-  const handleLaunchWhatsAppWeb = async (phone = primaryPhone, text = whatsAppMessageText) => {
+  const handleLaunchWhatsAppWeb = (phone = primaryPhone, text = whatsAppMessageText) => {
     if (!phone) {
       toast.error('No phone number recorded for this lead');
       return;
     }
     const waUrl = getWhatsAppWebUrl(phone, text, currentLead?.country);
     window.open(waUrl, '_blank');
+    setHasOpenedWhatsApp(true);
     toast.info('Opening WhatsApp Web...', {
-      description: `Message pre-filled for ${currentLead.business_name || 'recipient'}. Press Enter in WhatsApp Web to send!`
+      description: `Message pre-filled for ${currentLead.business_name || 'recipient'}. Press Enter in WhatsApp Web to send, then click "Mark Messaged" below!`
     });
-
-    try {
-      const res = await fetch(`/api/leads/${currentLead.id}/contacted`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          channel: 'whatsapp',
-          note: `Pitch dispatched via WhatsApp Web (${whatsAppHook})`
-        })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setCurrentStatus('messaged');
-        if (data.lead) setDetail(prev => ({ ...prev, lead: data.lead }));
-        if (onRefreshLead) onRefreshLead();
-      }
-    } catch (err) {
-      console.error('Failed to auto-advance stage on WhatsApp launch', err);
-    }
   };
 
   // Schedule Custom Follow-up
@@ -2094,7 +2077,7 @@ export default function LeadDossierPage({
                           : "bg-background-secondary-default border-separator-border text-text-secondary hover:text-text-primary hover:border-text-secondary"
                       )}
                     >
-                      {hook.label}
+                      {hook.title || hook.label}
                     </button>
                   ))}
                 </div>
@@ -2111,7 +2094,7 @@ export default function LeadDossierPage({
                   </span>
                 </div>
                 <textarea
-                  rows={4}
+                  rows={5}
                   value={whatsAppMessageText}
                   onChange={(e) => setWhatsAppMessageText(e.target.value)}
                   placeholder="Tailored WhatsApp message will appear here..."
@@ -2144,6 +2127,25 @@ export default function LeadDossierPage({
                     {copiedWhatsApp ? 'Copied' : 'Copy Message'}
                   </Button>
                 </div>
+
+                {/* Inline confirmation: Bhej diya? [Mark as Messaged (+3d)] */}
+                {hasOpenedWhatsApp && normalizeStage(currentStatus) !== 'messaged' && (
+                  <div className="flex items-center gap-2 p-1.5 px-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs w-full sm:w-auto justify-between sm:justify-end animate-in fade-in">
+                    <span className="text-text-secondary font-medium">Bhej diya?</span>
+                    <Button
+                      size="small"
+                      variant="primary"
+                      leadingIcon={RiCheckLine}
+                      onClick={() => {
+                        handleMarkContacted(3);
+                        setHasOpenedWhatsApp(false);
+                      }}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium"
+                    >
+                      Mark Messaged (+3d)
+                    </Button>
+                  </div>
+                )}
 
                 {!primaryPhone && (
                   <span className="text-[11px] text-amber-500/90 font-medium">

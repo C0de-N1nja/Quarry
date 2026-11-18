@@ -30,7 +30,7 @@ describe('WhatsApp Helper (client/src/utils/whatsappHelper.js)', () => {
     assert(url.startsWith('https://wa.me/61451899683?text=Hi%20Mc%20Laminate'));
   });
 
-  it('5. Generates high-converting WhatsApp message copy based on lead data', () => {
+  it('5. Generates high-converting business-language WhatsApp copy based on lead data', () => {
     const leadNoWebsite = {
       business_name: 'Gulf Coast Trees',
       decision_maker_name: 'Patrick Planthaber',
@@ -44,22 +44,29 @@ describe('WhatsApp Helper (client/src/utils/whatsappHelper.js)', () => {
     assert(msg.includes('Hi Patrick Planthaber'));
     assert(msg.includes('Gulf Coast Trees'));
     assert(msg.includes('Tampa'));
-    assert(msg.includes('commercial website'));
+    assert(msg.includes('Google Maps'));
     // Strictly zero emojis check
     assert(!/[\p{Extended_Pictographic}]/u.test(msg), 'Message must contain zero emojis');
   });
 
-  it('6. Supports speed audit and casual hooks', () => {
+  it('6. Supports AI search, competitor leakage, and speed audit business hooks', () => {
     const lead = {
       business_name: 'Acme Roofers',
       city: 'Austin',
       website: 'https://acmeroofers.com'
     };
 
-    const speedMsg = generateWhatsAppMessage(lead, 'speed_audit');
-    assert(speedMsg.includes('mobile audit'));
+    const aiMsg = generateWhatsAppMessage(lead, 'ai_search');
+    assert(aiMsg.includes('ChatGPT'));
+    assert(aiMsg.includes('Acme Roofers'));
+    assert(!/[\p{Extended_Pictographic}]/u.test(aiMsg));
 
-    const casualMsg = generateWhatsAppMessage(lead, 'casual');
-    assert(casualMsg.includes('taking new clients this month'));
+    const leakMsg = generateWhatsAppMessage(lead, 'competitor_leak');
+    assert(leakMsg.includes('losing calls'));
+    assert(!/[\p{Extended_Pictographic}]/u.test(leakMsg));
+
+    const speedMsg = generateWhatsAppMessage(lead, 'speed_audit');
+    assert(speedMsg.includes('phone') || speedMsg.includes('mobile'));
+    assert(!/[\p{Extended_Pictographic}]/u.test(speedMsg));
   });
 });

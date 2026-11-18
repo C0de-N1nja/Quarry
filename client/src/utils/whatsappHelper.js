@@ -56,32 +56,45 @@ export function normalizeWhatsAppPhone(rawPhone, country = 'US') {
 }
 
 /**
- * High-converting WhatsApp message hooks for local businesses.
- * Strictly zero emojis, direct, professional B2B consulting standard.
+ * High-converting, non-technical business-language WhatsApp hooks for local businesses.
+ * Grounded in customer behavior, AI search visibility (ChatGPT/Google), and competitor customer leakage.
+ * Strictly zero consumer emojis, respectful, point-to-point.
  */
 export const WHATSAPP_HOOKS = [
   {
-    id: 'no_website',
-    title: 'No-Website Direct Hook',
-    badge: 'Highest Reply Rate',
-    desc: 'Highlights their Google rating and asks if they are taking new clients without a site'
+    id: 'ai_search',
+    title: 'AI Search & ChatGPT',
+    badge: 'Modern AI Gap',
+    desc: 'Explains ChatGPT and Google AI only recommend businesses with an official website'
+  },
+  {
+    id: 'competitor_leak',
+    title: 'Competitor Customer Leak',
+    badge: 'Revenue Alert',
+    desc: 'Highlights how nearby competitors win calls because customers check proof on their phone'
+  },
+  {
+    id: 'reputation',
+    title: 'Trapped Google Reputation',
+    badge: 'For Rated Leads',
+    desc: 'Turns 5-star Google reputation into new jobs instead of letting competitors win'
+  },
+  {
+    id: 'direct',
+    title: 'Direct 30-Sec Inbound Hook',
+    badge: 'Short & Punchy',
+    desc: 'Ultra-concise message asking about capturing local search calls'
   },
   {
     id: 'speed_audit',
-    title: 'Mobile Speed & Audit Hook',
-    badge: 'Audit Focused',
-    desc: 'Mentions mobile page speed or mobile experience fixes'
-  },
-  {
-    id: 'casual',
-    title: 'Casual 1-Liner (Low Pressure)',
-    badge: 'Direct & Simple',
-    desc: 'Short, friendly question about taking new clients this month'
+    title: 'Mobile Customer Drop-Off',
+    badge: 'Has Website',
+    desc: 'For businesses with a slow mobile site losing customers after 3 seconds'
   }
 ];
 
 /**
- * Generates high-converting WhatsApp message tailored for a specific lead.
+ * Generates high-converting WhatsApp message tailored for a specific lead in plain business language.
  */
 export function generateWhatsAppMessage(lead, hookId = 'auto') {
   if (!lead) return '';
@@ -90,28 +103,83 @@ export function generateWhatsAppMessage(lead, hookId = 'auto') {
   const ownerName = lead.decision_maker_name || lead.owner_name || '';
   const greetingName = ownerName || businessName;
   const location = lead.city || formatLocation(lead) || 'your area';
+  const category = lead.category || lead.google_category || 'services';
 
   const hasNoWebsite = lead.has_no_website === 1 || !lead.website || lead.website === 'None' ||
     /facebook\.com|instagram\.com|linkedin\.com|linktr\.ee/i.test(lead.website || '');
 
+  const hasGoodRating = Number(lead.rating) >= 4.5 && Number(lead.reviews_count) >= 5;
+
   let chosenHook = hookId;
   if (chosenHook === 'auto') {
-    chosenHook = hasNoWebsite ? 'no_website' : 'speed_audit';
+    if (!hasNoWebsite) {
+      chosenHook = 'speed_audit';
+    } else if (hasGoodRating) {
+      chosenHook = 'reputation';
+    } else {
+      chosenHook = 'ai_search';
+    }
   }
 
+  const ratingText = Number(lead.rating) > 0
+    ? `${lead.rating}-star rating (${lead.reviews_count || 0} reviews)`
+    : 'strong track record';
+
   switch (chosenHook) {
+    case 'competitor_leak': {
+      return `Hi ${greetingName}, had a quick observation regarding ${businessName}.
+
+You do great work in ${location}, but without an official website, you are likely losing calls every week to competitors.
+
+Most homeowners compare two or three businesses on their phones before hiring. When they see your listing with no website, they usually tap on the next competitor who shows photos of their past work, customer reviews, and a simple quote request form.
+
+You are doing the hard work on the job, but nearby businesses are getting those high-paying customers just by having a website.
+
+We sketched out a quick mobile concept specifically for ${businessName} to help you keep those calls. Would you like me to send the link over?`;
+    }
+
+    case 'reputation': {
+      return `Hi ${greetingName}, saw your ${ratingText} for ${businessName} in ${location} — you have a great reputation.
+
+The issue is that your great reputation is trapped inside Google Maps.
+
+Competitors in ${location} with fewer reviews and lower ratings are winning bigger jobs simply because they have an official website that builds immediate trust and lets customers request quotes at any time of day.
+
+A simple, clean website showing your best work and top reviews would make ${businessName} the obvious choice in town.
+
+I put together a quick preview of how this would look for your business. Open to seeing it?`;
+    }
+
+    case 'direct': {
+      return `Hi ${greetingName}, noticed ${businessName} has a strong presence in ${location} but no official website.
+
+When people search on Google or ask ChatGPT for ${category} in ${location}, nearby competitors get recommended because they have an active website.
+
+We mapped out a simple way for ${businessName} to capture those inquiries instead of losing them. Would you be open to a quick 2-minute preview?`;
+    }
+
     case 'speed_audit': {
-      return `Hi ${greetingName}, quick heads up — I ran a mobile audit on ${businessName} and noticed a couple of simple fixes to improve mobile customer inquiries. Would you like me to send over a quick 2-minute breakdown?`;
+      return `Hi ${greetingName}, quick heads up regarding ${businessName}.
+
+I looked up your website from my phone earlier today. You have a solid business, but on mobile, the page takes several seconds to load, making it difficult for customers to quickly tap and call you.
+
+Most phone searchers give up after 3 seconds and call the next business on Google.
+
+With two simple adjustments, your site can load instantly and bring in more phone calls. Would you like me to send over a quick 2-minute breakdown?`;
     }
-    case 'casual': {
-      return `Hi ${greetingName}, quick question — are you currently taking new clients this month for ${businessName}? Had a quick observation regarding your local Google Maps visibility in ${location}.`;
-    }
+
     case 'no_website':
+    case 'ai_search':
     default: {
-      const ratingProof = Number(lead.rating) > 0 
-        ? `high rating on Google Maps for ${businessName} in ${location}`
-        : `listing for ${businessName} in ${location}`;
-      return `Hi ${greetingName}, I saw your ${ratingProof} and noticed you do not have an official commercial website set up. Are you currently taking on new clients this month? Most local competitors capture bookings directly through search.`;
+      return `Hi ${greetingName}, quick question regarding ${businessName} in ${location}.
+
+I noticed your listing on Google Maps, but you don't have an official website attached to it.
+
+A lot of local customers now ask ChatGPT or Google things like "who is the best ${category} in ${location}?" These AI tools only recommend businesses that have a real website to check. Because your business doesn't have one listed, they automatically send those customers to your local competitors.
+
+We put together a simple plan to get ${businessName} recommended first when people search or ask AI for ${category}.
+
+Would you be open to taking a quick 2-minute look?`;
     }
   }
 }

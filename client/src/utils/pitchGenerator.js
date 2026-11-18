@@ -102,58 +102,57 @@ export function generatePitchDraft({
 
   switch (chosenAngle) {
     case 'no_website': {
-      subject = `Web presence inquiry for ${businessName}`;
-      const reputationProof = rating && reviewsCount > 0
-        ? `I noticed your verified ${rating} Google rating with ${reviewsCount.toLocaleString()} customer reviews in ${location} — impressive track record.`
-        : `I was researching reputable service businesses in ${location} and came across ${businessName}.`;
+      subject = `Quick question regarding customer inquiries for ${businessName}`;
       
       body = `Hi ${businessName} team,
 
-${reputationProof}
+I was looking at established service businesses in ${location} and came across ${businessName}.
 
-While searching for your official website, I noticed you do not currently have a dedicated commercial site set up (or customers get redirected to social profiles).
+I noticed you don't currently have an official website connected to your business profile. 
 
-Most local homeowners searching on Google book the first reputable contractor with an instant estimate or booking page. Without a direct site, qualified high-ticket inquiries often slip to competitors.
+The way local customers find and hire businesses has changed a lot recently. Beyond standard Google searches, many homeowners and clients now ask AI tools like ChatGPT: "Who is the most reliable service provider in ${location}?"
 
-I built a quick modern mockup of what a clean, mobile-optimized booking website for ${businessName} could look like.
+These AI tools only recommend businesses that have an official website they can look at to confirm your services, past work, and credibility. Because ${businessName} doesn't have a website listed, those customer inquiries are currently being handed straight to your competitors.
 
-Would you be open to a 2-minute preview this week? No pressure at all.
+Having a simple, professional website ensures both regular searchers and modern AI tools recommend ${businessName} first.
+
+We put together a quick, clean blueprint showing how this works and what it would look like for ${businessName}. Would you be open to a quick 2-minute preview this week?
 
 ${signature}`;
       break;
     }
 
     case 'slow_site': {
-      const ttfbMs = audit?.ttfb_ms || audit?.metrics?.ttfb_ms || 1800;
-      const seconds = (ttfbMs / 1000).toFixed(1);
-      subject = `Mobile load latency on ${businessName}'s website`;
+      subject = `Quick note regarding mobile customer inquiries for ${businessName}`;
       
       body = `Hi ${businessName} team,
 
-I came across ${businessName} while reviewing top-rated service providers in ${location}.
+I came across ${businessName} while looking at local service providers in ${location} and took a look at your website from my phone earlier today.
 
-I noticed your website takes approximately ${seconds} seconds to respond on mobile data connections. Over 50% of mobile searchers navigate back if a service page takes longer than 2 seconds to load.
+You have a solid business, but on mobile phones, the page takes several seconds to load, and it is difficult for a customer to quickly find your phone number or request a quote.
 
-We help service companies resolve speed bottlenecks so incoming Google search traffic converts into booked phone calls rather than bounce-offs.
+Most local customers give up after 3 seconds if a page does not load smoothly, and they call the next business on Google.
 
-I prepared a 1-page summary of 2 specific speed optimizations you can apply. Would you like me to share it?
+With a few simple adjustments, your site can load instantly and make it effortless for phone visitors to tap and call you right away.
+
+I put together a quick summary of 2 simple improvements you can make to bring in more calls. Would you like me to share it with you?
 
 ${signature}`;
       break;
     }
 
     case 'mobile_friendly': {
-      subject = `${businessName} mobile usability review`;
+      subject = `Customer experience on mobile for ${businessName}`;
       
       body = `Hi ${businessName} team,
 
-I was reviewing ${businessName}'s website from a smartphone earlier today.
+I was looking at ${businessName}'s website from a smartphone earlier today.
 
-Over 68% of local service inquiries originate directly on mobile devices, but your current layout does not scale seamlessly on smaller screens — making it difficult for prospective clients to tap and call.
+Over 80% of local customers now search and compare businesses on their phones before hiring. When viewing your site on a mobile device, the layout can be difficult to read, and prospective clients have to pinch and zoom to find your contact details.
 
-A responsive mobile layout with a persistent "Tap to Call" button consistently improves inbound inquiry conversion by 25-35%.
+A clean, easy-to-read mobile layout with a direct "Tap to Call" button makes it effortless for interested clients to get in touch before they move on to a competitor.
 
-Would you be open to a quick 2-minute walkthrough showing where prospective clients get stuck on mobile?
+Would you be open to a quick 2-minute walkthrough showing how to make your mobile page easier for customers to book?
 
 ${signature}`;
       break;
@@ -165,17 +164,22 @@ ${signature}`;
         ? `${rating} rating and ${reviewsCount.toLocaleString()} verified customer reviews` 
         : `established reputation in ${location}`;
 
-      subject = `Aligning ${businessName}'s web presence with your verified reputation`;
+      subject = `Your Google rating vs. competitors in ${location} (${businessName})`;
       
       body = `Hi ${businessName} team,
 
-I was reviewing your verified profile on Google and was impressed by your ${proofText} in ${location}.
+Congratulations on building your ${proofText} in ${location} — that kind of customer trust takes years of hard work to earn.
 
-Your customer satisfaction record is outstanding, but your current online presence does not fully reflect that premium standard to first-time searchers.
+However, right now that great reputation is only visible to people who happen to scroll through Google Maps.
 
-We help reputable local businesses turn established Google ratings into consistent high-ticket commercial accounts through conversion-focused web design.
+Without an official website:
+1. Customers who search Google outside of Maps cannot find your full service details.
+2. AI tools like ChatGPT cannot verify or recommend your business to local searchers.
+3. Competitors with lower ratings are winning clients simply because they have a professional website where customers can request a quote at any time.
 
-I would welcome the opportunity to share 3 specific adjustments to showcase your reviews and drive more booked jobs. Open to taking a look?
+A simple website featuring your best reviews and photos of your work would immediately turn ${businessName} into the top choice in your area.
+
+We drafted a quick visual preview of what this could look like for your business. Would you be open to seeing a quick 2-minute walkthrough?
 
 ${signature}`;
       break;

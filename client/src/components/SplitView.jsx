@@ -166,25 +166,8 @@ export default function SplitView({
     const waUrl = getWhatsAppWebUrl(phone, message, lead?.country);
     window.open(waUrl, '_blank');
     toast.info('Opening WhatsApp Web...', {
-      description: `Message pre-filled for ${lead?.business_name || 'recipient'}. Press Enter in WhatsApp Web to send!`
+      description: `Message pre-filled for ${lead?.business_name || 'recipient'}. Press Enter in WhatsApp Web to send, then toggle stage below when sent.`
     });
-
-    try {
-      const res = await fetch(`/api/leads/${lead.id}/contacted`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          channel: 'whatsapp',
-          note: 'Direct WhatsApp Web outreach'
-        })
-      });
-      const data = await res.json();
-      if (data.success && onRefreshLead) {
-        onRefreshLead();
-      }
-    } catch (err) {
-      console.error('Failed to auto-advance stage on WhatsApp launch', err);
-    }
   };
 
   const handleCopyWhatsAppMessage = (lead) => {
