@@ -172,6 +172,16 @@ class LeadController {
     }
   }
 
+  async getAllActivities(req, res) {
+    try {
+      const { limit = 100, channel, search } = req.query;
+      const activities = Lead.getAllActivities({ limit, channel, search });
+      res.json({ success: true, activities });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
   async addActivity(req, res) {
     try {
       const id = req.params.id;

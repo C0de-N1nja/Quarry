@@ -766,6 +766,35 @@ class Lead {
     }
   }
 
+  static getAllActivities({ limit = 100, channel = null, search = '' } = {}) {
+    try {
+      let sql = `
+        SELECT la.*, l.name as lead_name, l.phone as lead_phone, l.city as lead_city, l.stage as lead_stage
+        FROM lead_activities la
+        JOIN leads l ON la.lead_id = l.id
+      `;
+      const params = [];
+      const conditions = [];
+      if (channel && channel !== 'all') {
+        conditions.push('la.channel = ?');
+        params.push(channel);
+      }
+      if (search && search.trim()) {
+        conditions.push('(la.title LIKE ? OR la.details LIKE ? OR l.name LIKE ?)');
+        const s = `%${search.trim()}%`;
+        params.push(s, s, s);
+      }
+      if (conditions.length > 0) {
+        sql += ` WHERE ${conditions.join(' AND ')}`;
+      }
+      sql += ` ORDER BY la.created_at DESC, la.id DESC LIMIT ?`;
+      params.push(parseInt(limit, 10) || 100);
+      return db.prepare(sql).all(...params);
+    } catch (e) {
+      return [];
+    }
+  }
+
   static addActivity(leadId, { type = 'note', channel = 'system', title, details = '' }) {
     try {
       db.prepare(`

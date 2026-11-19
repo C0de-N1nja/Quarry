@@ -24,8 +24,8 @@ import { toast } from '@/components/base/toast/toast';
 import { DEFAULT_WHATSAPP_TEMPLATES } from '@/utils/whatsappHelper';
 import { DEFAULT_EMAIL_TEMPLATES } from '@/utils/pitchGenerator';
 
-export default function SettingsModal({ onClose, onOpenOnboarding }) {
-  const [activeTab, setActiveTab] = useState('general'); // 'general', 'templates', or 'osint'
+export default function SettingsModal({ onClose, onOpenOnboarding, initialTab = 'general' }) {
+  const [activeTab, setActiveTab] = useState(initialTab); // 'general', 'templates', or 'osint'
   const [templateSubTab, setTemplateSubTab] = useState('whatsapp'); // 'whatsapp' or 'email'
   const [settings, setSettings] = useState({
     sender_name: '',

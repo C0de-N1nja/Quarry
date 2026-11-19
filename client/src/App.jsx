@@ -15,6 +15,9 @@ import KeyboardShortcutsModal from './components/boardui/KeyboardShortcutsModal'
 import SummaryStrip from './components/boardui/SummaryStrip';
 import OnboardingModal from './components/boardui/OnboardingModal';
 import LiveJobsDrawer from './components/boardui/LiveJobsDrawer';
+import FindProspectsPage from './components/boardui/FindProspectsPage';
+import ActivityStreamPage from './components/boardui/ActivityStreamPage';
+import BatchWhatsAppQueueModal from './components/boardui/BatchWhatsAppQueueModal';
 import { Toaster, toast } from '@/components/base/toast/toast';
 
 export default function App() {
@@ -66,11 +69,13 @@ export default function App() {
   const [viewMode, setViewMode] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     const viewParam = params.get('view');
-    if (viewParam && ['table', 'kanban', 'split'].includes(viewParam)) {
+    if (viewParam && ['table', 'kanban', 'split', 'search', 'activity'].includes(viewParam)) {
       return viewParam;
     }
     return localStorage.getItem('viewMode') || 'table';
   });
+  const [settingsTab, setSettingsTab] = useState('general');
+  const [isBatchQueueOpen, setIsBatchQueueOpen] = useState(false);
   const [bannerToast, setBannerToast] = useState(null); // { message, time, type }
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
@@ -195,7 +200,7 @@ export default function App() {
     const leadId = params.get('leadId');
     const tab = params.get('tab');
     const viewParam = params.get('view');
-    if (viewParam && ['table', 'kanban', 'split'].includes(viewParam)) {
+    if (viewParam && ['table', 'kanban', 'split', 'search', 'activity'].includes(viewParam)) {
       setViewMode(viewParam);
     }
     if (leadId) {
@@ -522,8 +527,12 @@ export default function App() {
         stats={stats}
         theme={theme}
         onToggleTheme={toggleTheme}
-        onOpenSearch={(tab) => setActiveModal(tab === 'csv' ? 'csv' : 'search')}
-        onOpenSettings={() => setActiveModal('settings')}
+        onOpenSearch={() => handleViewModeChange('search')}
+        onOpenSettings={(tab = 'general') => {
+          setSettingsTab(tab);
+          setActiveModal('settings');
+        }}
+        onOpenBatchQueue={() => setIsBatchQueueOpen(true)}
         onOpenOnboarding={() => setIsOnboardingOpen(true)}
         onExportExcel={() => handleExportExcel('excel')}
         activeFilter={activeFilter}
@@ -537,8 +546,11 @@ export default function App() {
           stats={stats}
           theme={theme}
           onToggleTheme={toggleTheme}
-          onOpenSearch={(tab) => setActiveModal(tab === 'csv' ? 'csv' : 'search')}
-          onOpenSettings={() => setActiveModal('settings')}
+          onOpenSearch={() => handleViewModeChange('search')}
+          onOpenSettings={() => {
+            setSettingsTab('general');
+            setActiveModal('settings');
+          }}
           onExportExcel={() => handleExportExcel('excel')}
           onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
           onOpenLiveJobs={() => setIsLiveJobsOpen(true)}
@@ -547,94 +559,130 @@ export default function App() {
 
         {/* Main Content Area */}
         <main className="flex-1 w-full max-w-(--breakpoint-2xl) mx-auto px-3 sm:px-6 lg:px-8 py-3">
-        {/* Compact Triage Summary Strip (Replaces hero banner + 4 cards, ~72px tall) */}
-        <SummaryStrip
-          stats={stats}
-          totalCount={totalLeadsCount}
-          activeFilter={activeFilter}
-          contactChannel={contactChannel}
-          focusTier={focusTier}
-          onFilterChange={setActiveFilter}
-          onContactChannelChange={setContactChannel}
-          onFocusTierChange={setFocusTier}
-          onOpenSearch={(tab) => setActiveModal(tab === 'csv' ? 'csv' : 'search')}
-        />
+          {viewMode === 'search' ? (
+            <FindProspectsPage
+              onSelectLead={(lead) => {
+                setSelectedLead(lead);
+              }}
+              onViewSavedLeads={() => {
+                handleViewModeChange('table');
+                setActiveFilter('all');
+              }}
+              onRefresh={() => {
+                fetchLeads();
+                fetchStats();
+              }}
+              onOpenCsvUpload={() => setActiveModal('csv')}
+            />
+          ) : viewMode === 'activity' ? (
+            <ActivityStreamPage
+              onSelectLead={(lead) => {
+                setSelectedLead(lead);
+              }}
+              onViewSavedLeads={() => {
+                handleViewModeChange('table');
+                setActiveFilter('all');
+              }}
+              onOpenSearch={() => handleViewModeChange('search')}
+            />
+          ) : (
+            <>
+              {/* Compact Triage Summary Strip (Replaces hero banner + 4 cards, ~72px tall) */}
+              <SummaryStrip
+                stats={stats}
+                totalCount={totalLeadsCount}
+                activeFilter={activeFilter}
+                contactChannel={contactChannel}
+                focusTier={focusTier}
+                onFilterChange={setActiveFilter}
+                onContactChannelChange={setContactChannel}
+                onFocusTierChange={setFocusTier}
+                onOpenSearch={(tab) => {
+                  if (tab === 'csv') setActiveModal('csv');
+                  else handleViewModeChange('search');
+                }}
+              />
 
-        <LeadTable
-          leads={leads}
-          isLoading={isLoadingLeads}
-          activeFilter={activeFilter}
-          onFilterChange={setActiveFilter}
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          onSelectLead={setSelectedLead}
-          onRunOsint={handleRunOsint}
-          onOpenOsintRun={(opts, categoryOverride) => {
-            if (opts && typeof opts === 'object' && !Array.isArray(opts)) {
-              setOsintSelectedLeads(opts.leadIds || null);
-              setOsintCategory(opts.category || activeNiche);
-              setOsintParams(opts);
-            } else {
-              setOsintSelectedLeads(opts || null);
-              setOsintCategory(categoryOverride !== undefined ? categoryOverride : activeNiche);
-              setOsintParams({
-                filter: activeFilter,
-                category: categoryOverride !== undefined ? categoryOverride : activeNiche,
-                focusTier,
-                contactChannel,
-                searchTerm
-              });
-            }
-            setOsintJobId(null);
-            setActiveModal('osint');
-          }}
-          onDeleteLead={handleDeleteLead}
-          onArchiveLead={handleArchiveLead}
-          onResolveWebsite={handleResolveWebsite}
-          onOpenSearch={(tab) => setActiveModal(tab)}
-          onExportExcel={handleExportExcel}
-          selectedLead={selectedLead}
-          viewMode={viewMode}
-          onViewModeChange={handleViewModeChange}
-          onOpenLeadDrawer={(lead) => {
-            setSelectedLead(lead);
-            setActiveModal('drawer');
-          }}
-          stats={stats}
-          totalCount={totalLeadsCount}
-          pageSize={pageSize}
-          onPageSizeChange={setPageSize}
-          currentPage={currentPage}
-          onPageChange={setCurrentPage}
-          activeNiche={activeNiche}
-          onNicheChange={setActiveNiche}
-          activeCountry={activeCountry}
-          onCountryChange={(newCountry) => {
-            setActiveCountry(newCountry);
-            setActiveCity('all'); // Automatically cascade-reset city when country changes
-          }}
-          activeCity={activeCity}
-          onCityChange={setActiveCity}
-          contactChannel={contactChannel}
-          onContactChannelChange={setContactChannel}
-          ratingFilter={ratingFilter}
-          onRatingFilterChange={setRatingFilter}
-          reviewsFilter={reviewsFilter}
-          onReviewsFilterChange={setReviewsFilter}
-          noteFilter={noteFilter}
-          onNoteFilterChange={setNoteFilter}
-          onResetAllFilters={handleResetAllFilters}
-          focusTier={focusTier}
-          onFocusTierChange={setFocusTier}
-          onPurgeAllLeads={handlePurgeAllLeads}
-          onResetOsint={handleResetOsint}
-          onOpenAudit={handleOpenAudit}
-          onRefresh={() => {
-            fetchLeads();
-            fetchStats();
-          }}
-        />
-      </main>
+              <LeadTable
+                leads={leads}
+                isLoading={isLoadingLeads}
+                activeFilter={activeFilter}
+                onFilterChange={setActiveFilter}
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                onSelectLead={setSelectedLead}
+                onRunOsint={handleRunOsint}
+                onOpenOsintRun={(opts, categoryOverride) => {
+                  if (opts && typeof opts === 'object' && !Array.isArray(opts)) {
+                    setOsintSelectedLeads(opts.leadIds || null);
+                    setOsintCategory(opts.category || activeNiche);
+                    setOsintParams(opts);
+                  } else {
+                    setOsintSelectedLeads(opts || null);
+                    setOsintCategory(categoryOverride !== undefined ? categoryOverride : activeNiche);
+                    setOsintParams({
+                      filter: activeFilter,
+                      category: categoryOverride !== undefined ? categoryOverride : activeNiche,
+                      focusTier,
+                      contactChannel,
+                      searchTerm
+                    });
+                  }
+                  setOsintJobId(null);
+                  setActiveModal('osint');
+                }}
+                onDeleteLead={handleDeleteLead}
+                onArchiveLead={handleArchiveLead}
+                onResolveWebsite={handleResolveWebsite}
+                onOpenSearch={(tab) => {
+                  if (tab === 'csv') setActiveModal('csv');
+                  else handleViewModeChange('search');
+                }}
+                onExportExcel={handleExportExcel}
+                selectedLead={selectedLead}
+                viewMode={viewMode}
+                onViewModeChange={handleViewModeChange}
+                onOpenLeadDrawer={(lead) => {
+                  setSelectedLead(lead);
+                  setActiveModal('drawer');
+                }}
+                stats={stats}
+                totalCount={totalLeadsCount}
+                pageSize={pageSize}
+                onPageSizeChange={setPageSize}
+                currentPage={currentPage}
+                onPageChange={setCurrentPage}
+                activeNiche={activeNiche}
+                onNicheChange={setActiveNiche}
+                activeCountry={activeCountry}
+                onCountryChange={(newCountry) => {
+                  setActiveCountry(newCountry);
+                  setActiveCity('all'); // Automatically cascade-reset city when country changes
+                }}
+                activeCity={activeCity}
+                onCityChange={setActiveCity}
+                contactChannel={contactChannel}
+                onContactChannelChange={setContactChannel}
+                ratingFilter={ratingFilter}
+                onRatingFilterChange={setRatingFilter}
+                reviewsFilter={reviewsFilter}
+                onReviewsFilterChange={setReviewsFilter}
+                noteFilter={noteFilter}
+                onNoteFilterChange={setNoteFilter}
+                onResetAllFilters={handleResetAllFilters}
+                focusTier={focusTier}
+                onFocusTierChange={setFocusTier}
+                onPurgeAllLeads={handlePurgeAllLeads}
+                onResetOsint={handleResetOsint}
+                onOpenAudit={handleOpenAudit}
+                onRefresh={() => {
+                  fetchLeads();
+                  fetchStats();
+                }}
+              />
+            </>
+          )}
+        </main>
       </div>
 
       {/* Search / CSV Ingestion Modal */}
@@ -668,10 +716,29 @@ export default function App() {
       {/* Settings Modal */}
       {activeModal === 'settings' && (
         <SettingsModal 
-          onClose={() => setActiveModal(null)} 
+          initialTab={settingsTab}
+          onClose={() => {
+            setActiveModal(null);
+            setSettingsTab('general');
+          }} 
           onOpenOnboarding={() => setIsOnboardingOpen(true)}
         />
       )}
+
+      {/* Standalone Batch WhatsApp Queue Runner Modal */}
+      <BatchWhatsAppQueueModal
+        isOpen={isBatchQueueOpen}
+        onClose={() => setIsBatchQueueOpen(false)}
+        selectedLeads={leads.filter(l => l.phone).slice(0, 50)}
+        onUpdateLeadStage={() => {
+          fetchLeads();
+          fetchStats();
+        }}
+        onRefresh={() => {
+          fetchLeads();
+          fetchStats();
+        }}
+      />
 
       {/* Live Batch OSINT Telemetry Modal */}
       {activeModal === 'osint' && (
