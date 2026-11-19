@@ -829,27 +829,8 @@ class OsintService {
   }
 
   /**
-   * Dedicated Facebook Page Intelligence Extractor:
-   * Uses Relay GraphQL About payload extraction & OpenGraph crawler headers.
-   * Completely bypasses Facebook's desktop login wall in <1 second without headless browser overhead.
-   */
-  async scrapeFacebookPage(profileUrl) {
-    if (!profileUrl) return null;
-    const scriptPath = path.join(__dirname, '../scripts/fb_scraper.py');
-    try {
-      const sanitizedUrl = profileUrl.replace(/["$`\\]/g, '');
-      const { stdout } = await spawnKill(`python3 "${scriptPath}" "${sanitizedUrl}"`, 9000);
-      if (!stdout) return null;
-      const parsed = JSON.parse(stdout);
-      return parsed.ok ? parsed : null;
-    } catch {
-      return null;
-    }
-  }
-
-  /**
    * Inspect a social profile or bio link page for external website links and contact info.
-   * Utilizes Jina Reader for social platforms (Facebook/Instagram) to bypass login walls.
+   * Powered by pure Scrapling with HTTP/3 Chrome TLS impersonation and Turnstile bypass.
    */
   async inspectProfile(profileUrl, platform = 'unknown') {
     const result = {
@@ -865,93 +846,82 @@ class OsintService {
 
     if (!profileUrl) return result;
 
-    const lowerUrl = profileUrl.toLowerCase();
+    // 1. Primary: Pure Scrapling Social Scraper
+    if (stealthService.isAvailable()) {
+      try {
+        const socialData = await stealthService.scrapeSocial(profileUrl, { timeout: 8000 });
+        if (socialData && socialData.success) {
+          result.platform = socialData.platform || platform;
+          result.bioText = socialData.bio || '';
+          result.whatsapp = socialData.whatsapp || null;
 
-    // 1. High-Performance Facebook Page Extraction
-    if (lowerUrl.includes('facebook.com')) {
-      const fbData = await this.scrapeFacebookPage(profileUrl);
-      if (fbData) {
-        if (fbData.bio) result.bioText = fbData.bio;
-        if (fbData.email) {
-          const valid = this.extractEmails(fbData.email);
-          for (const em of valid) {
-            if (!result.emails.includes(em)) result.emails.push(em);
-          }
-        }
-        if (fbData.phone && !result.phones.includes(fbData.phone)) {
-          result.phones.push(fbData.phone);
-        }
-        if (fbData.website) {
-          const norm = this.normalizeUrl(fbData.website);
-          if (norm && !this.isSocialOrDirectory(norm) && !result.candidateLinks.includes(norm)) {
-            result.candidateLinks.push(norm);
-          }
-        }
-        if (Array.isArray(fbData.candidate_links)) {
-          for (const link of fbData.candidate_links) {
-            const norm = this.normalizeUrl(link);
-            if (norm && !this.isSocialOrDirectory(norm) && !result.candidateLinks.includes(norm)) {
-              result.candidateLinks.push(norm);
+          if (Array.isArray(socialData.emails)) {
+            for (const em of socialData.emails) {
+              const valid = this.extractEmails(em);
+              for (const v of valid) {
+                if (!result.emails.includes(v)) result.emails.push(v);
+              }
             }
           }
+
+          if (Array.isArray(socialData.phones)) {
+            for (const ph of socialData.phones) {
+              if (!result.phones.includes(ph)) result.phones.push(ph);
+            }
+          }
+
+          if (Array.isArray(socialData.candidate_links)) {
+            for (const link of socialData.candidate_links) {
+              const norm = this.normalizeUrl(link);
+              if (norm && !this.isSocialOrDirectory(norm) && !result.candidateLinks.includes(norm)) {
+                result.candidateLinks.push(norm);
+              }
+            }
+          }
+
+          if (result.emails.length > 0 || result.candidateLinks.length > 0 || result.bioText.length > 15) {
+            return result;
+          }
         }
-        // If Facebook scraper successfully extracted email or website, return immediately
-        if (result.emails.length > 0 || result.candidateLinks.length > 0) {
-          return result;
-        }
+      } catch (scraplingErr) {
+        // Fallback to direct fetch
       }
     }
 
-    let textContent = '';
-    let htmlContent = '';
-
-    // If target is a social profile (Instagram, LinkedIn), prioritize Jina Reader to bypass login walls
-    const isSocialGated = lowerUrl.includes('instagram.com') || lowerUrl.includes('linkedin.com');
-
-    if (isSocialGated) {
-      try {
-        const clean = profileUrl.replace(/\/+$/, '');
-        const jinaRes = await axios.get(`https://r.jina.ai/${clean}`, {
-          timeout: 8000,
-          headers: { 'User-Agent': 'Mozilla/5.0' }
-        });
-        if (typeof jinaRes.data === 'string' && jinaRes.data.length > 50) {
-          textContent = jinaRes.data;
-        }
-      } catch (jinaErr) {
-        try {
-          const jinaRes2 = await axios.get(`https://r.jina.ai/${profileUrl}`, { timeout: 7000 });
-          if (typeof jinaRes2.data === 'string') textContent = jinaRes2.data;
-        } catch {}
-      }
-    }
-
-    // Direct HTTP probe (for regular sites or fallback)
+    // 2. Direct Scrapling fetch fallback (pure offline TLS, zero external Jina proxy)
     try {
-      const response = await axios.get(profileUrl, {
-        timeout: 7000,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
-        },
-        maxRedirects: 3,
-        validateStatus: (s) => s < 400
-      });
+      let htmlContent = '';
+      if (stealthService.isAvailable()) {
+        const stealth = await stealthService.fetch(profileUrl, { timeout: 7000 });
+        if (stealth && stealth.html) htmlContent = stealth.html;
+      }
 
-      htmlContent = typeof response.data === 'string' ? response.data : '';
+      if (!htmlContent) {
+        const response = await axios.get(profileUrl, {
+          timeout: 6000,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
+          },
+          maxRedirects: 3,
+          validateStatus: (s) => s < 400
+        });
+        htmlContent = typeof response.data === 'string' ? response.data : '';
+      }
+
       if (htmlContent) {
         const $ = cheerio.load(htmlContent);
         const pageTitle = $('title').text() || '';
         const metaDesc = $('meta[name="description"], meta[property="og:description"]').attr('content') || '';
-        const bodyText = $('body').text() || '';
         result.bioText = `${pageTitle} ${metaDesc}`.trim();
 
+        // Extract outbound links
         $('a[href]').each((_, el) => {
           let href = $(el).attr('href') || '';
           if (href.startsWith('//')) href = 'https:' + href;
           if (!href.startsWith('http')) return;
 
           if (href.includes('wa.me/') || href.includes('api.whatsapp.com/send')) {
-            result.whatsapp = href;
+            if (!result.whatsapp) result.whatsapp = href;
             return;
           }
 
@@ -975,63 +945,20 @@ class OsintService {
             }
           }
         });
+
+        // Extract emails & phones
+        const emails = this.extractEmails(htmlContent);
+        for (const e of emails) {
+          if (!result.emails.includes(e)) result.emails.push(e);
+        }
+        const phones = this.extractPhoneNumbers(htmlContent, result.bioText);
+        for (const p of phones) {
+          if (!result.phones.includes(p)) result.phones.push(p);
+        }
       }
     } catch (err) {
-      const isBlockOrGated = isSocialGated || err.response?.status === 403 || err.response?.status === 503;
-      if (isBlockOrGated && !textContent && stealthService.isAvailable()) {
-        try {
-          const stealth = await stealthService.fetch(profileUrl, { timeout: 8000 });
-          if (stealth && stealth.html) {
-            htmlContent = stealth.html;
-            delete result.error;
-          } else {
-            result.error = err.message || 'Inspection failed';
-          }
-        } catch {
-          result.error = err.message || 'Inspection failed';
-        }
-      } else if (!textContent) {
-        result.error = err.message || 'Inspection failed';
-      }
+      result.error = err.message || 'Inspection failed';
     }
-
-    // Extract links, emails, and phones from combined content (HTML + Jina Markdown)
-    const combinedText = `${htmlContent} ${textContent}`;
-
-    // Extract external website links from Markdown text (e.g. [website](https://...))
-    const mdLinks = textContent.match(/https?:\/\/[^\s)\]"']+/g) || [];
-    for (let link of mdLinks) {
-      if (link.includes('wa.me/') || link.includes('api.whatsapp.com/send')) {
-        if (!result.whatsapp) result.whatsapp = link;
-        continue;
-      }
-      if (!this.isSocialOrDirectory(link)) {
-        const norm = this.normalizeUrl(link);
-        if (norm && !result.candidateLinks.includes(norm)) {
-          result.candidateLinks.push(norm);
-        }
-      }
-    }
-
-    result.emails = this.extractEmails(combinedText);
-
-    // Clean raw HTML out of combinedText and strip URLs to prevent CDN hashes / image IDs from being matched as phone numbers
-    const cleanText = this.normalizeFancyText(combinedText
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
-      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/https?:\/\/[^\s"'<>]+/gi, ' '));
-
-    // Match phone numbers even if adjacent to emojis or punctuation (e.g. 408-469-1693☎️)
-    const phoneRegex = /(?:\+?1[-.\s]?)?\(?[2-9]\d{2}\)?[-.\s]?[2-9]\d{2}[-.\s]?\d{4}(?!\d)/g;
-    const phoneMatches = cleanText.match(phoneRegex) || [];
-    const validPhones = phoneMatches.map(p => p.trim()).filter(p => {
-      const digits = p.replace(/\D/g, '');
-      if (digits.length !== 10 && digits.length !== 11) return false;
-      if (digits.startsWith('179') || digits.startsWith('178') || digits.startsWith('180') || digits.startsWith('184')) return false;
-      return true;
-    });
-    result.phones = Array.from(new Set(validPhones));
 
     return result;
   }

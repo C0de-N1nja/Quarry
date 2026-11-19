@@ -7,6 +7,7 @@ Capabilities:
   1. fetch: Fast HTTP/3 TLS impersonation + fallback to StealthyFetcher for Cloudflare Turnstile / Interstitial bypass.
   2. search: Search engine SERP scraper (Yahoo, Bing, DuckDuckGo) with unwrap logic, snippet parsing, and regex extraction.
   3. crawl: Multi-page contact crawler for prospect websites, extracting emails, phones, and social links.
+  4. social: Direct social profile scraper (Facebook, Instagram, LinkedIn, X, TikTok, Linktree) with zero third-party proxies.
 """
 
 import sys
@@ -38,6 +39,12 @@ CLOUDFLARE_MARKERS = [
 EMAIL_REGEX = re.compile(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', re.IGNORECASE)
 PHONE_REGEX = re.compile(r'(?:\+?1[-.\s]?)?\(?[2-9]\d{2}\)?[-.\s]?[2-9]\d{2}[-.\s]?\d{4}\b')
 INTL_PHONE_REGEX = re.compile(r'\+?\d{1,4}[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,9}\b')
+
+SOCIAL_DOMAINS = [
+    'facebook.com', 'fb.com', 'instagram.com', 'instagr.am', 'linkedin.com',
+    'twitter.com', 'x.com', 'tiktok.com', 'youtube.com', 'youtu.be', 'pinterest.com',
+    'google.com', 'apple.com', 'sentry.io'
+]
 
 def is_cloudflare_challenge(status_code: int, html: str) -> bool:
     if status_code in (403, 503):
@@ -128,7 +135,6 @@ def search_query(query: str, engine: str = "yahoo", timeout_ms: int = 7000) -> d
     snippets: List[str] = []
     engine_name = engine.lower()
 
-    # Search URL construction
     if engine_name == "bing":
         url = "https://www.bing.com/search?q=" + urllib.parse.quote_plus(clean_q)
     elif engine_name == "duckduckgo":
@@ -155,7 +161,6 @@ def search_query(query: str, engine: str = "yahoo", timeout_ms: int = 7000) -> d
                     except Exception:
                         pass
             
-            # Extract text snippets
             raw_snippets = res.css('div.compText, p, div.fc-falcon').getall()
             for s in raw_snippets:
                 clean_text = re.sub(r'<[^>]+>', ' ', s).strip()
@@ -188,7 +193,6 @@ def search_query(query: str, engine: str = "yahoo", timeout_ms: int = 7000) -> d
                 if len(clean_text) > 20 and clean_text not in snippets:
                     snippets.append(clean_text)
 
-        # Harvest emails and phone numbers from the search results
         combined_text = " ".join(snippets) + " " + html
         found_emails = list(set(EMAIL_REGEX.findall(combined_text)))
         clean_emails = [e for e in found_emails if not e.endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg')) and 'example.com' not in e]
@@ -212,6 +216,152 @@ def search_query(query: str, engine: str = "yahoo", timeout_ms: int = 7000) -> d
             "html": ""
         }
 
+def scrape_social_profile(profile_url: str, timeout_ms: int = 8000) -> dict:
+    """Scrape data directly from a social media profile using pure Scrapling without third-party proxies"""
+    from scrapling.fetchers import Fetcher
+
+    if not profile_url:
+        return {"success": False, "error": "No URL provided"}
+
+    clean_url = profile_url.strip().split('?')[0].rstrip('/')
+    if not clean_url.startswith('http'):
+        clean_url = 'https://' + clean_url
+
+    lower = clean_url.lower()
+    platform = 'unknown'
+    if 'facebook.com' in lower or 'fb.com' in lower:
+        platform = 'facebook'
+    elif 'instagram.com' in lower:
+        platform = 'instagram'
+    elif 'linkedin.com' in lower:
+        platform = 'linkedin'
+    elif 'twitter.com' in lower or 'x.com' in lower:
+        platform = 'twitter'
+    elif 'tiktok.com' in lower:
+        platform = 'tiktok'
+    elif 'youtube.com' in lower:
+        platform = 'youtube'
+    elif any(d in lower for d in ['linktr.ee', 'bio.link', 'beacons.ai']):
+        platform = 'linktree'
+
+    result = {
+        "success": False,
+        "platform": platform,
+        "url": clean_url,
+        "page_name": None,
+        "bio": "",
+        "website": None,
+        "emails": [],
+        "phones": [],
+        "whatsapp": None,
+        "candidate_links": [],
+        "engine": "scrapling_social"
+    }
+
+    try:
+        timeout_sec = max(4, int(timeout_ms / 1000))
+        # Use Chrome TLS impersonation
+        res = Fetcher.get(clean_url, timeout=timeout_sec, follow_redirects=True)
+        html = extract_body_text(res)
+
+        if not html or res.status >= 400:
+            # Fallback to stealth browser if fast HTTP was blocked
+            from scrapling.fetchers import StealthyFetcher
+            page = StealthyFetcher.fetch(clean_url, headless=True, solve_cloudflare=True, timeout=timeout_ms)
+            html = extract_body_text(page)
+
+        if not html:
+            result["error"] = "Empty page content"
+            return result
+
+        result["success"] = True
+
+        # 1. Extract Title / Page Name
+        title_tag = res.css('meta[property="og:title"]::attr(content), title::text').get()
+        if title_tag:
+            clean_title = re.sub(r'\s*[\(\|\-–].*$', '', title_tag).strip()
+            result["page_name"] = clean_title or title_tag.strip()
+
+        # 2. Extract Bio Text
+        og_desc = res.css('meta[property="og:description"]::attr(content), meta[name="description"]::attr(content)').get()
+        body_snippets = res.css('p::text, span::text').getall()
+        clean_body = " ".join([b.strip() for b in body_snippets if len(b.strip()) > 15])
+        
+        bio_parts = []
+        if og_desc:
+            bio_parts.append(og_desc.strip())
+        if clean_body:
+            bio_parts.append(clean_body[:500])
+        result["bio"] = " ".join(bio_parts).strip()
+
+        # 3. Extract Emails
+        combined = (result["bio"] + " " + html)
+        emails = set(EMAIL_REGEX.findall(combined))
+        clean_emails = [e.lower() for e in emails if not e.endswith(('.png', '.jpg', '.jpeg', '.svg', '.gif', '.webp', '.js', '.css')) and 'example.com' not in e]
+        result["emails"] = list(clean_emails)[:5]
+
+        # 4. Extract Phones & WhatsApp
+        phones = set()
+        for p in INTL_PHONE_REGEX.findall(result["bio"] or ""):
+            digits = re.sub(r'\D', '', p)
+            if 7 <= len(digits) <= 15:
+                phones.add(p.strip())
+        result["phones"] = list(phones)[:3]
+
+        wa_match = re.search(r'https?://(?:wa\.me|api\.whatsapp\.com/send)[^\s"\'<>]+', html)
+        if wa_match:
+            result["whatsapp"] = wa_match.group(0)
+
+        # 5. Extract Candidate External Links & Website
+        candidate_links = []
+        
+        # Check unwrapped Facebook outbound links (l.facebook.com/l.php?u=...)
+        for m in re.finditer(r'l\.facebook\.com/l\.php\?u=([^&"\']+)', html):
+            target = urllib.parse.unquote(m.group(1))
+            if target.startswith('http') and not any(d in target.lower() for d in SOCIAL_DOMAINS):
+                candidate_links.append(target)
+
+        # Check Instagram external bio link
+        for m in re.finditer(r'https?://(?:l\.instagram\.com/\?u=|linktr\.ee/|bio\.link/|beacons\.ai/)[^\s"\'<>]+', html):
+            raw = m.group(0)
+            if 'l.instagram.com/?u=' in raw:
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(raw).query)
+                if 'u' in q and q['u'][0].startswith('http'):
+                    target = q['u'][0]
+                    if not any(d in target.lower() for d in SOCIAL_DOMAINS):
+                        candidate_links.append(target)
+            else:
+                candidate_links.append(raw)
+
+        # Check all other standard links (for Linktree, bio links, or direct profile links)
+        for link in res.css('a::attr(href)').getall():
+            if link.startswith('//'):
+                link = 'https:' + link
+            if link.startswith('http'):
+                clean_l = link.split('?')[0].rstrip('/')
+                lower_l = clean_l.lower()
+                if not any(d in lower_l for d in SOCIAL_DOMAINS):
+                    if not any(x in lower_l for x in ['privacy', 'terms', 'cookie', 'help', 'login', 'signup', 'support']):
+                        candidate_links.append(clean_l)
+
+        # Deduplicate candidates
+        seen = set()
+        deduped = []
+        for c in candidate_links:
+            norm = c.rstrip('/')
+            if norm not in seen:
+                seen.add(norm)
+                deduped.append(norm)
+
+        result["candidate_links"] = deduped[:5]
+        if deduped:
+            result["website"] = deduped[0]
+
+        return result
+    except Exception as e:
+        result["error"] = str(e)
+        return result
+
 def crawl_site(base_url: str, timeout_ms: int = 10000) -> dict:
     """Crawl homepage and contact subpages using Scrapling to extract authentic contacts and socials"""
     from scrapling.fetchers import Fetcher
@@ -230,16 +380,13 @@ def crawl_site(base_url: str, timeout_ms: int = 10000) -> dict:
     def harvest_from_html(html_str: str, current_url: str):
         if not html_str:
             return
-        # Emails
         for e in EMAIL_REGEX.findall(html_str):
             if not e.endswith(('.png', '.jpg', '.jpeg', '.svg', '.gif', '.webp', '.css', '.js')) and 'example.com' not in e:
                 emails.add(e.lower())
-        # Phones
         for p in INTL_PHONE_REGEX.findall(html_str):
             digits = re.sub(r'\D', '', p)
             if 7 <= len(digits) <= 15:
                 phones.add(p.strip())
-        # Socials
         if "facebook.com/" in html_str and "facebook" not in socials:
             fb = re.search(r'https?://(?:www\.)?facebook\.com/[a-zA-Z0-9.\-_]+', html_str)
             if fb and not any(x in fb.group(0).lower() for x in ['sharer', 'share', 'dialog', 'tr?id=']):
@@ -253,7 +400,6 @@ def crawl_site(base_url: str, timeout_ms: int = 10000) -> dict:
             if li:
                 socials["linkedin"] = li.group(0)
 
-    # 1. Fetch homepage
     home_fetch = fetch_url(base_url, timeout_ms=timeout_ms)
     visited.add(base_url)
 
@@ -270,7 +416,6 @@ def crawl_site(base_url: str, timeout_ms: int = 10000) -> dict:
     home_html = home_fetch.get("html", "")
     harvest_from_html(home_html, base_url)
 
-    # 2. Extract potential contact / about links
     contact_keywords = ['contact', 'about', 'get-in-touch', 'team', 'reach']
     subpage_urls = []
     
@@ -283,7 +428,6 @@ def crawl_site(base_url: str, timeout_ms: int = 10000) -> dict:
             if sub_parsed.netloc.lower() == domain and full_sub not in visited and full_sub not in subpage_urls:
                 subpage_urls.append(full_sub)
 
-    # 3. Fetch up to 3 contact subpages with fast HTTP/3
     for sub in subpage_urls[:3]:
         visited.add(sub)
         sub_res = fetch_url(sub, timeout_ms=5000)
@@ -320,9 +464,13 @@ def main():
     p_crawl.add_argument("url", help="Prospect homepage URL")
     p_crawl.add_argument("--timeout", type=int, default=10000, help="Timeout in milliseconds")
 
+    # Command: social
+    p_social = subparsers.add_parser("social")
+    p_social.add_argument("url", help="Social profile URL to inspect")
+    p_social.add_argument("--timeout", type=int, default=8000, help="Timeout in milliseconds")
+
     args = parser.parse_args()
 
-    # Backwards compatibility: if no subcommand, treat first argument as url for fetch
     if not args.command:
         if len(sys.argv) > 1 and not sys.argv[1].startswith("-"):
             url = sys.argv[1]
@@ -341,6 +489,9 @@ def main():
         print(json.dumps(res))
     elif args.command == "crawl":
         res = crawl_site(args.url, timeout_ms=args.timeout)
+        print(json.dumps(res))
+    elif args.command == "social":
+        res = scrape_social_profile(args.url, timeout_ms=args.timeout)
         print(json.dumps(res))
 
 if __name__ == "__main__":

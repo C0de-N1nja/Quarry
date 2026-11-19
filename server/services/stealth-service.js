@@ -144,7 +144,7 @@ class StealthService {
     const args = [this.scriptPath, 'crawl', url, '--timeout', String(timeoutMs)];
 
     try {
-      const { stdout, timedOut } = await spawnKill(pythonBin, args, timeoutMs + 5000);
+      const { stdout, timedOut } = await spawnKill(pythonBin, args, timeoutMs + 4000);
       if (timedOut || !stdout || !stdout.trim()) {
         return { success: false, url, emails: [], phones: [], socials: {}, error: 'Crawl timed out' };
       }
@@ -159,6 +159,7 @@ class StealthService {
           emails: Array.isArray(parsed.emails) ? parsed.emails : [],
           phones: Array.isArray(parsed.phones) ? parsed.phones : [],
           socials: parsed.socials || {},
+          pages_scraped: parsed.pages_scraped || 0,
           error: parsed.error || null
         };
       }
@@ -167,6 +168,52 @@ class StealthService {
     }
 
     return { success: false, url, emails: [], phones: [], socials: {}, error: 'Invalid crawl response' };
+  }
+
+  /**
+   * Scrape a social media profile directly via Scrapling
+   * @param {string} url - Target social profile URL
+   * @param {Object} options - { timeout: number }
+   * @returns {Promise<{success: boolean, platform: string, url: string, page_name: string|null, bio: string, emails: string[], phones: string[], whatsapp: string|null, candidate_links: string[], website: string|null, error: string|null}>}
+   */
+  async scrapeSocial(url, options = {}) {
+    if (!url || typeof url !== 'string' || !url.startsWith('http')) {
+      return { success: false, url, emails: [], phones: [], candidate_links: [], error: 'Invalid URL' };
+    }
+
+    const pythonBin = this.getPythonBinary();
+    const timeoutMs = options.timeout || 8000;
+    const args = [this.scriptPath, 'social', url, '--timeout', String(timeoutMs)];
+
+    try {
+      const { stdout, timedOut } = await spawnKill(pythonBin, args, timeoutMs + 4000);
+      if (timedOut || !stdout || !stdout.trim()) {
+        return { success: false, url, emails: [], phones: [], candidate_links: [], error: 'Social scrape timed out' };
+      }
+
+      const jsonStart = stdout.indexOf('{');
+      const jsonEnd = stdout.lastIndexOf('}');
+      if (jsonStart !== -1 && jsonEnd !== -1) {
+        const parsed = JSON.parse(stdout.slice(jsonStart, jsonEnd + 1));
+        return {
+          success: Boolean(parsed.success),
+          platform: parsed.platform || 'unknown',
+          url: parsed.url || url,
+          page_name: parsed.page_name || null,
+          bio: parsed.bio || '',
+          emails: Array.isArray(parsed.emails) ? parsed.emails : [],
+          phones: Array.isArray(parsed.phones) ? parsed.phones : [],
+          whatsapp: parsed.whatsapp || null,
+          candidate_links: Array.isArray(parsed.candidate_links) ? parsed.candidate_links : [],
+          website: parsed.website || null,
+          error: parsed.error || null
+        };
+      }
+    } catch (err) {
+      return { success: false, url, emails: [], phones: [], candidate_links: [], error: err.message };
+    }
+
+    return { success: false, url, emails: [], phones: [], candidate_links: [], error: 'Invalid social response' };
   }
 }
 
