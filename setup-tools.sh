@@ -53,12 +53,7 @@ elif command -v python3 &>/dev/null && [ -f "$SERVER_TOOLS/blackbird/requirement
   echo "✅ Bundled Blackbird ready"
 fi
 
-# 5. Bundled Facebook Page Scraper
-if [ -d "$SERVER_TOOLS/facebook-page-info-scraper" ]; then
-  echo "✅ Bundled Facebook Page Info Scraper ready"
-fi
-
-# 6. Bundled WhatsLookup
+# 5. Bundled WhatsLookup
 if [ -d "$SERVER_TOOLS/whatslookup" ]; then
   echo "✅ Bundled WhatsLookup ready"
 fi
