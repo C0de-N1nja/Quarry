@@ -230,12 +230,22 @@ export const SEQUENCE_STEPS = [
   }
 ];
 
-export function generateSequenceMessage(lead, step = 1, hookId = 'auto') {
+export const DEFAULT_WHATSAPP_TEMPLATES = {
+  step1: `Hi {greetingName}, I came across {businessName} in {location} on Google Maps.\n\nI noticed you do not have an official website connected to your listing. Right now when clients in {location} search or ask AI like ChatGPT for {category}, competitors with verified websites are recommended first.\n\nWould you be open to seeing a 2-minute mobile concept of how an official website helps you win those customer calls?`,
+  step2: `Hi {greetingName}, quick follow-up regarding {businessName}.\n\nI know you are busy managing active jobs on-site. I put together a quick 1-page visual summary of how local competitors in {location} are capturing search inquiries from Google and ChatGPT, plus a clean mobile concept for {businessName}.\n\nWould you like me to send over the link so you can check it out on your phone?`,
+  step3: `Hi {greetingName}, last note from me — assuming your schedule for {businessName} is completely booked out with client jobs this month, so I will not follow up again.\n\nIf you ever want to get recommended first when clients search or ask ChatGPT for {category} in {location}, feel free to reach out anytime. All the best with your business!`
+};
+
+function interpolateVars(template, vars) {
+  if (!template) return '';
+  return template.replace(/\{(\w+)\}/g, (match, key) => {
+    return vars[key] !== undefined ? vars[key] : match;
+  });
+}
+
+export function generateSequenceMessage(lead, step = 1, hookId = 'auto', settings = {}) {
   if (!lead) return '';
   const numStep = parseInt(step, 10) || 1;
-  if (numStep === 1) {
-    return generateWhatsAppMessage(lead, hookId);
-  }
 
   const businessName = lead.business_name || lead.company_name || 'Business Owner';
   const ownerName = lead.decision_maker_name || lead.owner_name || '';
@@ -243,7 +253,28 @@ export function generateSequenceMessage(lead, step = 1, hookId = 'auto') {
   const location = lead.city || formatLocation(lead) || 'your area';
   const category = lead.category || lead.google_category || 'services';
 
+  const vars = {
+    businessName,
+    companyName: businessName,
+    greetingName,
+    location,
+    city: lead.city || location,
+    category,
+    senderName: settings.sender_name || 'Our team',
+    portfolioUrl: settings.my_portfolio || ''
+  };
+
+  if (numStep === 1) {
+    if (settings.custom_whatsapp_step1) {
+      return interpolateVars(settings.custom_whatsapp_step1, vars);
+    }
+    return generateWhatsAppMessage(lead, hookId, settings);
+  }
+
   if (numStep === 2) {
+    if (settings.custom_whatsapp_step2) {
+      return interpolateVars(settings.custom_whatsapp_step2, vars);
+    }
     return `Hi ${greetingName}, quick follow-up regarding ${businessName}.
 
 I know you are busy managing active jobs on-site. I put together a quick 1-page visual summary of how local competitors in ${location} are capturing search inquiries from Google and ChatGPT, plus a clean mobile concept for ${businessName}.
@@ -252,6 +283,9 @@ Would you like me to send over the link so you can check it out on your phone?`;
   }
 
   // Step 3: Polite closeout / break-up message
+  if (settings.custom_whatsapp_step3) {
+    return interpolateVars(settings.custom_whatsapp_step3, vars);
+  }
   return `Hi ${greetingName}, last note from me — assuming your schedule for ${businessName} is completely booked out with client jobs this month, so I will not follow up again.
 
 If you ever want to get recommended first when clients search or ask ChatGPT for ${category} in ${location}, feel free to reach out anytime. All the best with your business!`;

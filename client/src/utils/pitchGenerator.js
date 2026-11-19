@@ -79,6 +79,11 @@ export function determineOptimalAngle(lead, audit) {
   return 'no_website';
 }
 
+export const DEFAULT_EMAIL_TEMPLATES = {
+  subject: `Quick question regarding customer inquiries for {businessName}`,
+  body: `Hi {greetingName},\n\nI was looking at established service businesses in {location} and came across {businessName}.\n\nI noticed you don't currently have an official website connected to your business profile.\n\nThe way local customers find and hire businesses has changed a lot recently. Beyond standard Google searches, many homeowners and clients now ask AI tools like ChatGPT: "Who is the most reliable service provider in {location}?"\n\nThese AI tools only recommend businesses that have an official website they can look at to confirm your services, past work, and credibility. Because {businessName} doesn't have a website listed, those customer inquiries are currently being handed straight to your competitors.\n\nHaving a simple, professional website ensures both regular searchers and modern AI tools recommend {businessName} first.\n\nWe put together a quick, clean blueprint showing how this works and what it would look like for {businessName}. Would you be open to a quick 2-minute preview this week?\n\n{signature}`
+};
+
 export function generatePitchDraft({
   lead,
   audit,
@@ -94,6 +99,46 @@ export function generatePitchDraft({
   const agencyName = settings.agency_name || '';
   const bookingLink = settings.my_portfolio || '';
   const signature = settings.outreach_signature || `Best regards,\n${senderName}${agencyName ? ` | ${agencyName}` : ''}${bookingLink ? `\n${bookingLink}` : ''}`;
+  const greetingName = lead.decision_maker_name || lead.owner_name || `${businessName} team`;
+
+  const vars = {
+    businessName,
+    companyName: businessName,
+    greetingName,
+    location,
+    city: lead.city || location,
+    category: lead.category || lead.google_category || 'services',
+    rating: rating || '',
+    reviewsCount: reviewsCount || '',
+    senderName,
+    agencyName,
+    bookingLink,
+    portfolioUrl: bookingLink,
+    signature
+  };
+
+  const interpolate = (tpl) => {
+    if (!tpl) return '';
+    return tpl.replace(/\{(\w+)\}/g, (match, key) => {
+      return vars[key] !== undefined ? vars[key] : match;
+    });
+  };
+
+  if (settings.custom_email_subject || settings.custom_email_body) {
+    const customSubj = settings.custom_email_subject 
+      ? interpolate(settings.custom_email_subject) 
+      : `Quick question regarding customer inquiries for ${businessName}`;
+    const customBody = settings.custom_email_body 
+      ? interpolate(settings.custom_email_body) 
+      : '';
+    if (customBody) {
+      return {
+        subject: customSubj,
+        body: customBody,
+        angle: 'custom'
+      };
+    }
+  }
 
   const chosenAngle = angle === 'auto' ? determineOptimalAngle(lead, audit) : angle;
 

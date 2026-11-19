@@ -9,7 +9,11 @@ import {
   RiExternalLinkLine, 
   RiCompass3Line,
   RiDatabase2Line,
-  RiUser3Line
+  RiUser3Line,
+  RiMailLine,
+  RiWhatsappLine,
+  RiRestartLine,
+  RiFileCopyLine
 } from '@remixicon/react';
 import { Modal, ModalBody, ModalFooter } from '@/components/base/modal/modal';
 import { CloseButton } from '@/components/base/buttons/close-button';
@@ -17,9 +21,12 @@ import { Button } from '@/components/base/buttons/button';
 import { PillTabList, PillTab } from '@/components/base/tabs/pill-tab';
 import { Switch } from '@/components/base/switch/switch';
 import { toast } from '@/components/base/toast/toast';
+import { DEFAULT_WHATSAPP_TEMPLATES } from '@/utils/whatsappHelper';
+import { DEFAULT_EMAIL_TEMPLATES } from '@/utils/pitchGenerator';
 
 export default function SettingsModal({ onClose, onOpenOnboarding }) {
-  const [activeTab, setActiveTab] = useState('general'); // 'general' or 'osint'
+  const [activeTab, setActiveTab] = useState('general'); // 'general', 'templates', or 'osint'
+  const [templateSubTab, setTemplateSubTab] = useState('whatsapp'); // 'whatsapp' or 'email'
   const [settings, setSettings] = useState({
     sender_name: '',
     sender_email: '',
@@ -27,7 +34,12 @@ export default function SettingsModal({ onClose, onOpenOnboarding }) {
     crawler_concurrency: '4',
     enable_mx_verification: 'true',
     enable_whatsapp_detection: 'true',
-    enable_social_recon: 'true'
+    enable_social_recon: 'true',
+    custom_email_subject: '',
+    custom_email_body: '',
+    custom_whatsapp_step1: '',
+    custom_whatsapp_step2: '',
+    custom_whatsapp_step3: ''
   });
 
   const [fetching, setFetching] = useState(true);
@@ -110,6 +122,14 @@ export default function SettingsModal({ onClose, onOpenOnboarding }) {
             onSelect={() => setActiveTab('general')}
           >
             Outreach Profile
+          </PillTab>
+          <PillTab
+            variant="blue"
+            icon={RiMailLine}
+            isSelected={activeTab === 'templates'}
+            onSelect={() => setActiveTab('templates')}
+          >
+            Outreach Templates
           </PillTab>
           <PillTab
             variant="blue"
@@ -275,6 +295,218 @@ export default function SettingsModal({ onClose, onOpenOnboarding }) {
                 Re-launch Discovery Setup Wizard
               </Button>
             </div>
+          </div>
+        ) : activeTab === 'templates' ? (
+          <div className="space-y-5">
+            {/* Template Header & Explainer */}
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <h3 className="font-semibold text-text-primary uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                  <RiMailLine className="size-3.5 text-text-tertiary" />
+                  <span>Outreach Template Engine</span>
+                </h3>
+                <div className="flex items-center gap-1 bg-background-secondary-default p-0.5 rounded-lg border border-separator-border">
+                  <button
+                    type="button"
+                    onClick={() => setTemplateSubTab('whatsapp')}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+                      templateSubTab === 'whatsapp'
+                        ? 'bg-emerald-500/15 text-emerald-400 font-semibold'
+                        : 'text-text-secondary hover:text-text-primary'
+                    }`}
+                  >
+                    <RiWhatsappLine className="size-3" />
+                    <span>WhatsApp</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTemplateSubTab('email')}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+                      templateSubTab === 'email'
+                        ? 'bg-blue-500/15 text-blue-400 font-semibold'
+                        : 'text-text-secondary hover:text-text-primary'
+                    }`}
+                  >
+                    <RiMailLine className="size-3" />
+                    <span>Cold Email</span>
+                  </button>
+                </div>
+              </div>
+              <p className="text-text-secondary text-[11px] mb-3">
+                Customize your outreach scripts. These templates automatically power the Lead Dossier, Batch WhatsApp Queue, and CSV exports.
+              </p>
+
+              {/* Dynamic Variables Cheat-Sheet */}
+              <div className="p-3 rounded-xl bg-background-secondary-default border border-separator-border space-y-2 mb-4">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-text-tertiary font-semibold">
+                  Dynamic Variables (Click to copy into clipboard):
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {[
+                    '{businessName}',
+                    '{greetingName}',
+                    '{location}',
+                    '{city}',
+                    '{category}',
+                    '{senderName}',
+                    '{portfolioUrl}'
+                  ].map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(tag);
+                        toast.success(`Copied ${tag}`);
+                      }}
+                      className="px-2 py-0.5 rounded-md text-[10px] font-mono bg-background-primary-default border border-separator-border text-text-primary hover:border-text-primary transition-colors cursor-pointer"
+                      title="Click to copy tag"
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* SubTab 1: WhatsApp Multi-Touch Cadence */}
+            {templateSubTab === 'whatsapp' && (
+              <div className="space-y-4">
+                {/* Step 1 Template */}
+                <div className="p-3.5 rounded-2xl bg-background-secondary-default border border-separator-border space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-text-primary text-[11px]">
+                      Step 1: Initial Hook (Day 1)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSettings({ ...settings, custom_whatsapp_step1: DEFAULT_WHATSAPP_TEMPLATES.step1 });
+                        toast.info('Step 1 reset to default template');
+                      }}
+                      className="text-[10px] text-text-tertiary hover:text-text-primary hover:underline cursor-pointer flex items-center gap-1"
+                    >
+                      <RiRestartLine className="size-3" />
+                      <span>Reset to Default</span>
+                    </button>
+                  </div>
+                  <textarea
+                    rows={4}
+                    value={settings.custom_whatsapp_step1 !== undefined && settings.custom_whatsapp_step1 !== '' ? settings.custom_whatsapp_step1 : DEFAULT_WHATSAPP_TEMPLATES.step1}
+                    onChange={(e) => setSettings({ ...settings, custom_whatsapp_step1: e.target.value })}
+                    className="w-full p-2.5 rounded-xl bg-background-primary-default border border-separator-border text-text-primary font-mono text-[11px] leading-relaxed focus:border-text-primary focus:outline-none resize-none"
+                  />
+                </div>
+
+                {/* Step 2 Template */}
+                <div className="p-3.5 rounded-2xl bg-background-secondary-default border border-separator-border space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-text-primary text-[11px]">
+                      Step 2: Proof & Value Add (Day 3)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSettings({ ...settings, custom_whatsapp_step2: DEFAULT_WHATSAPP_TEMPLATES.step2 });
+                        toast.info('Step 2 reset to default template');
+                      }}
+                      className="text-[10px] text-text-tertiary hover:text-text-primary hover:underline cursor-pointer flex items-center gap-1"
+                    >
+                      <RiRestartLine className="size-3" />
+                      <span>Reset to Default</span>
+                    </button>
+                  </div>
+                  <textarea
+                    rows={4}
+                    value={settings.custom_whatsapp_step2 !== undefined && settings.custom_whatsapp_step2 !== '' ? settings.custom_whatsapp_step2 : DEFAULT_WHATSAPP_TEMPLATES.step2}
+                    onChange={(e) => setSettings({ ...settings, custom_whatsapp_step2: e.target.value })}
+                    className="w-full p-2.5 rounded-xl bg-background-primary-default border border-separator-border text-text-primary font-mono text-[11px] leading-relaxed focus:border-text-primary focus:outline-none resize-none"
+                  />
+                </div>
+
+                {/* Step 3 Template */}
+                <div className="p-3.5 rounded-2xl bg-background-secondary-default border border-separator-border space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-text-primary text-[11px]">
+                      Step 3: Polite Closeout (Day 7 Break-up)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSettings({ ...settings, custom_whatsapp_step3: DEFAULT_WHATSAPP_TEMPLATES.step3 });
+                        toast.info('Step 3 reset to default template');
+                      }}
+                      className="text-[10px] text-text-tertiary hover:text-text-primary hover:underline cursor-pointer flex items-center gap-1"
+                    >
+                      <RiRestartLine className="size-3" />
+                      <span>Reset to Default</span>
+                    </button>
+                  </div>
+                  <textarea
+                    rows={4}
+                    value={settings.custom_whatsapp_step3 !== undefined && settings.custom_whatsapp_step3 !== '' ? settings.custom_whatsapp_step3 : DEFAULT_WHATSAPP_TEMPLATES.step3}
+                    onChange={(e) => setSettings({ ...settings, custom_whatsapp_step3: e.target.value })}
+                    className="w-full p-2.5 rounded-xl bg-background-primary-default border border-separator-border text-text-primary font-mono text-[11px] leading-relaxed focus:border-text-primary focus:outline-none resize-none"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* SubTab 2: Cold Email Templates */}
+            {templateSubTab === 'email' && (
+              <div className="space-y-4">
+                {/* Email Subject Line */}
+                <div className="p-3.5 rounded-2xl bg-background-secondary-default border border-separator-border space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-text-primary text-[11px]">
+                      Default Cold Email Subject Line
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSettings({ ...settings, custom_email_subject: DEFAULT_EMAIL_TEMPLATES.subject });
+                        toast.info('Subject reset to default');
+                      }}
+                      className="text-[10px] text-text-tertiary hover:text-text-primary hover:underline cursor-pointer flex items-center gap-1"
+                    >
+                      <RiRestartLine className="size-3" />
+                      <span>Reset to Default</span>
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={settings.custom_email_subject !== undefined && settings.custom_email_subject !== '' ? settings.custom_email_subject : DEFAULT_EMAIL_TEMPLATES.subject}
+                    onChange={(e) => setSettings({ ...settings, custom_email_subject: e.target.value })}
+                    className="w-full p-2.5 rounded-xl bg-background-primary-default border border-separator-border text-text-primary font-mono text-[11px] focus:border-text-primary focus:outline-none"
+                  />
+                </div>
+
+                {/* Email Body */}
+                <div className="p-3.5 rounded-2xl bg-background-secondary-default border border-separator-border space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-text-primary text-[11px]">
+                      Default Cold Email Body
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSettings({ ...settings, custom_email_body: DEFAULT_EMAIL_TEMPLATES.body });
+                        toast.info('Email body reset to default');
+                      }}
+                      className="text-[10px] text-text-tertiary hover:text-text-primary hover:underline cursor-pointer flex items-center gap-1"
+                    >
+                      <RiRestartLine className="size-3" />
+                      <span>Reset to Default</span>
+                    </button>
+                  </div>
+                  <textarea
+                    rows={8}
+                    value={settings.custom_email_body !== undefined && settings.custom_email_body !== '' ? settings.custom_email_body : DEFAULT_EMAIL_TEMPLATES.body}
+                    onChange={(e) => setSettings({ ...settings, custom_email_body: e.target.value })}
+                    className="w-full p-2.5 rounded-xl bg-background-primary-default border border-separator-border text-text-primary font-mono text-[11px] leading-relaxed focus:border-text-primary focus:outline-none resize-none"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-5">

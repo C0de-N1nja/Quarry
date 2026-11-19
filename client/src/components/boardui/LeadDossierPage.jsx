@@ -575,14 +575,14 @@ export default function LeadDossierPage({
 
   useEffect(() => {
     if (currentLead) {
-      setWhatsAppMessageText(generateSequenceMessage(currentLead, sequenceStep, whatsAppHook));
+      setWhatsAppMessageText(generateSequenceMessage(currentLead, sequenceStep, whatsAppHook, settings));
     }
-  }, [currentLead?.id, sequenceStep, whatsAppHook]);
+  }, [currentLead?.id, sequenceStep, whatsAppHook, settings]);
 
   const handleSequenceStepChange = (step) => {
     const nextStep = parseInt(step, 10) || 1;
     setSequenceStep(nextStep);
-    setWhatsAppMessageText(generateSequenceMessage(currentLead, nextStep, whatsAppHook));
+    setWhatsAppMessageText(generateSequenceMessage(currentLead, nextStep, whatsAppHook, settings));
   };
 
   const handleAdvanceSequence = async (targetStep) => {
@@ -613,7 +613,7 @@ export default function LeadDossierPage({
 
   const handleWhatsAppHookChange = (hookId) => {
     setWhatsAppHook(hookId);
-    setWhatsAppMessageText(generateSequenceMessage(currentLead, sequenceStep, hookId));
+    setWhatsAppMessageText(generateSequenceMessage(currentLead, sequenceStep, hookId, settings));
   };
 
   const handleCopyWhatsAppMessage = (text = whatsAppMessageText) => {

@@ -89,10 +89,16 @@ export default function WhatsAppModal({
   const [copiedId, setCopiedId] = useState(null);
 
   const activeScript = scripts.find(s => s.id === selectedScriptId) || scripts[0];
+  const [messageText, setMessageText] = useState(activeScript.text);
 
-  const handleCopy = (script) => {
-    navigator.clipboard.writeText(script.text);
-    setCopiedId(script.id);
+  const handleSelectScript = (script) => {
+    setSelectedScriptId(script.id);
+    setMessageText(script.text);
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(messageText);
+    setCopiedId(selectedScriptId);
     toast.success('WhatsApp message copied to clipboard!', {
       description: 'Ready to paste into WhatsApp Web or mobile chat'
     });
@@ -100,7 +106,7 @@ export default function WhatsAppModal({
   };
 
   const handleLaunchWhatsApp = () => {
-    const waUrl = getWhatsAppWebUrl(lead.phone, activeScript.text, lead.country);
+    const waUrl = getWhatsAppWebUrl(lead.phone, messageText, lead.country);
     window.open(waUrl, '_blank');
     setHasLaunchedWa(true);
     toast.info('Opening WhatsApp Web...', {
@@ -261,7 +267,7 @@ export default function WhatsAppModal({
               return (
                 <div
                   key={script.id}
-                  onClick={() => setSelectedScriptId(script.id)}
+                  onClick={() => handleSelectScript(script)}
                   className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all ${
                     isSelected
                       ? 'border-emerald-500 bg-emerald-500/5 shadow-xs ring-1 ring-emerald-500/30'
@@ -273,13 +279,43 @@ export default function WhatsAppModal({
                       <Icon className={`size-4 ${isSelected ? 'text-emerald-500' : 'text-text-tertiary'}`} />
                       <span>{script.title}</span>
                     </span>
-                    <Chip variant="subtle" color={script.color} size="sm">
-                      {script.badge}
-                    </Chip>
+                    <div className="flex items-center gap-2">
+                      {isSelected && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMessageText(script.text);
+                            toast.info('Template reset to default text');
+                          }}
+                          className="text-[10px] text-text-tertiary hover:text-text-primary hover:underline cursor-pointer"
+                        >
+                          Reset
+                        </button>
+                      )}
+                      <Chip variant="subtle" color={script.color} size="sm">
+                        {script.badge}
+                      </Chip>
+                    </div>
                   </div>
-                  <p className="text-caption-1-regular text-text-secondary font-mono leading-relaxed bg-background-primary-default p-2.5 rounded-lg border border-separator-border select-text whitespace-pre-line">
-                    {script.text}
-                  </p>
+                  {isSelected ? (
+                    <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-between text-[10px] text-text-tertiary mb-1 font-mono">
+                        <span>Editable Message (Pre-filled on Web):</span>
+                        <span>{messageText.length} chars</span>
+                      </div>
+                      <textarea
+                        rows={5}
+                        value={messageText}
+                        onChange={(e) => setMessageText(e.target.value)}
+                        className="w-full text-caption-1-regular font-mono leading-relaxed bg-background-primary-default p-2.5 rounded-lg border border-separator-border text-text-primary focus:border-text-primary focus:outline-none resize-none"
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-caption-1-regular text-text-secondary font-mono leading-relaxed bg-background-primary-default p-2.5 rounded-lg border border-separator-border select-text whitespace-pre-line line-clamp-3">
+                      {script.text}
+                    </p>
+                  )}
                 </div>
               );
             })}
@@ -291,7 +327,7 @@ export default function WhatsAppModal({
         <Button
           size="small"
           variant="secondary"
-          onClick={() => handleCopy(activeScript)}
+          onClick={handleCopy}
           leadingIcon={copiedId === activeScript.id ? RiCheckLine : RiFileCopyLine}
         >
           {copiedId === activeScript.id ? 'Copied!' : 'Copy WhatsApp Message'}
