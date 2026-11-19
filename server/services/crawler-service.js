@@ -25,48 +25,30 @@ class CrawlerService {
     const query = `${keyword} in ${location}`.trim();
     const leads = [];
     const seenWebsites = new Set();
+    const searchEngineDomains = ['duckduckgo.com', 'google.com', 'bing.com', 'yahoo.com', 'wikipedia.org'];
 
     try {
-      const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-      const res = await axios.get(searchUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml',
-          'Accept-Language': 'en-US,en;q=0.9'
-        },
-        timeout: 10000
-      });
+      const searchRes = await stealthService.search(query, { engine: 'yahoo', timeout: 8000 });
+      const links = searchRes?.links || [];
+      const snippets = searchRes?.snippets || [];
 
-      const $ = cheerio.load(res.data);
-      const searchEngineDomains = ['duckduckgo.com', 'google.com', 'bing.com', 'yahoo.com', 'wikipedia.org'];
-
-      $('.result').each((i, el) => {
-        if (leads.length >= limit) return false;
-
-        const title = $(el).find('.result__title a').text().trim();
-        let rawLink = $(el).find('.result__title a').attr('href') || '';
-        const snippet = $(el).find('.result__snippet').text().trim();
-
-        if (rawLink.includes('uddg=')) {
-          const match = rawLink.match(/uddg=([^&]+)/);
-          if (match && match[1]) {
-            rawLink = decodeURIComponent(match[1]);
-          }
-        }
-
-        if (!rawLink.startsWith('http')) return;
+      for (let i = 0; i < links.length && leads.length < limit; i++) {
+        const link = links[i];
+        if (!link || !link.startsWith('http')) continue;
 
         try {
-          const parsed = new URL(rawLink);
-          const domain = parsed.hostname.replace(/^www\./, '');
+          const parsed = new URL(link);
+          const domain = parsed.hostname.replace(/^www\./, '').toLowerCase();
 
-          if (isSocialOrAggregator(domain) || searchEngineDomains.some(d => domain.includes(d))) return;
-          if (seenWebsites.has(domain)) return;
+          if (isSocialOrAggregator(domain) || searchEngineDomains.some(d => domain.includes(d))) continue;
+          if (seenWebsites.has(domain)) continue;
           seenWebsites.add(domain);
 
-          let cleanName = title.split(/[-|–:]/)[0].trim();
-          if (cleanName.length < 3) cleanName = title;
+          // Infer business name from domain
+          const brand = domain.split('.')[0];
+          const cleanName = brand.charAt(0).toUpperCase() + brand.slice(1);
 
+          const snippet = snippets[i] || '';
           const phoneMatch = snippet.match(/(?:\+?1[-.\s]?)?\(?[2-9]\d{2}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
           const phone = phoneMatch ? phoneMatch[0] : null;
 
@@ -76,7 +58,7 @@ class CrawlerService {
             maps_link: null,
             phone: phone,
             address: null,
-            city: null,
+            city: location || null,
             category: keyword,
             rating: null,
             reviews_count: 0,
@@ -87,62 +69,13 @@ class CrawlerService {
             website_status: 'active'
           });
         } catch {}
-      });
+      }
     } catch (err) {
-      let fallbackHtml = '';
-      if (stealthService.isAvailable()) {
-        try {
-          const stealth = await stealthService.fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`);
-          if (stealth && stealth.html) fallbackHtml = stealth.html;
-        } catch {}
-      }
-      if (!fallbackHtml) {
-        try {
-          const chromiumQuery = encodeURIComponent(query);
-          const { stdout } = await execPromise(
-            `/snap/bin/chromium --headless --disable-gpu --dump-dom "https://html.duckduckgo.com/html/?q=${chromiumQuery}"`,
-            { timeout: 15000 }
-          );
-          fallbackHtml = stdout;
-        } catch {}
-      }
-      if (fallbackHtml) {
-        const $ = cheerio.load(fallbackHtml);
-        $('.result').each((i, el) => {
-          if (leads.length >= limit) return false;
-          const title = $(el).find('.result__title a').text().trim();
-          let rawLink = $(el).find('.result__title a').attr('href') || '';
-          if (rawLink.includes('uddg=')) {
-            const match = rawLink.match(/uddg=([^&]+)/);
-            if (match && match[1]) rawLink = decodeURIComponent(match[1]);
-          }
-          if (!rawLink.startsWith('http')) return;
-          try {
-            const parsed = new URL(rawLink);
-            const domain = parsed.hostname.replace(/^www\./, '');
-            if (!seenWebsites.has(domain)) {
-              seenWebsites.add(domain);
-              leads.push({
-                business_name: title.split(/[-|–]/)[0].trim() || domain,
-                website: `https://${domain}`,
-                maps_link: null,
-                phone: null,
-                address: null,
-                city: null,
-                category: keyword,
-                rating: null,
-                reviews_count: 0,
-                source: 'crawler',
-                status: 'new',
-                has_no_website: 0,
-                no_website_verified: 0,
-                website_status: 'active'
-              });
-            }
-          } catch {}
-        });
-      }
+      // Graceful error handling
     }
+
+    return leads;
+  }
 
     return leads;
   }
@@ -230,66 +163,37 @@ class CrawlerService {
       linktree: null
     };
 
-    let html = '';
-    try {
-      const res = await axios.get(cleanUrl, {
-        timeout: 7000,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-        },
-        maxRedirects: 4,
-        validateStatus: () => true
-      });
-      html = res.data || '';
-    } catch (e) {
+    if (stealthService.isAvailable()) {
+      try {
+        const crawlRes = await stealthService.crawlWebsite(cleanUrl, { timeout: 8000 });
+        if (crawlRes && crawlRes.socials) {
+          socials = { ...socials, ...crawlRes.socials };
+        }
+      } catch (err) {}
+    }
+
+    // Direct Cheerio fallback if needed
+    if (!socials.facebook && !socials.instagram && !socials.linkedin) {
+      let html = '';
       if (stealthService.isAvailable()) {
-        try {
-          const stealth = await stealthService.fetch(cleanUrl);
-          if (stealth && stealth.html) html = stealth.html;
-        } catch {}
+        const stealth = await stealthService.fetch(cleanUrl, { timeout: 6000 });
+        if (stealth && stealth.html) html = stealth.html;
       }
       if (!html) {
         try {
-          const { stdout } = await execPromise(
-            `/snap/bin/chromium --headless --disable-gpu --dump-dom "${cleanUrl}"`,
-            { timeout: 12000 }
-          );
-          html = stdout;
+          const res = await axios.get(cleanUrl, {
+            timeout: 5000,
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+            validateStatus: () => true
+          });
+          html = res.data || '';
         } catch {}
       }
-    }
 
-    if (html && typeof html === 'string') {
-      const $ = cheerio.load(html);
-      socials = extractSocialProfilesFromCheerio($, cleanUrl);
-
-      // If facebook or instagram missing, check if there is a /contact or /about page linked
-      if (!socials.facebook || !socials.instagram) {
-        const contactHref = $('a[href*="contact" i]').first().attr('href') || $('a[href*="about" i]').first().attr('href');
-        if (contactHref) {
-          try {
-            let contactUrl = contactHref;
-            if (contactUrl.startsWith('/')) {
-              const u = new URL(cleanUrl);
-              contactUrl = `${u.protocol}//${u.host}${contactUrl}`;
-            }
-            if (contactUrl.startsWith('http')) {
-              const contactRes = await axios.get(contactUrl, {
-                timeout: 5000,
-                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-                validateStatus: () => true
-              });
-              if (contactRes.data) {
-                const $c = cheerio.load(contactRes.data);
-                const contactSocials = extractSocialProfilesFromCheerio($c, contactUrl);
-                for (const [k, v] of Object.entries(contactSocials)) {
-                  if (v && !socials[k]) socials[k] = v;
-                }
-              }
-            }
-          } catch {}
-        }
+      if (html && typeof html === 'string') {
+        const $ = cheerio.load(html);
+        const extracted = extractSocialProfilesFromCheerio($, cleanUrl);
+        socials = { ...socials, ...extracted };
       }
     }
 
