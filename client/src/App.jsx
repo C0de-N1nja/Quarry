@@ -752,7 +752,7 @@ export default function App() {
           searchTerm={osintParams?.searchTerm || searchTerm}
           collections={stats?.collections || []}
           stats={stats}
-          limit={pageSize === 'all' ? 5000 : (parseInt(pageSize, 10) || 100)}
+          limit={osintParams?.limit || 5000}
           onClose={() => {
             setActiveModal(null);
             setOsintSelectedLeads(null);

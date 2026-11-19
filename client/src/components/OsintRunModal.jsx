@@ -42,7 +42,7 @@ export default function OsintRunModal({
   searchTerm = '',
   collections = [],
   stats = null,
-  limit = 100,
+  limit = 5000,
   onClose, 
   onRunCompleted 
 }) {
@@ -276,7 +276,14 @@ export default function OsintRunModal({
     }
   };
 
-  const total = job?.total || targetLeadIds.length || limit;
+  const fallbackTotal = targetLeadIds.length > 0 
+    ? targetLeadIds.length 
+    : activeScope === 'no_website' 
+    ? (stats?.noWebsite || limit)
+    : activeScope === 'gold'
+    ? (stats?.goldLeads || limit)
+    : (stats?.totalLeads || limit);
+  const total = job?.total || fallbackTotal;
   const processed = job?.processed || 0;
   const progressPercent = total > 0 ? Math.min(100, Math.round((processed / total) * 100)) : 0;
   const isRunning = job?.status === 'running' || loading;

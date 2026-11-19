@@ -118,7 +118,7 @@ class OsintController {
       if (Array.isArray(leadIds) && leadIds.length > 0) {
         targets = leadIds.map(id => Lead.findById(id)).filter(Boolean);
       } else {
-        const parsedLimit = (limit === 'all' || !limit || limit > 5000) ? 5000 : Math.max(1, parseInt(limit, 10) || 100);
+        const parsedLimit = (limit === 'all' || !limit || parseInt(limit, 10) >= 5000) ? 50000 : Math.max(1, parseInt(limit, 10) || 50000);
         const finalTier = tier || (focusTier === 'gold' ? 'gold' : null);
         const finalBatchMode = batchMode || (focusTier === 'today' ? 'today' : null);
 

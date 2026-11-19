@@ -677,14 +677,28 @@ export default function BoardLeadTable({
     if (!onOpenOsintRun) return;
 
     if (osintScopeChoice === 'selected') {
-      onOpenOsintRun({
-        leadIds: Array.from(selectedLeadIds),
-        category: activeNiche,
-        filter: activeFilter,
-        focusTier,
-        contactChannel,
-        searchTerm
-      });
+      if (isAllMatchingSelected) {
+        onOpenOsintRun({
+          leadIds: null,
+          category: activeNiche,
+          filter: activeFilter,
+          focusTier,
+          contactChannel,
+          city: activeCity,
+          searchTerm,
+          limit: 50000
+        });
+      } else {
+        onOpenOsintRun({
+          leadIds: Array.from(selectedLeadIds),
+          category: activeNiche,
+          filter: activeFilter,
+          focusTier,
+          contactChannel,
+          searchTerm,
+          limit: selectedLeadIds.size
+        });
+      }
     } else if (osintScopeChoice === 'all') {
       onOpenOsintRun({
         leadIds: null,
@@ -692,7 +706,8 @@ export default function BoardLeadTable({
         filter: 'all',
         focusTier: 'vault',
         contactChannel: 'all',
-        searchTerm: ''
+        searchTerm: '',
+        limit: 50000
       }, 'all');
     } else {
       // current filter
@@ -703,7 +718,8 @@ export default function BoardLeadTable({
         focusTier,
         contactChannel,
         city: activeCity,
-        searchTerm
+        searchTerm,
+        limit: 50000
       });
     }
   };
@@ -886,7 +902,7 @@ export default function BoardLeadTable({
               variant="secondary"
               leadingIcon={RiShieldCheckLine}
               onClick={() => {
-                setOsintScopeChoice(selectedLeadIds.size > 0 ? 'selected' : 'filter');
+                setOsintScopeChoice((selectedLeadIds.size > 0 || isAllMatchingSelected) ? 'selected' : 'filter');
                 setIsOsintScopeModalOpen(true);
               }}
               title="Find verified owners and contact details across leads"
@@ -2049,7 +2065,7 @@ export default function BoardLeadTable({
               <label 
                 className={cx(
                   "flex items-center justify-between p-3 rounded-2lg border text-xs cursor-pointer transition-colors",
-                  selectedLeadIds.size === 0 && "opacity-50 cursor-not-allowed",
+                  selectedLeadIds.size === 0 && !isAllMatchingSelected && "opacity-50 cursor-not-allowed",
                   osintScopeChoice === 'selected'
                     ? "border-accent-500 bg-accent-500/10 font-semibold text-text-primary ring-1 ring-accent-500/30"
                     : "border-border-button-default bg-background-secondary-default text-text-secondary hover:bg-background-secondary-hover"
@@ -2060,14 +2076,20 @@ export default function BoardLeadTable({
                     type="radio"
                     name="osintScope"
                     value="selected"
-                    disabled={selectedLeadIds.size === 0}
+                    disabled={selectedLeadIds.size === 0 && !isAllMatchingSelected}
                     checked={osintScopeChoice === 'selected'}
                     onChange={() => setOsintScopeChoice('selected')}
                     className="cursor-pointer accent-accent-500"
                   />
-                  <span>Only the businesses I checked</span>
+                  <span>
+                    {isAllMatchingSelected 
+                      ? `All ${totalItems.toLocaleString()} matching businesses selected` 
+                      : 'Only the businesses I checked'}
+                  </span>
                 </div>
-                <span className="font-mono text-[11px] font-bold">({selectedLeadIds.size})</span>
+                <span className="font-mono text-[11px] font-bold">
+                  ({isAllMatchingSelected ? totalItems.toLocaleString() : selectedLeadIds.size})
+                </span>
               </label>
 
               {/* Scope Option 2: Current Filter */}
@@ -2088,7 +2110,7 @@ export default function BoardLeadTable({
                     onChange={() => setOsintScopeChoice('filter')}
                     className="cursor-pointer accent-accent-500"
                   />
-                  <span>All businesses on this page</span>
+                  <span>All businesses matching current filters</span>
                 </div>
                 <span className="font-mono text-[11px] font-bold">({totalItems.toLocaleString()})</span>
               </label>
