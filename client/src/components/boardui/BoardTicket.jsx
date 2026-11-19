@@ -15,6 +15,8 @@ import { Chip } from '@/components/base/badges/chip';
 import { IconButton } from '@/components/base/buttons/icon-button';
 import { normalizeStage, getStageLabel } from '@shared/stages';
 import NextActionButton from './NextActionButton';
+import { getProblemDiagnosis } from '@/utils/problemDiagnosis';
+import { cx } from '@/utils/cx';
 
 function normalizeNiche(niche = '') {
   if (!niche) return 'Local Business';
@@ -162,6 +164,25 @@ function BoardTicket({
           </Chip>
         )}
       </div>
+
+      {/* 1-Line Plain English Problem Diagnosis (WarmReach style) */}
+      {(() => {
+        const diag = getProblemDiagnosis(lead);
+        return (
+          <div className="mb-2.5 truncate" title={diag.text}>
+            <span className={cx(
+              "inline-block truncate text-[10px] font-medium px-2 py-0.5 rounded border max-w-full",
+              diag.type === 'danger'
+                ? "bg-rose-500/10 text-rose-500 dark:text-rose-400 border-rose-500/20"
+                : diag.type === 'warning'
+                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+            )}>
+              {diag.text}
+            </span>
+          </div>
+        );
+      })()}
 
       {/* Saved Note Snippet Preview */}
       {savedNote && (

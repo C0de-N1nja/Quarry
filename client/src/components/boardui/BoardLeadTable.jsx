@@ -59,6 +59,7 @@ import { canCheckWebsite } from '@/utils/nextAction';
 import { toast } from '@/components/base/toast/toast';
 import { generateWhatsAppMessage, generateSequenceMessage, getWhatsAppWebUrl } from '@/utils/whatsappHelper';
 import { generatePitchDraft } from '@/utils/pitchGenerator';
+import { getProblemDiagnosis } from '@/utils/problemDiagnosis';
 
 function getInitials(name = '') {
   const parts = name.trim().split(/\s+/).slice(0, 2);
@@ -1645,6 +1646,26 @@ export default function BoardLeadTable({
                               </span>
                             )}
                           </div>
+
+                          {/* 1-Line Plain English Problem Diagnosis (WarmReach style) */}
+                          {(() => {
+                            const diag = getProblemDiagnosis(lead);
+                            return (
+                              <div className="mt-1 flex items-center min-w-0" title={diag.text}>
+                                <span className={cx(
+                                  "truncate text-[10px] font-medium px-1.5 py-0.5 rounded border max-w-[270px]",
+                                  diag.type === 'danger'
+                                    ? "bg-rose-500/10 text-rose-500 dark:text-rose-400 border-rose-500/20"
+                                    : diag.type === 'warning'
+                                    ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                                    : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                                )}>
+                                  {diag.text}
+                                </span>
+                              </div>
+                            );
+                          })()}
+
                           {savedNote && (
                             <p className="truncate text-[10px] text-amber-300/80 font-sans italic mt-0.5 max-w-[210px]" title={savedNote}>
                               "{savedNote.replace(/[\r\n]+/g, ' ')}"

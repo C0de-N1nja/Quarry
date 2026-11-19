@@ -157,9 +157,9 @@ export default function SummaryStrip({
         })}
       </div>
 
-      {/* Actionable Follow-ups Alert Bar */}
-      {Boolean(stats?.followUpsDue > 0) && (
-        <div className="mt-2.5 pt-2 border-t border-separator-border/60 flex items-center justify-between text-xs px-1">
+      {/* Actionable Follow-ups Alert Bar & Daily Momentum */}
+      <div className="mt-2.5 pt-2 border-t border-separator-border/60 flex items-center justify-between text-xs px-1 flex-wrap gap-2">
+        {Boolean(stats?.followUpsDue > 0) ? (
           <div className="flex items-center gap-2">
             <span className={cx(
               "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-semibold text-[11px] border",
@@ -172,24 +172,41 @@ export default function SummaryStrip({
             </span>
             <span className="text-text-secondary text-[11px] hidden sm:inline">Reach out today to close conversations into deals</span>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              if (onFocusTierChange) onFocusTierChange('vault');
-              if (onContactChannelChange) onContactChannelChange('all');
-              if (onFilterChange) onFilterChange('follow_up');
-            }}
-            className={cx(
-              "px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer",
-              activeFilter === 'follow_up'
-                ? "bg-text-primary text-background-primary-default border-transparent shadow-xs"
-                : "bg-background-primary-default border-separator-border text-text-primary hover:border-text-primary"
-            )}
-          >
-            {activeFilter === 'follow_up' ? 'Showing Due Leads' : "View Today's Follow-ups →"}
-          </button>
+        ) : (
+          <div className="flex items-center gap-3 text-[11px] text-text-secondary">
+            <span className="font-semibold text-text-primary">Outreach status:</span>
+            <span>{stats?.messaged || 0} contacted</span>
+            <span className="text-separator-border">•</span>
+            <span className="text-purple-500 font-semibold">{stats?.replied || 0} in discussion</span>
+            <span className="text-separator-border">•</span>
+            <span className="text-emerald-500 font-semibold">{stats?.won || 0} won deals</span>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[11px] text-text-tertiary hidden md:inline">
+            Nothing sends until you approve it
+          </span>
+          {Boolean(stats?.followUpsDue > 0) && (
+            <button
+              type="button"
+              onClick={() => {
+                if (onFocusTierChange) onFocusTierChange('vault');
+                if (onContactChannelChange) onContactChannelChange('all');
+                if (onFilterChange) onFilterChange('follow_up');
+              }}
+              className={cx(
+                "px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer",
+                activeFilter === 'follow_up'
+                  ? "bg-text-primary text-background-primary-default border-transparent shadow-xs"
+                  : "bg-background-primary-default border-separator-border text-text-primary hover:border-text-primary"
+              )}
+            >
+              {activeFilter === 'follow_up' ? 'Showing Due Leads' : "View Today's Follow-ups →"}
+            </button>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
