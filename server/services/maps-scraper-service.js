@@ -13,6 +13,7 @@ const timezoneService = require('./timezone-service');
 const notificationService = require('./notification-service');
 const telemetryService = require('./telemetry-service');
 const phoneService = require('./phone-service');
+const hardwareGovernor = require('./hardware-governor');
 
 function resolveMapsScraperBin() {
   if (process.env.MAPS_SCRAPER_BIN && fs.existsSync(process.env.MAPS_SCRAPER_BIN)) {
@@ -666,9 +667,8 @@ class MapsScraperService {
       const depth = parseInt(process.env.MAPS_DEPTH, 10) || (limit <= 250 ? 5 : (limit <= 1000 ? 8 : 10));
       const timeoutMs = Math.max(180000, Math.min(600000, queries.length * 30000));
 
-      const cpuCount = os.cpus().length || 4;
-      const maxConcurrency = Math.max(2, Math.min(cpuCount - 2, 8));
-      const workerConcurrency = Math.min(maxConcurrency, Math.max(1, queries.length));
+      // Dynamic hardware governor: adapts concurrency to user's CPU cores and RAM headroom
+      const workerConcurrency = hardwareGovernor.getMapsConcurrency(queries.length);
 
       const args = [
         '-input', tempQueryFile,

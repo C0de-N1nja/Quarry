@@ -68,8 +68,11 @@ app.use((err, req, res, next) => {
 });
 
 if (require.main === module) {
+  const hardwareGovernor = require('./services/hardware-governor');
+  const profile = hardwareGovernor.getProfile();
   app.listen(PORT, () => {
     console.log(`[Quarry Server] Minimal Core Running on http://localhost:${PORT}`);
+    console.log(`[Hardware Governor] Detected ${profile.cpuCores} CPU cores, ${profile.totalMemoryGb}GB RAM (Safe Workers: ${profile.recommendedMapsConcurrency} Maps / ${profile.recommendedOsintConcurrency} OSINT)`);
   });
 }
 

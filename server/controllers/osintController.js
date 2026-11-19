@@ -1,4 +1,5 @@
 const os = require('os');
+const hardwareGovernor = require('../services/hardware-governor');
 const osintService = require('../services/osint-service');
 const ownerOsintService = require('../services/owner-osint-service');
 const socialResolverService = require('../services/social-resolver-service');
@@ -136,8 +137,8 @@ class OsintController {
         return res.status(400).json({ success: false, error: 'No matching leads found for OSINT run' });
       }
 
-      // Conservative parallel workers (default: 3) to prevent search engine rate limits and CPU contention
-      const concurrency = parseInt(process.env.OSINT_CONCURRENCY, 10) || 3;
+      // Dynamic hardware governor: scales workers to CPU cores and available memory
+      const concurrency = hardwareGovernor.getOsintConcurrency();
 
       const jobId = 'osint_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
       osintTelemetryService.initJob(jobId, targets, concurrency);

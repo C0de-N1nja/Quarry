@@ -560,6 +560,14 @@ async function run() {
     const workerConcurrency = Math.max(3, Math.min(cpuCount - 2, 8));
     assert(workerConcurrency >= 3, 'Worker concurrency must be at least 3');
     assert(workerConcurrency <= cpuCount, 'Worker concurrency must not exceed total CPU cores');
+
+    const governor = require('../services/hardware-governor');
+    const profile = governor.getProfile();
+    assert(profile.cpuCores >= 1, 'Must report at least 1 core');
+    assert(profile.totalMemoryGb >= 1, 'Must report at least 1 GB RAM');
+    assert(profile.recommendedMapsConcurrency >= 1, 'Maps concurrency must be at least 1');
+    assert(profile.recommendedMapsConcurrency <= profile.cpuCores, 'Maps concurrency must not exceed total CPU cores');
+    assert(profile.recommendedOsintConcurrency >= 1, 'OSINT concurrency must be at least 1');
   });
 
   // Test 40: Multi-Query Generation & Linux Notification Service
