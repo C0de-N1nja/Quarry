@@ -18,11 +18,12 @@ class WhatsAppService {
     if (process.env.RAPIDAPI_KEY) return process.env.RAPIDAPI_KEY;
 
     try {
+      const os = require('os');
       const candidates = [
         path.resolve(__dirname, '../tools/whatslookup/.env'),
         process.env.WHATSLOOKUP_PATH ? path.join(process.env.WHATSLOOKUP_PATH, '.env') : null,
         path.resolve(__dirname, '../../../github-tools/whatslookup/.env'),
-        '/home/beast/github-tools/whatslookup/.env'
+        path.join(os.homedir(), 'github-tools/whatslookup/.env')
       ].filter(Boolean);
 
       for (const dotenvPath of candidates) {

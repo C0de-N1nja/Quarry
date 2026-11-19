@@ -12,12 +12,14 @@ class HarvesterService {
   }
 
   _initPaths() {
-    this.uvPath = process.env.UV_PATH || (fs.existsSync('/home/beast/.local/bin/uv') ? '/home/beast/.local/bin/uv' : 'uv');
+    const os = require('os');
+    const defaultUv = path.join(os.homedir(), '.local/bin/uv');
+    this.uvPath = process.env.UV_PATH || (fs.existsSync(defaultUv) ? defaultUv : 'uv');
 
     const candidateDirs = [
       process.env.HARVESTER_PATH,
       path.resolve(__dirname, '../../../github-tools/theHarvester'),
-      '/home/beast/github-tools/theHarvester'
+      path.join(os.homedir(), 'github-tools/theHarvester')
     ].filter(Boolean);
 
     this.harvesterDir = null;

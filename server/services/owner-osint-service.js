@@ -457,7 +457,8 @@ class OwnerOsintService {
     if (!handle || handle.length < 3) return [];
     try {
       const fs = require('fs');
-      const defaultBin = '/home/beast/.local/bin/sherlock';
+      const os = require('os');
+      const defaultBin = path.join(os.homedir(), '.local/bin/sherlock');
       const binCmd = process.env.SHERLOCK_PATH || (fs.existsSync(defaultBin) ? defaultBin : 'sherlock');
       const { stdout } = await execPromise(`${binCmd} --timeout 5 --print-found "${handle}"`, { timeout: 15000 });
       const foundUrls = [];

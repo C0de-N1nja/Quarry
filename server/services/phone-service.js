@@ -1,5 +1,7 @@
 const { exec } = require('child_process');
 const util = require('util');
+const path = require('path');
+const os = require('os');
 const execPromise = util.promisify(exec);
 const { parsePhoneNumber } = require('libphonenumber-js');
 const db = require('../db/database');
@@ -87,7 +89,7 @@ class PhoneService {
     if (!options || !options.fast) {
       try {
         const fs = require('fs');
-        const defaultBin = '/home/beast/.local/bin/phoneinfoga';
+        const defaultBin = path.join(os.homedir(), '.local/bin/phoneinfoga');
         const binCmd = process.env.PHONEINFOGA_PATH || (fs.existsSync(defaultBin) ? defaultBin : 'phoneinfoga');
         const { stdout } = await execPromise(
           `${binCmd} scan -n "${normalized}" --disable ovh,numverify`,

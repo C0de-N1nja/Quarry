@@ -14,13 +14,29 @@ const notificationService = require('./notification-service');
 const telemetryService = require('./telemetry-service');
 const phoneService = require('./phone-service');
 
-const DEFAULT_BIN_PATH = '/home/beast/.local/bin/google_maps_scraper';
-const BINARY_PATH = process.env.MAPS_SCRAPER_BIN ||
-  (fs.existsSync(DEFAULT_BIN_PATH)
-    ? DEFAULT_BIN_PATH
-    : (fs.existsSync('/home/beast/go/bin/google-maps-scraper')
-      ? '/home/beast/go/bin/google-maps-scraper'
-      : 'google_maps_scraper'));
+function resolveMapsScraperBin() {
+  if (process.env.MAPS_SCRAPER_BIN && fs.existsSync(process.env.MAPS_SCRAPER_BIN)) {
+    return process.env.MAPS_SCRAPER_BIN;
+  }
+  const home = os.homedir();
+  const candidates = [
+    path.join(__dirname, '../bin/google_maps_scraper'),
+    path.join(__dirname, '../bin/google-maps-scraper'),
+    path.join(__dirname, '../tools/google_maps_scraper'),
+    path.join(home, '.local/bin/google_maps_scraper'),
+    path.join(home, 'go/bin/google-maps-scraper'),
+    path.join(home, 'go/bin/google_maps_scraper'),
+    '/usr/local/bin/google_maps_scraper',
+    '/usr/local/bin/google-maps-scraper',
+    '/usr/bin/google_maps_scraper'
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return 'google_maps_scraper';
+}
+
+const BINARY_PATH = resolveMapsScraperBin();
 
 /**
  * Cleanly terminates child processes and their descendant browser subprocesses
@@ -458,6 +474,9 @@ function generateSearchQueries(keyword, city, limit = 100, countryCode = 'US') {
 }
 
 class MapsScraperService {
+  getBinaryPath() {
+    return BINARY_PATH;
+  }
   /**
    * Multi-Scraper Lead Extractor:
    * Combines high-speed native Go Google Maps engine with clean directory fallback,

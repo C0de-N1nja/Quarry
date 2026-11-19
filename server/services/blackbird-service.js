@@ -14,12 +14,13 @@ class BlackbirdService {
     const defaultPython = path.resolve(__dirname, '../.venv/bin/python');
     this.pythonPath = process.env.PYTHON_PATH || (fs.existsSync(defaultPython) ? defaultPython : 'python3');
 
+    const os = require('os');
     // Prioritize in-repo bundled tools first, then env, then external fallbacks
     const candidateDirs = [
       path.resolve(__dirname, '../tools/blackbird'),
       process.env.BLACKBIRD_PATH,
       path.resolve(__dirname, '../../../github-tools/blackbird'),
-      '/home/beast/github-tools/blackbird'
+      path.join(os.homedir(), 'github-tools/blackbird')
     ].filter(Boolean);
 
     this.blackbirdDir = null;
