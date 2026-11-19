@@ -214,17 +214,18 @@ class OwnerOsintService {
       for (const p of targetPaths) {
         try {
           let html = '';
-          try {
-            const pageRes = await axios.get(norm + p, {
-              timeout: 4000,
-              headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
-              validateStatus: s => s === 200
-            });
-            html = pageRes.data;
-          } catch (axiosErr) {
-            // If challenged or failed, invoke stealth fetcher
-            const sRes = await stealthService.fetch(norm + p, { engine: 'fast_http', timeout: 5000 });
-            if (sRes.success && sRes.html) html = sRes.html;
+          const sRes = await stealthService.fetch(norm + p, { timeout: 5000 });
+          if (sRes && sRes.success && sRes.html) {
+            html = sRes.html;
+          } else {
+            try {
+              const pageRes = await axios.get(norm + p, {
+                timeout: 4000,
+                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+                validateStatus: s => s === 200
+              });
+              html = pageRes.data;
+            } catch (err) {}
           }
 
           if (html && typeof html === 'string') {
