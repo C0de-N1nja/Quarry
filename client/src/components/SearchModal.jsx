@@ -134,6 +134,67 @@ export const SUPPORTED_COUNTRIES = [
       'Fujairah',
       'Umm Al Quwain'
     ]
+  },
+  {
+    code: 'KW',
+    name: 'Kuwait',
+    dial: '+965',
+    currency: 'KWD',
+    example: 'e.g. Kuwait City, Salmiya, Shuwaikh',
+    topCities: [
+      'Kuwait City',
+      'Salmiya',
+      'Hawally',
+      'Shuwaikh',
+      'Farwaniya',
+      'Ahmadi',
+      'Al Jahra'
+    ]
+  },
+  {
+    code: 'NZ',
+    name: 'New Zealand',
+    dial: '+64',
+    currency: 'NZ$',
+    example: 'e.g. Auckland, Wellington, Christchurch',
+    topCities: [
+      'Auckland',
+      'Wellington',
+      'Christchurch',
+      'Hamilton',
+      'Tauranga',
+      'Dunedin'
+    ]
+  },
+  {
+    code: 'DE',
+    name: 'Germany',
+    dial: '+49',
+    currency: '€',
+    example: 'e.g. Berlin, Munich, Frankfurt',
+    topCities: [
+      'Berlin',
+      'Munich',
+      'Hamburg',
+      'Frankfurt',
+      'Cologne',
+      'Stuttgart'
+    ]
+  },
+  {
+    code: 'SA',
+    name: 'Saudi Arabia',
+    dial: '+966',
+    currency: 'SAR',
+    example: 'e.g. Riyadh, Jeddah, Dammam',
+    topCities: [
+      'Riyadh',
+      'Jeddah',
+      'Dammam',
+      'Mecca',
+      'Medina',
+      'Khobar'
+    ]
   }
 ];
 
@@ -330,13 +391,23 @@ export default function SearchModal({
     };
   }, []);
 
-  // Global Country Scoping
+  // Global Country Scoping (Preset Dropdown + Custom Input)
   const [selectedCountry, setSelectedCountry] = useState(() => localStorage.getItem('quarry_selected_country') || 'US');
+  const [customCountryInput, setCustomCountryInput] = useState(() => localStorage.getItem('quarry_selected_country') || 'US');
+
   const handleCountryChange = (newCountry) => {
     setSelectedCountry(newCountry);
+    setCustomCountryInput(newCountry);
     localStorage.setItem('quarry_selected_country', newCountry);
     setMapsCityOption('');
     setCrawlerCityOption('');
+  };
+
+  const handleCustomCountryInput = (val) => {
+    setCustomCountryInput(val);
+    const upper = val.trim().toUpperCase();
+    setSelectedCountry(upper || 'US');
+    localStorage.setItem('quarry_selected_country', upper || 'US');
   };
 
   // Maps Radar form
@@ -1015,40 +1086,44 @@ export default function SearchModal({
                   <RiBuildingLine className="size-3.5 text-text-secondary" />
                   <span>Target Trade or Business Niche</span>
                 </label>
-                <span className="text-status-blue-text font-mono text-[10px]">Select preset or type custom</span>
+                <span className="text-status-blue-text font-mono text-[10px]">Select preset OR type your own</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                 {/* 1. Trade Dropdown */}
-                <div className="relative flex items-center">
-                  <select
-                    value={mapsTradeOption}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setMapsTradeOption(val);
-                      if (val && val !== 'custom') {
-                        setMapsKeyword(val);
-                      }
-                    }}
-                    className="w-full appearance-none px-3 pr-8 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary cursor-pointer font-medium"
-                  >
-                    <option value="">-- Choose Trade / Niche Preset --</option>
-                    {TRADE_CATEGORIES.map((cat) => (
-                      <optgroup key={cat.category} label={cat.category}>
-                        {cat.trades.map((t) => (
-                          <option key={t} value={t}>
-                            {t}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ))}
-                    <option value="custom">Custom / Write your own...</option>
-                  </select>
-                  <RiArrowDownSLine className="pointer-events-none absolute right-2.5 size-4 text-text-tertiary" />
+                <div>
+                  <div className="text-[11px] font-medium text-text-tertiary mb-1">Choose from presets:</div>
+                  <div className="relative flex items-center">
+                    <select
+                      value={mapsTradeOption}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setMapsTradeOption(val);
+                        if (val && val !== 'custom') {
+                          setMapsKeyword(val);
+                        }
+                      }}
+                      className="w-full appearance-none px-3 pr-8 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary cursor-pointer font-medium"
+                    >
+                      <option value="">-- Choose Trade / Niche Preset --</option>
+                      {TRADE_CATEGORIES.map((cat) => (
+                        <optgroup key={cat.category} label={cat.category}>
+                          {cat.trades.map((t) => (
+                            <option key={t} value={t}>
+                              {t}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                      <option value="custom">Other / Type below...</option>
+                    </select>
+                    <RiArrowDownSLine className="pointer-events-none absolute right-2.5 size-4 text-text-tertiary" />
+                  </div>
                 </div>
 
                 {/* 2. Write Trade Yourself */}
                 <div>
+                  <div className="text-[11px] font-medium text-text-tertiary mb-1">Or type custom trade / keyword:</div>
                   <input
                     type="text"
                     value={mapsKeyword}
@@ -1056,7 +1131,7 @@ export default function SearchModal({
                       setMapsKeyword(e.target.value);
                       setMapsTradeOption('custom');
                     }}
-                    placeholder="e.g. Italian Restaurants, Dentists, MedSpa, Roofing..."
+                    placeholder="e.g. Hybrid Flooring, Dentists, MedSpa, Roofing, HVAC..."
                     required
                     className="w-full px-3 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary placeholder:text-text-tertiary font-medium"
                   />
@@ -1071,6 +1146,7 @@ export default function SearchModal({
                   'HVAC Services',
                   'Plumbing Contractors',
                   'Dentists',
+                  'Flooring & Tiling',
                   'Restaurants',
                   'Med Spas',
                   'Electricians',
@@ -1095,95 +1171,131 @@ export default function SearchModal({
               </div>
             </div>
 
-            {/* Geographic & Limit Selection */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-2.5">
-              {/* 1. Target Country */}
-              <div>
-                <label className="block text-caption-1-semibold text-text-primary mb-1.5 flex items-center gap-1.5">
-                  <RiGlobalLine className="size-3.5 text-text-secondary" />
-                  <span>Target Country</span>
-                </label>
-                <div className="relative flex items-center">
-                  <select
-                    value={selectedCountry}
-                    onChange={(e) => handleCountryChange(e.target.value)}
-                    className="w-full appearance-none px-3 pr-8 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary cursor-pointer font-medium"
-                  >
-                    {SUPPORTED_COUNTRIES.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.name} ({c.dial})
-                      </option>
-                    ))}
-                  </select>
-                  <RiArrowDownSLine className="pointer-events-none absolute right-2.5 size-4 text-text-tertiary" />
+            {/* Geographic & Limit Selection (Dropdown + Custom Input for Country and City) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+              {/* Target Country Selection (Dropdown + Custom Input) */}
+              <div className="p-3 rounded-2xl bg-background-secondary-default/40 border border-separator-border space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-caption-1-semibold text-text-primary flex items-center gap-1.5">
+                    <RiGlobalLine className="size-3.5 text-text-secondary" />
+                    <span>Target Country</span>
+                  </label>
+                  <span className="text-[10px] font-mono text-status-blue-text font-bold">Code: {selectedCountry || 'US'}</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <div className="text-[11px] text-text-tertiary mb-1">Choose country:</div>
+                    <div className="relative flex items-center">
+                      <select
+                        value={SUPPORTED_COUNTRIES.some(c => c.code === selectedCountry) ? selectedCountry : 'custom'}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val !== 'custom') {
+                            handleCountryChange(val);
+                          }
+                        }}
+                        className="w-full appearance-none px-3 pr-8 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary cursor-pointer font-medium"
+                      >
+                        {SUPPORTED_COUNTRIES.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {c.name} ({c.code})
+                          </option>
+                        ))}
+                        <option value="custom">Other / Custom Country...</option>
+                      </select>
+                      <RiArrowDownSLine className="pointer-events-none absolute right-2.5 size-4 text-text-tertiary" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-[11px] text-text-tertiary mb-1">Or type country code / name:</div>
+                    <input
+                      type="text"
+                      value={customCountryInput}
+                      onChange={(e) => handleCustomCountryInput(e.target.value)}
+                      placeholder="e.g. US, AU, GB, KW, NZ..."
+                      className="w-full px-3 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary placeholder:text-text-tertiary font-medium uppercase font-mono"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* 2. City Dropdown for Selected Country */}
-              <div>
-                <label className="block text-caption-1-semibold text-text-primary mb-1.5 flex items-center gap-1.5">
-                  <RiMapPinLine className="size-3.5 text-text-secondary" />
-                  <span>Select City</span>
-                </label>
-                <div className="relative flex items-center">
-                  <select
-                    value={mapsCityOption}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setMapsCityOption(val);
-                      if (val && val !== 'custom') {
-                        setMapsLocation(val);
-                      }
-                    }}
-                    className="w-full appearance-none px-3 pr-8 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary cursor-pointer font-medium"
-                  >
-                    <option value="">-- Choose City --</option>
-                    {(SUPPORTED_COUNTRIES.find((c) => c.code === selectedCountry)?.topCities || []).map((city) => (
-                      <option key={city} value={city}>
-                        {city}
-                      </option>
-                    ))}
-                    <option value="custom">Other / Custom City...</option>
-                  </select>
-                  <RiArrowDownSLine className="pointer-events-none absolute right-2.5 size-4 text-text-tertiary" />
+              {/* Target City Selection (Dropdown + Custom Input) */}
+              <div className="p-3 rounded-2xl bg-background-secondary-default/40 border border-separator-border space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-caption-1-semibold text-text-primary flex items-center gap-1.5">
+                    <RiMapPinLine className="size-3.5 text-text-secondary" />
+                    <span>Target City / Location</span>
+                  </label>
+                  <span className="text-[10px] text-text-tertiary truncate max-w-[140px]">{mapsLocation || 'Required'}</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <div className="text-[11px] text-text-tertiary mb-1">Choose top city:</div>
+                    <div className="relative flex items-center">
+                      <select
+                        value={mapsCityOption}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setMapsCityOption(val);
+                          if (val && val !== 'custom') {
+                            setMapsLocation(val);
+                          }
+                        }}
+                        className="w-full appearance-none px-3 pr-8 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary cursor-pointer font-medium"
+                      >
+                        <option value="">-- Choose City Preset --</option>
+                        {(SUPPORTED_COUNTRIES.find((c) => c.code === selectedCountry)?.topCities || []).map((city) => (
+                          <option key={city} value={city}>
+                            {city}
+                          </option>
+                        ))}
+                        <option value="custom">Other / Custom City...</option>
+                      </select>
+                      <RiArrowDownSLine className="pointer-events-none absolute right-2.5 size-4 text-text-tertiary" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-[11px] text-text-tertiary mb-1">Or type your own city:</div>
+                    <input
+                      type="text"
+                      value={mapsLocation}
+                      onChange={(e) => {
+                        setMapsLocation(e.target.value);
+                        setMapsCityOption('custom');
+                      }}
+                      placeholder={SUPPORTED_COUNTRIES.find((c) => c.code === selectedCountry)?.example || 'e.g. Austin, TX or Hobart'}
+                      required
+                      className="w-full px-3 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary placeholder:text-text-tertiary font-medium"
+                    />
+                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* 3. City / Region Input (Type any city or suburb) */}
-              <div>
-                <label className="block text-caption-1-semibold text-text-primary mb-1.5">City / Suburb / Region</label>
-                <input
-                  type="text"
-                  value={mapsLocation}
-                  onChange={(e) => {
-                    setMapsLocation(e.target.value);
-                    setMapsCityOption('custom');
-                  }}
-                  placeholder={SUPPORTED_COUNTRIES.find((c) => c.code === selectedCountry)?.example || 'e.g. Austin, TX'}
-                  required
-                  className="w-full px-3 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary placeholder:text-text-tertiary font-medium"
-                />
-              </div>
-
-              {/* 4. Max Places to Harvest */}
-              <div>
-                <label className="block text-caption-1-semibold text-text-primary mb-1.5">Max Places</label>
-                <div className="relative flex items-center">
-                  <select
-                    value={mapsLimitOption}
-                    onChange={(e) => setMapsLimitOption(e.target.value)}
-                    className="w-full appearance-none px-3 pr-8 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary cursor-pointer"
-                  >
-                    <option value="20">20 Places (Quick Scan)</option>
-                    <option value="50">50 Places (Medium Batch)</option>
-                    <option value="100">100 Places</option>
-                    <option value="250">250 Places (Broad Search)</option>
-                    <option value="500">500 Places (Metro Sweep)</option>
-                    <option value="1000">1,000 Places (Deep Regional Run)</option>
-                    <option value="custom">Custom Quantity...</option>
-                  </select>
-                  <RiArrowDownSLine className="pointer-events-none absolute right-2.5 size-4 text-text-tertiary" />
-                </div>
+            {/* Max Places Selection */}
+            <div className="p-3 rounded-2xl bg-background-secondary-default/40 border border-separator-border space-y-2">
+              <label className="text-caption-1-semibold text-text-primary block">
+                Max Places to Harvest
+              </label>
+              <div className="relative flex items-center max-w-sm">
+                <select
+                  value={mapsLimitOption}
+                  onChange={(e) => setMapsLimitOption(e.target.value)}
+                  className="w-full appearance-none px-3 pr-8 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary cursor-pointer font-medium"
+                >
+                  <option value="20">20 Places (Quick Scan)</option>
+                  <option value="50">50 Places (Medium Batch)</option>
+                  <option value="100">100 Places</option>
+                  <option value="250">250 Places (Broad Search)</option>
+                  <option value="500">500 Places (Metro Sweep)</option>
+                  <option value="1000">1,000 Places (Deep Regional Run)</option>
+                  <option value="custom">Custom Quantity...</option>
+                </select>
+                <RiArrowDownSLine className="pointer-events-none absolute right-2.5 size-4 text-text-tertiary" />
               </div>
             </div>
 
@@ -1339,83 +1451,114 @@ export default function SearchModal({
               </div>
             </div>
 
-            {/* Geographic & Limit Selection */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-2.5">
-              {/* 1. Target Country */}
-              <div>
-                <label className="block text-caption-1-semibold text-text-primary mb-1.5 flex items-center gap-1.5">
-                  <RiGlobalLine className="size-3.5 text-text-secondary" />
-                  <span>Target Country</span>
-                </label>
-                <div className="relative flex items-center">
-                  <select
-                    value={selectedCountry}
-                    onChange={(e) => handleCountryChange(e.target.value)}
-                    className="w-full appearance-none px-3 pr-8 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary cursor-pointer font-medium"
-                  >
-                    {SUPPORTED_COUNTRIES.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.name} ({c.dial})
-                      </option>
-                    ))}
-                  </select>
-                  <RiArrowDownSLine className="pointer-events-none absolute right-2.5 size-4 text-text-tertiary" />
+            {/* Geographic & Limit Selection (Country, City & Max Prospects) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Target Country: Dropdown + Custom Input */}
+              <div className="p-3 rounded-2xl bg-background-secondary-default/40 border border-separator-border space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-caption-1-semibold text-text-primary flex items-center gap-1.5">
+                    <RiGlobalLine className="size-3.5 text-text-secondary" />
+                    <span>Target Country</span>
+                  </label>
+                  <span className="text-status-blue-text font-mono text-[10px]">Dropdown OR custom input</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <div className="text-[11px] text-text-tertiary mb-1">Choose preset:</div>
+                    <div className="relative flex items-center">
+                      <select
+                        value={selectedCountry}
+                        onChange={(e) => handleCountryChange(e.target.value)}
+                        className="w-full appearance-none px-3 pr-8 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary cursor-pointer font-medium"
+                      >
+                        {SUPPORTED_COUNTRIES.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {c.name} ({c.dial})
+                          </option>
+                        ))}
+                      </select>
+                      <RiArrowDownSLine className="pointer-events-none absolute right-2.5 size-4 text-text-tertiary" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-[11px] text-text-tertiary mb-1">Or type your own:</div>
+                    <input
+                      type="text"
+                      value={customCountryInput}
+                      onChange={(e) => handleCustomCountryInput(e.target.value)}
+                      placeholder="e.g. KW, AU, US, DE, SA"
+                      className="w-full px-3 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary placeholder:text-text-tertiary font-medium uppercase"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* 2. City Dropdown for Selected Country */}
-              <div>
-                <label className="block text-caption-1-semibold text-text-primary mb-1.5 flex items-center gap-1.5">
-                  <RiMapPinLine className="size-3.5 text-text-secondary" />
-                  <span>Select City</span>
-                </label>
-                <div className="relative flex items-center">
-                  <select
-                    value={crawlerCityOption}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setCrawlerCityOption(val);
-                      if (val && val !== 'custom') {
-                        setLocation(val);
-                      }
-                    }}
-                    className="w-full appearance-none px-3 pr-8 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary cursor-pointer font-medium"
-                  >
-                    <option value="">-- Choose City --</option>
-                    {(SUPPORTED_COUNTRIES.find((c) => c.code === selectedCountry)?.topCities || []).map((city) => (
-                      <option key={city} value={city}>
-                        {city}
-                      </option>
-                    ))}
-                    <option value="custom">Other / Custom City...</option>
-                  </select>
-                  <RiArrowDownSLine className="pointer-events-none absolute right-2.5 size-4 text-text-tertiary" />
+              {/* Target City: Dropdown + Custom Input */}
+              <div className="p-3 rounded-2xl bg-background-secondary-default/40 border border-separator-border space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-caption-1-semibold text-text-primary flex items-center gap-1.5">
+                    <RiMapPinLine className="size-3.5 text-text-secondary" />
+                    <span>Target City / Region</span>
+                  </label>
+                  <span className="text-status-blue-text font-mono text-[10px]">Preset OR write city</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <div className="text-[11px] text-text-tertiary mb-1">Choose top city:</div>
+                    <div className="relative flex items-center">
+                      <select
+                        value={crawlerCityOption}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setCrawlerCityOption(val);
+                          if (val && val !== 'custom') {
+                            setLocation(val);
+                          }
+                        }}
+                        className="w-full appearance-none px-3 pr-8 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary cursor-pointer font-medium"
+                      >
+                        <option value="">-- Choose City Preset --</option>
+                        {(SUPPORTED_COUNTRIES.find((c) => c.code === selectedCountry)?.topCities || []).map((city) => (
+                          <option key={city} value={city}>
+                            {city}
+                          </option>
+                        ))}
+                        <option value="custom">Other / Custom City...</option>
+                      </select>
+                      <RiArrowDownSLine className="pointer-events-none absolute right-2.5 size-4 text-text-tertiary" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-[11px] text-text-tertiary mb-1">Or type your own city:</div>
+                    <input
+                      type="text"
+                      value={location}
+                      onChange={(e) => {
+                        setLocation(e.target.value);
+                        setCrawlerCityOption('custom');
+                      }}
+                      placeholder={SUPPORTED_COUNTRIES.find((c) => c.code === selectedCountry)?.example || 'e.g. Austin, TX or Hobart'}
+                      required
+                      className="w-full px-3 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary placeholder:text-text-tertiary font-medium"
+                    />
+                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* 3. City / Region Input (Type any city or suburb) */}
-              <div>
-                <label className="block text-caption-1-semibold text-text-primary mb-1.5">City / Location</label>
-                <input
-                  type="text"
-                  value={location}
-                  onChange={(e) => {
-                    setLocation(e.target.value);
-                    setCrawlerCityOption('custom');
-                  }}
-                  placeholder={SUPPORTED_COUNTRIES.find((c) => c.code === selectedCountry)?.example || 'e.g. Austin, TX'}
-                  required
-                  className="w-full px-3 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary placeholder:text-text-tertiary font-medium"
-                />
-              </div>
-
-              {/* 4. Max Prospects to Fetch */}
-              <div>
-                <label className="block text-caption-1-semibold text-text-primary mb-1.5">Max Prospects</label>
-                <div className="relative flex items-center">
-                  <select
-                    value={crawlerLimitOption}
-                    onChange={(e) => setCrawlerLimitOption(e.target.value)}
+            {/* Max Prospects Selection */}
+            <div className="p-3 rounded-2xl bg-background-secondary-default/40 border border-separator-border space-y-2">
+              <label className="text-caption-1-semibold text-text-primary block">
+                Max Prospects to Fetch
+              </label>
+              <div className="relative flex items-center max-w-sm">
+                <select
+                  value={crawlerLimitOption}
+                  onChange={(e) => setCrawlerLimitOption(e.target.value)}
                     className="w-full appearance-none px-3 pr-8 py-2 text-caption-1-regular rounded-xl bg-background-secondary-default border border-separator-border focus:border-border-focus-ring focus:outline-none text-text-primary cursor-pointer"
                   >
                     <option value="10">10 Prospects</option>
@@ -1429,7 +1572,6 @@ export default function SearchModal({
                   <RiArrowDownSLine className="pointer-events-none absolute right-2.5 size-4 text-text-tertiary" />
                 </div>
               </div>
-            </div>
 
             {crawlerLimitOption === 'custom' && (
               <div className="p-3.5 rounded-xl bg-background-secondary-default border border-border-focus-ring/40 animate-in fade-in slide-in-from-top-1 duration-150">
