@@ -271,7 +271,13 @@ function sendBrowserNotification(title, body) {
   } catch (e) {}
 }
 
-export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreated }) {
+export default function SearchModal({ 
+  initialTab = 'maps', 
+  onClose, 
+  onLeadCreated,
+  isFullPage = false,
+  onViewSavedLeads
+}) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -634,27 +640,53 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
     }
   };
 
-  return (
-    <Modal
-      isOpen={true}
-      onOpenChange={(open) => { if (!open && !loading) onClose(); }}
-      size={loading && activeTab === 'maps' ? 'lg' : 'md'}
-      aria-label="Lead Ingestion Engine"
-      className="p-0 gap-0 overflow-hidden flex flex-col max-h-[92vh] bg-background-primary-default border border-separator-border text-text-primary shadow-2xl rounded-3xl"
-    >
-      {/* Modal Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-separator-border bg-background-secondary-default shrink-0">
-        <div className="flex items-center gap-2">
-          <RiSearchLine className="h-4 w-4 text-accent-500" />
-          <h2 className="text-sm font-semibold text-text-primary">Lead Ingestion Engine</h2>
+  const BodyContainer = isFullPage ? 'div' : ModalBody;
+  const bodyProps = isFullPage
+    ? { className: "p-0 gap-0 flex-1" }
+    : { className: "p-0 gap-0 flex-1 overflow-y-auto" };
+
+  const content = (
+    <>
+      {/* Header */}
+      {isFullPage ? (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-5 border-b border-separator-border bg-background-secondary-default gap-3 shrink-0">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Apex Studio / Search Businesses</span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-bold text-text-primary flex items-center gap-2">
+              <RiSearchLine className="h-6 w-6 text-accent-500" />
+              Search Businesses
+            </h1>
+            <p className="text-xs sm:text-sm text-text-secondary mt-1">
+              Search any trade and location via high-speed Google Maps Radar, web crawler, CSV imports, or manual lead entry.
+            </p>
+          </div>
+          {onViewSavedLeads && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onViewSavedLeads}
+              className="shrink-0 self-start sm:self-auto"
+            >
+              View All Saved Leads
+            </Button>
+          )}
         </div>
-        <CloseButton
-          size="md"
-          onClick={onClose}
-          disabled={loading}
-          aria-label="Close Modal"
-        />
-      </div>
+      ) : (
+        <div className="flex items-center justify-between px-6 py-4 border-b border-separator-border bg-background-secondary-default shrink-0">
+          <div className="flex items-center gap-2">
+            <RiSearchLine className="h-4 w-4 text-accent-500" />
+            <h2 className="text-sm font-semibold text-text-primary">Lead Ingestion Engine</h2>
+          </div>
+          <CloseButton
+            size="md"
+            onClick={onClose}
+            disabled={loading}
+            aria-label="Close Modal"
+          />
+        </div>
+      )}
 
       {/* Tab Buttons using BoardUI PillTabs */}
       <div className="px-5 py-2.5 border-b border-separator-border bg-background-secondary-default shrink-0">
@@ -698,7 +730,7 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
         </PillTabList>
       </div>
 
-      <ModalBody className="p-0 gap-0 flex-1 overflow-y-auto">
+      <BodyContainer {...bodyProps}>
 
         {/* Notifications & Live Stopwatch */}
         {error && (
@@ -953,7 +985,7 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
                   <Button
                     size="small"
                     variant="primary"
-                    onClick={onClose}
+                    onClick={onViewSavedLeads || onClose}
                   >
                     View Generated Leads in Dashboard
                   </Button>
@@ -1586,7 +1618,29 @@ export default function SearchModal({ initialTab = 'maps', onClose, onLeadCreate
             </div>
           </form>
         )}
-      </ModalBody>
+      </BodyContainer>
+    </>
+  );
+
+  if (isFullPage) {
+    return (
+      <div className="w-full max-w-5xl mx-auto py-2 sm:py-4 px-2 sm:px-0">
+        <div className="bg-background-primary-default border border-separator-border text-text-primary shadow-sm rounded-2xl sm:rounded-3xl overflow-hidden flex flex-col mb-8">
+          {content}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Modal
+      isOpen={true}
+      onOpenChange={(open) => { if (!open && !loading) onClose?.(); }}
+      size={loading && activeTab === 'maps' ? 'lg' : 'md'}
+      aria-label="Lead Ingestion Engine"
+      className="p-0 gap-0 overflow-hidden flex flex-col max-h-[92vh] bg-background-primary-default border border-separator-border text-text-primary shadow-2xl rounded-3xl"
+    >
+      {content}
     </Modal>
   );
 }
