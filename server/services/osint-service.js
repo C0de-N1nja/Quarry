@@ -1077,7 +1077,6 @@ class OsintService {
     // 2. HTTP Probe
     let html = '';
     try {
-    try {
       if (stealthService.isAvailable()) {
         const stealth = await stealthService.fetch(url, { timeout: 8000 });
         if (stealth && stealth.html && stealth.status < 400) {

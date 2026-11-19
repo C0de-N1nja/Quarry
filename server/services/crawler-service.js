@@ -77,9 +77,6 @@ class CrawlerService {
     return leads;
   }
 
-    return leads;
-  }
-
   /**
    * Parse CSV file buffer for batch import
    * Flexible support for Google Maps exports, custom lead CSVs, etc.
