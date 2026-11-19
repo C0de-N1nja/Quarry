@@ -26,6 +26,7 @@ const Lead = require('../models/Lead');
 const Contact = require('../models/Contact');
 const phoneService = require('./phone-service');
 const stealthService = require('./stealth-service');
+const jevService = require('./jev-service');
 const db = require('../db/database');
 
 const BLOCKED_EMAIL_DOMAINS = [
@@ -1230,8 +1231,20 @@ class OsintService {
       return verification;
     }
 
-    // 4. Business Match Check
-    const matches = this.matchesBusiness(html, lead);
+    // 4. Business Match Check (Local heuristic + Optional Jev AI probabilistic gate)
+    let matches = this.matchesBusiness(html, lead);
+
+    if (!matches && jevService.isConfigured()) {
+      try {
+        const textSample = (html || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 1500);
+        const jevRes = await jevService.verifyBusinessWebsite(lead, candidateUrl, textSample);
+        if (jevRes && jevRes.isRealWebsite) {
+          matches = true;
+          verification.jevConfidence = jevRes.confidence;
+        }
+      } catch (_) {}
+    }
+
     verification.businessMatch = matches;
     if (!matches) {
       verification.reason = 'Page content does not match business name, phone, or location';

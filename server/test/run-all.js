@@ -1830,6 +1830,16 @@ async function run() {
     assert.strictEqual(classification.isNoWebsite, true);
   });
 
+  // Test 52: Optional Jev AI (TypeSafe System One) Decision Layer
+  test('JevService gracefully handles optional API key and returns correct status', () => {
+    const jevService = require('../services/jev-service');
+    assert(typeof jevService.isConfigured === 'function', 'isConfigured must be a function');
+    assert(typeof jevService.verifyBusinessWebsite === 'function', 'verifyBusinessWebsite must be a function');
+    const status = jevService.getStatus();
+    assert.strictEqual(typeof status.configured, 'boolean');
+    assert.strictEqual(status.model, 'jev-latest');
+  });
+
 // Cleanup test lead
   Mockup.deleteByLeadId(testLeadId);
   db.prepare('DELETE FROM leads WHERE id = ?').run(testLeadId);
