@@ -824,6 +824,36 @@ export default function BoardLeadTable({
                   {(stats?.unclaimedListings || 0).toLocaleString()}
                 </span>
               </PillTab>
+
+              <PillTab
+                variant="gray"
+                isSelected={activeFilter === 'won'}
+                onSelect={() => {
+                  if (onFocusTierChange) onFocusTierChange('vault');
+                  if (onContactChannelChange) onContactChannelChange('all');
+                  if (onFilterChange) onFilterChange(activeFilter === 'won' ? 'all' : 'won');
+                }}
+              >
+                <span>Won</span>
+                <span className="ms-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400">
+                  {(stats?.won || 0).toLocaleString()}
+                </span>
+              </PillTab>
+
+              <PillTab
+                variant="gray"
+                isSelected={activeFilter === 'lost'}
+                onSelect={() => {
+                  if (onFocusTierChange) onFocusTierChange('vault');
+                  if (onContactChannelChange) onContactChannelChange('all');
+                  if (onFilterChange) onFilterChange(activeFilter === 'lost' ? 'all' : 'lost');
+                }}
+              >
+                <span>Lost</span>
+                <span className="ms-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-mono font-bold bg-slate-500/20 text-text-tertiary">
+                  {(stats?.lost || 0).toLocaleString()}
+                </span>
+              </PillTab>
             </PillTabList>
 
             {/* Gold Vault Saved-Filter Chip (BoardUI Chip & Button design) */}
