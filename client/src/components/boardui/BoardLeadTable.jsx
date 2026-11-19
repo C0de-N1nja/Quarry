@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { STAGES, STAGE_CONFIG, normalizeStage, getStageLabel } from '@shared/stages';
+import { STAGES, STAGE_IDS, STAGE_CONFIG, normalizeStage, getStageLabel } from '@shared/stages';
 import {
   RiShieldCheckLine,
   RiSpeedUpLine,
@@ -1391,7 +1391,7 @@ export default function BoardLeadTable({
                 </DropdownTrigger>
                 <DropdownPopover>
                   <DropdownGroup>
-                    {STAGES.map(s => (
+                    {STAGE_IDS.map(s => (
                       <DropdownItem key={s} onAction={() => handleBatchStageChange(s)}>
                         {getStageLabel(s)}
                       </DropdownItem>

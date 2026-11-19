@@ -12,7 +12,16 @@ export const STAGES = {
   MESSAGED: 'messaged',
   REPLIED: 'replied',
   WON: 'won',
-  LOST: 'lost'
+  LOST: 'lost',
+  map(fn) {
+    return STAGE_IDS.map(fn);
+  },
+  forEach(fn) {
+    return STAGE_IDS.forEach(fn);
+  },
+  filter(fn) {
+    return STAGE_IDS.filter(fn);
+  }
 };
 
 export const STAGE_IDS = ['new', 'contact_found', 'messaged', 'replied', 'won', 'lost'];
