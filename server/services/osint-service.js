@@ -529,8 +529,8 @@ class OsintService {
   }
 
   /**
-   * Multi-Engine Search with Automatic Rotation (Yahoo -> Bing -> oc -> DuckDuckGo)
-   * Prevents bot blocks through query sanitization, header randomization, and TLS impersonation
+   * Multi-Engine Search with Scrapling Engine (Yahoo -> Bing -> DuckDuckGo)
+   * Powered by Scrapling HTTP/3 TLS Impersonation & redirect unwrapping
    */
   async searchEngineQuery(query, preferredEngine = 'yahoo', timeout = 6000) {
     const cleanQuery = query
@@ -538,85 +538,66 @@ class OsintService {
       .replace(/\s+/g, ' ')
       .trim();
 
-    const ua = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+    if (!cleanQuery) {
+      return { success: false, engine: 'none', links: [], snippets: [], html: '', error: 'Empty query' };
+    }
+
     const engines = preferredEngine === 'bing'
       ? ['bing', 'yahoo', 'duckduckgo']
       : ['yahoo', 'bing', 'duckduckgo'];
 
     const errors = [];
 
-    // Tier 1: Direct queries across engines (with oc TLS impersonation for Yahoo)
+    // Primary: Scrapling Native Engine
+    if (stealthService.isAvailable()) {
+      for (const engine of engines) {
+        try {
+          const res = await stealthService.search(cleanQuery, { engine, timeout });
+          if (res && res.success && (res.links?.length > 0 || res.snippets?.length > 0)) {
+            return {
+              success: true,
+              engine: res.engine || `scrapling_${engine}`,
+              links: res.links || [],
+              snippets: res.snippets || [],
+              emails: res.emails || [],
+              html: res.html || '',
+              error: null
+            };
+          }
+          if (res?.error) {
+            errors.push({ engine: `scrapling_${engine}`, error: res.error });
+          }
+        } catch (scraplingErr) {
+          errors.push({ engine: `scrapling_${engine}`, error: scraplingErr.message });
+        }
+      }
+    }
+
+    // Direct Axios fallback only if Scrapling is missing or returned no results
+    const ua = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
     for (const engine of engines) {
       try {
         let html = '';
         if (engine === 'yahoo') {
-          try {
-            const res = await axios.get(`https://search.yahoo.com/search?p=${encodeURIComponent(cleanQuery)}`, {
-              headers: {
-                'User-Agent': ua,
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Referer': 'https://search.yahoo.com/'
-              },
-              timeout,
-              validateStatus: (s) => s < 400
-            });
-            html = res.data;
-          } catch (yahooAxiosErr) {
-            // If direct Axios gets challenged (500 or redirect), immediately bypass via oc open (TLS impersonation)
-            try {
-              const ocUrl = `https://search.yahoo.com/search?p=${encodeURIComponent(cleanQuery)}`;
-              const { stdout } = await spawnKill(`oc open "${ocUrl}" --json`, 10000);
-              const data = JSON.parse(stdout);
-              if (data && Array.isArray(data.blocks)) {
-                const links = [];
-                const snippets = [];
-                for (const b of data.blocks) {
-                  if (b.href) {
-                    const unwrapped = this.decodeSearchUrl(b.href);
-                    if (unwrapped.startsWith('http') && !unwrapped.includes('yahoo.com')) links.push(unwrapped);
-                  }
-                  if (b.type === 'text' && b.text) {
-                    const txt = b.text.trim();
-                    if (txt.length > 25 && !/voice search|microphone access|waiting for permission/i.test(txt)) {
-                      snippets.push(txt);
-                    }
-                  }
-                }
-                if (links.length > 0 || snippets.length > 0) {
-                  return { success: true, engine: 'oc_yahoo', links, snippets, html: '', error: null };
-                }
-              }
-            } catch (ocErr) {
-              errors.push({ engine: 'oc_yahoo', error: ocErr.message });
-            }
-            throw yahooAxiosErr;
-          }
+          const res = await axios.get(`https://search.yahoo.com/search?p=${encodeURIComponent(cleanQuery)}`, {
+            headers: { 'User-Agent': ua, 'Accept': 'text/html', 'Referer': 'https://search.yahoo.com/' },
+            timeout,
+            validateStatus: s => s < 400
+          });
+          html = res.data;
         } else if (engine === 'bing') {
           const res = await axios.get(`https://www.bing.com/search?q=${encodeURIComponent(cleanQuery)}`, {
-            headers: {
-              'User-Agent': ua,
-              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-              'Accept-Language': 'en-US,en;q=0.9',
-              'Referer': 'https://www.bing.com/'
-            },
+            headers: { 'User-Agent': ua, 'Accept': 'text/html', 'Referer': 'https://www.bing.com/' },
             timeout,
-            validateStatus: (s) => s < 400
+            validateStatus: s => s < 400
           });
           html = res.data;
         } else if (engine === 'duckduckgo') {
-          const res = await axios.post(
-            'https://lite.duckduckgo.com/lite/',
-            new URLSearchParams({ q: cleanQuery }).toString(),
-            {
-              headers: {
-                'User-Agent': ua,
-                'Content-Type': 'application/x-www-form-urlencoded'
-              },
-              timeout: 3000,
-              validateStatus: (s) => s < 400
-            }
-          );
+          const res = await axios.post('https://lite.duckduckgo.com/lite/', new URLSearchParams({ q: cleanQuery }).toString(), {
+            headers: { 'User-Agent': ua, 'Content-Type': 'application/x-www-form-urlencoded' },
+            timeout: 3000,
+            validateStatus: s => s < 400
+          });
           html = res.data;
         }
 
@@ -625,19 +606,7 @@ class OsintService {
           const links = [];
           const snippets = [];
 
-          // Target specific search result links first
-          const linkSelectors = [
-            '#web ol li div.compTitle a',
-            '#web ol li h3 a',
-            'div.compTitle a',
-            'h3.title a',
-            'li.b_algo h2 a',
-            'li.b_algo a[href]',
-            'td.result-link a',
-            '.result__url',
-            'a.result__a'
-          ];
-          $(linkSelectors.join(', ')).each((_, el) => {
+          $('a[href]').each((_, el) => {
             const raw = $(el).attr('href') || '';
             const unwrapped = this.decodeSearchUrl(raw);
             if (unwrapped.startsWith('http') && !/yahoo\.com|bing\.com|duckduckgo\.com|microsoft\.com/i.test(unwrapped)) {
@@ -645,83 +614,20 @@ class OsintService {
             }
           });
 
-          // Fallback to all a[href] if specific selectors returned none
-          if (links.length === 0) {
-            $('a[href]').each((_, el) => {
-              const raw = $(el).attr('href') || '';
-              const unwrapped = this.decodeSearchUrl(raw);
-              if (unwrapped.startsWith('http') && !/yahoo\.com|bing\.com|duckduckgo\.com|microsoft\.com/i.test(unwrapped)) {
-                if (!links.includes(unwrapped)) links.push(unwrapped);
-              }
-            });
-          }
-
-          // Extract legitimate snippets, ignoring UI navigation and voice search prompts
-          const snippetSelectors = [
-            'div.compText',
-            'li.b_algo p',
-            'li.b_algo div.b_caption p',
-            '.b_snippet',
-            'td.result-snippet',
-            '.result-snippet',
-            '.result__snippet',
-            'div.compText span'
-          ];
-          $(snippetSelectors.join(', ')).each((_, el) => {
+          $('div.compText, li.b_algo p, td.result-snippet, .result__snippet').each((_, el) => {
             const txt = $(el).text().replace(/\s+/g, ' ').trim();
-            if (txt.length >= 25 && !/voice search|microphone access|waiting for permission|selected edition|try saying|feedback|privacy policy|terms of service/i.test(txt)) {
+            if (txt.length >= 25 && !/voice search|microphone access|waiting for permission/i.test(txt)) {
               snippets.push(txt);
             }
           });
 
           if (links.length > 0 || snippets.length > 0) {
-            return {
-              success: true,
-              engine,
-              links,
-              snippets,
-              html,
-              error: null
-            };
+            return { success: true, engine, links, snippets, html, error: null };
           }
         }
       } catch (err) {
-        errors.push({ engine, error: err.message, code: err.code || null });
+        errors.push({ engine, error: err.message });
       }
-    }
-
-    // Tier 2: oc open fallback (built-in TLS browser impersonation)
-    try {
-      const ocUrl = `https://search.yahoo.com/search?p=${encodeURIComponent(cleanQuery)}`;
-      const { stdout } = await spawnKill(`oc open "${ocUrl}" --json`, 10000);
-      const data = JSON.parse(stdout);
-      if (data && Array.isArray(data.blocks)) {
-        const links = [];
-        const snippets = [];
-
-        for (const b of data.blocks) {
-          if (b.href) {
-            const unwrapped = this.decodeSearchUrl(b.href);
-            if (unwrapped.startsWith('http')) links.push(unwrapped);
-          }
-          if (b.type === 'text' && b.text) {
-            snippets.push(b.text.trim());
-          }
-        }
-
-        if (links.length > 0 || snippets.length > 0) {
-          return {
-            success: true,
-            engine: 'oc_yahoo',
-            links,
-            snippets,
-            html: '',
-            error: null
-          };
-        }
-      }
-    } catch (ocErr) {
-      errors.push({ engine: 'oc_yahoo', error: ocErr.message });
     }
 
     return {
@@ -1171,57 +1077,39 @@ class OsintService {
     // 2. HTTP Probe
     let html = '';
     try {
-      const response = await axios.get(url, {
-        timeout: 6000,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
-        },
-        maxRedirects: 4,
-        validateStatus: () => true
-      });
-
-      verification.httpStatus = response.status;
-      const isCfBlocked = response.status === 403 || response.status === 503 ||
-        (typeof response.data === 'string' && (response.data.includes('cf-browser-verification') || response.data.includes('challenge-platform')));
-
-      if (isCfBlocked && stealthService.isAvailable()) {
-        const stealth = await stealthService.fetch(url);
-        if (stealth && stealth.html && stealth.status < 400) {
-          html = stealth.html;
-          verification.httpStatus = stealth.status;
-          verification.stealthBypass = true;
-          verification.stealthEngine = stealth.engine;
-        } else if (response.status >= 400) {
-          verification.reason = `HTTP status ${response.status} returned`;
-          return verification;
-        }
-      } else if (response.status >= 400) {
-        verification.reason = `HTTP status ${response.status} returned`;
-        return verification;
-      } else {
-        html = typeof response.data === 'string' ? response.data : '';
-      }
-    } catch (httpErr) {
-      const isBlockOrTls = httpErr.code === 'ERR_TLS_CERT_ALTNAME_INVALID' ||
-        httpErr.code === 'ECONNRESET' ||
-        httpErr.response?.status === 403 ||
-        httpErr.response?.status === 503;
-
-      if (isBlockOrTls && stealthService.isAvailable()) {
+    try {
+      if (stealthService.isAvailable()) {
         const stealth = await stealthService.fetch(url, { timeout: 8000 });
         if (stealth && stealth.html && stealth.status < 400) {
           html = stealth.html;
           verification.httpStatus = stealth.status;
           verification.stealthBypass = true;
           verification.stealthEngine = stealth.engine;
-        } else {
-          verification.reason = `Connection failed: ${httpErr.message}`;
+        } else if (stealth && stealth.status >= 400) {
+          verification.reason = `HTTP status ${stealth.status} returned`;
           return verification;
         }
-      } else {
-        verification.reason = `Connection failed: ${httpErr.message}`;
-        return verification;
       }
+
+      if (!html) {
+        const response = await axios.get(url, {
+          timeout: 6000,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
+          },
+          maxRedirects: 4,
+          validateStatus: () => true
+        });
+        verification.httpStatus = response.status;
+        if (response.status >= 400) {
+          verification.reason = `HTTP status ${response.status} returned`;
+          return verification;
+        }
+        html = typeof response.data === 'string' ? response.data : '';
+      }
+    } catch (httpErr) {
+      verification.reason = `Connection failed: ${httpErr.message}`;
+      return verification;
     }
 
     // 3. Parked Domain Check
