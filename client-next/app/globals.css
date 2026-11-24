@@ -1,0 +1,140 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --canvas-bg: #050505;
+    --elevated-surface: #0c0c0c;
+    --border-hairline: #171717;
+    --border-card: #1c1c1c;
+    --border-hover: #242424;
+    --text-primary: #ffffff;
+    --text-body: #cfcfcf;
+    --text-muted: #8a8a8a;
+    --text-hint: #7e7e7e;
+  }
+
+  body {
+    background-color: #050505;
+    color: #cfcfcf;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+/* Subtle 60px x 60px background grid as specified in Quarry Section 1 */
+.quarry-grid-bg {
+  background-color: #050505;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* Leaflet Tile Inverted Dark Mode Filter as specified in Quarry Section 1 */
+.leaflet-tile-pane {
+  filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(92%);
+}
+
+.leaflet-container {
+  background-color: #0c0c0c !important;
+}
+
+/* Custom scrollbars for sidebars and textareas */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #050505;
+}
+::-webkit-scrollbar-thumb {
+  background: #1c1c1c;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #242424;
+}
+
+/* Light Theme Overrides */
+html.light body,
+.light.quarry-grid-bg,
+.light .quarry-grid-bg {
+  background-color: #f8fafc !important;
+  background-image:
+    linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px) !important;
+  color: #334155 !important;
+}
+
+.light .bg-\[\#050505\] {
+  background-color: #f8fafc !important;
+}
+
+.light .bg-\[\#050505\]\/90,
+.light .bg-\[\#050505\]\/80,
+.light .bg-\[\#050505\]\/85 {
+  background-color: rgba(248, 250, 252, 0.9) !important;
+}
+
+.light .bg-\[\#0c0c0c\],
+.light .bg-\[\#0b0b0b\],
+.light .bg-\[\#080808\] {
+  background-color: #ffffff !important;
+}
+
+.light .border-\[\#171717\],
+.light .border-\[\#1c1c1c\],
+.light .border-\[\#141414\],
+.light .border-\[\#111111\],
+.light .divide-\[\#141414\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e2e8f0 !important;
+}
+
+.light .hover\:border-\[\#242424\]:hover,
+.light .border-\[\#242424\] {
+  border-color: #cbd5e1 !important;
+}
+
+.light .text-white {
+  color: #0f172a !important;
+}
+
+.light .text-\[\#cfcfcf\] {
+  color: #334155 !important;
+}
+
+.light .text-\[\#8a8a8a\] {
+  color: #64748b !important;
+}
+
+.light .text-\[\#7e7e7e\] {
+  color: #94a3b8 !important;
+}
+
+.light .hover\:bg-\[\#171717\]:hover,
+.light .hover\:bg-\[\#141414\]:hover,
+.light .hover\:bg-\[\#111111\]:hover {
+  background-color: #f1f5f9 !important;
+}
+
+.light .bg-\[\#171717\],
+.light .bg-\[\#141414\] {
+  background-color: #f1f5f9 !important;
+}
+
+.light .leaflet-tile-pane {
+  filter: none !important;
+}
+
+.light .leaflet-container {
+  background-color: #e2e8f0 !important;
+}
+
+.light ::-webkit-scrollbar-track {
+  background: #f8fafc !important;
+}
+.light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1 !important;
+}
+.light ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8 !important;
+}

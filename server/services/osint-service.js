@@ -269,10 +269,15 @@ class OsintService {
   }
 
   /**
-   * Determine if a URL is an aggregator, social network, directory, or bio-link
+   * Determine if a URL is an aggregator, social network, directory, media portal, or bio-link
    */
   isSocialOrDirectory(url) {
     if (!url) return true;
+    try {
+      const { isSocialOrAggregator } = require('./social-domains');
+      if (isSocialOrAggregator(url)) return true;
+    } catch {}
+
     try {
       let clean = url.toLowerCase().trim();
       if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
@@ -294,6 +299,50 @@ class OsintService {
   }
 
   /**
+   * Enforce that candidate website domain root shares distinctive brand tokens with lead
+   */
+  isDomainBrandRelevant(url, businessName) {
+    if (!url || !businessName) return false;
+    try {
+      let clean = url.toLowerCase().trim();
+      if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
+        clean = 'https://' + clean;
+      }
+      const parsed = new URL(clean);
+      const host = parsed.hostname.replace(/^www\./, '').toLowerCase();
+      const domainRoot = host.split('.')[0].replace(/[^a-z0-9]/g, '');
+
+      // Check if domain root is a known generic/media/directory platform
+      const { isSocialOrAggregator } = require('./social-domains');
+      if (isSocialOrAggregator(clean)) return false;
+
+      const genericTradeWords = new Set([
+        'and', 'the', 'inc', 'llc', 'corp', 'co', 'services', 'service', 'solutions', 'group', 'company',
+        'pros', 'pro', 'design', 'designs', 'custom', 'bay', 'area', 'city', 'pty', 'ltd', 'limited', 'australia',
+        'roof', 'roofing', 'floor', 'flooring', 'tile', 'tiler', 'tiling', 'clean', 'cleaning', 'repair',
+        'repairs', 'plumb', 'plumber', 'plumbing', 'electric', 'electrician', 'contractor', 'contractors',
+        'builder', 'builders', 'building', 'renovations', 'renovation', 'remodel', 'remodeling', 'handyman'
+      ]);
+
+      const allTokens = businessName.toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length >= 3);
+      const distinctiveTokens = allTokens.filter(w => !genericTradeWords.has(w));
+
+      if (distinctiveTokens.length > 0) {
+        // Distinctive brand exists (e.g. "Mc", "Laminate", "Hybrid" or "Finer", "Hobart"):
+        // The domain root MUST contain at least one distinctive brand token!
+        return distinctiveTokens.some(tok => domainRoot.includes(tok) || (tok.length >= 5 && tok.includes(domainRoot)));
+      } else {
+        // Generic trade name like "Roof Tiler":
+        // Must contain the combined brand name (e.g. "rooftiler"), never a competitor's domain like "rdwroofing"
+        const combined = allTokens.join('');
+        return domainRoot.includes(combined) || combined.includes(domainRoot);
+      }
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Check if page content indicates a parked or expired domain
    */
   isParkedOrExpired(html) {
@@ -303,7 +352,7 @@ class OsintService {
   }
 
   /**
-   * Check if webpage content matches the target business (name tokens, phone, or city)
+   * Check if webpage content matches the target business (name tokens, phone, or address)
    */
   matchesBusiness(html, lead) {
     if (!html || typeof html !== 'string') return false;
@@ -317,36 +366,54 @@ class OsintService {
       return false;
     }
 
-    // 1. Check phone digits
+    // 1. Phone Match: Golden standard.
     if (lead.phone) {
       const digits = lead.phone.replace(/[^\d]/g, '');
-      if (digits.length >= 7 && lower.replace(/[^\d]/g, '').includes(digits.slice(-7))) {
+      if (digits.length >= 8 && lower.replace(/[^\d]/g, '').includes(digits.slice(-8))) {
         return true;
       }
     }
 
-    // 2. Check business name tokens
-    const stopWords = ['llc', 'inc', 'corp', 'co', 'the', 'and', '&', 'services', 'service', 'solutions', 'group', 'company', 'clinic', 'center', 'pros', 'pro', 'area', 'bay', 'custom', 'design', 'designs'];
-    const nameTokens = (lead.business_name || '')
-      .toLowerCase()
-      .split(/[^a-z0-9]+/)
-      .filter(w => w.length >= 4 && !stopWords.includes(w));
+    // 2. Exact Full Business Name Match (e.g. "roofing pros" or "finer flooring")
+    const cleanBName = bName.replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (cleanBName.length >= 4 && lower.includes(cleanBName)) {
+      return true;
+    }
+
+    // 3. Distinctive Brand Name Match
+    const stopWords = new Set([
+      'llc', 'inc', 'corp', 'co', 'the', 'and', '&', 'services', 'service', 'solutions', 'group', 'company',
+      'clinic', 'center', 'pros', 'pro', 'area', 'bay', 'custom', 'design', 'designs', 'pty', 'ltd', 'limited',
+      'roof', 'roofing', 'floor', 'flooring', 'tile', 'tiler', 'tiling', 'clean', 'cleaning', 'plumb', 'plumbing',
+      'contractor', 'builder', 'renovations', 'renovation'
+    ]);
+    const nameTokens = bName.split(/[^a-z0-9]+/).filter(w => w.length >= 3 && !stopWords.has(w));
 
     if (nameTokens.length > 0) {
       const matched = nameTokens.filter(token => lower.includes(token));
-      if (matched.length >= Math.min(2, nameTokens.length)) {
+      // Must match ALL distinctive tokens if <= 2, or at least 2
+      if (matched.length >= Math.min(2, nameTokens.length) && matched.length === nameTokens.length) {
+        return true;
+      }
+    } else {
+      // Name consists entirely of trade/common words (e.g. "Roofing Pros")
+      const allWords = bName.split(/[^a-z0-9]+/).filter(w => w.length >= 3 && !['the', 'and', '&', 'llc', 'inc', 'pty', 'ltd'].includes(w));
+      if (allWords.length >= 2 && allWords.every(w => lower.includes(w))) {
+        if (lead.city && lower.includes(lead.city.toLowerCase().trim())) {
+          return true;
+        }
+      }
+    }
+
+    // 4. Street Address Match (if provided)
+    if (lead.address && lead.address.length >= 6) {
+      const cleanAddr = lead.address.toLowerCase().split(',')[0].trim();
+      if (cleanAddr.length >= 5 && lower.includes(cleanAddr)) {
         return true;
       }
     }
 
-    // 3. Check city if provided
-    if (lead.city && lead.city.length >= 4 && lower.includes(lead.city.toLowerCase())) {
-      // If city matches AND at least 1 distinctive name token matches
-      if (nameTokens.length > 0 && nameTokens.some(token => lower.includes(token))) {
-        return true;
-      }
-    }
-
+    // Merely mentioning city + a generic trade word is NEVER a business match!
     return false;
   }
 
@@ -649,10 +716,31 @@ class OsintService {
     const bName = (lead.business_name || '').toLowerCase();
     const cleanHref = href.split('?')[0].toLowerCase();
 
-    // 1. Extract slug from social URL
-    const match = cleanHref.match(/^https?:\/\/(?:www\.)?(?:facebook|instagram|linkedin|twitter|x)\.com\/(?:in\/|company\/)?([a-zA-Z0-9._-]+)/i);
-    if (!match || !match[1]) return true;
-    const slug = match[1].toLowerCase().replace(/[^a-z0-9]/g, '');
+    // 1. Extract slug / handle from social URL
+    const match = cleanHref.match(/^https?:\/\/(?:www\.)?(?:facebook|instagram|linkedin|twitter|x|tiktok|youtube|snapchat|pinterest)\.com\/(?:in\/|company\/|@|add\/|biz\/|p\/)?([a-zA-Z0-9._-]+)/i);
+    if (!match || !match[1]) return false;
+    const rawSlug = match[1].toLowerCase();
+
+    // Reject non-profile paths (posts, photos, reels, videos, stories, shares)
+    const bannedSlugs = [
+      'photo', 'photos', 'post', 'posts', 'video', 'videos', 'reel', 'reels', 'stories',
+      'share', 'sharer', 'dialog', 'search', 'explore', 'pages', 'groups', 'events', 'watch',
+      'marketplace', 'tag', 'status', 'intent', 'i', 'home', 'notifications', 'about', 'help',
+      'privacy', 'terms', 'developer', 'legal', 'feed'
+    ];
+    if (bannedSlugs.includes(rawSlug) || cleanHref.includes('/video/') || cleanHref.includes('/p/') || cleanHref.includes('/reel/') || cleanHref.includes('/status/')) {
+      return false;
+    }
+
+    const slug = rawSlug.replace(/[^a-z0-9]/g, '');
+    if (slug.length < 3) return false;
+
+    // Reject known viral/meme/celebrity accounts
+    const globalMemeBanned = [
+      'knowyourmeme', 'tiktok', 'facebook', 'instagram', 'twitter', 'youtube', 'linkedin',
+      'google', 'apple', 'microsoft', 'reuters', 'bbc', 'cnn', 'dailymail', 'netflix', 'spotify'
+    ];
+    if (globalMemeBanned.includes(slug)) return false;
 
     // 2. Conflicting trade filter
     const leadCategory = (lead.category || '').toLowerCase();
@@ -668,20 +756,26 @@ class OsintService {
       if (conflictingTrades.some(c => slug.includes(c))) return false;
     }
 
-    // 3. Brand token collision check
-    const genericWords = new Set(['and', 'the', 'inc', 'llc', 'corp', 'co', 'services', 'service', 'solutions', 'group', 'company', 'pros', 'pro', 'design', 'designs', 'custom', 'bay', 'area', 'city']);
-    const brandTokens = bName.split(/[^a-z0-9]+/).filter(w => w.length >= 4 && !genericWords.has(w));
+    // 3. Distinctive Brand Token Check
+    const genericTradeWords = new Set([
+      'and', 'the', 'inc', 'llc', 'corp', 'co', 'services', 'service', 'solutions', 'group', 'company',
+      'pros', 'pro', 'design', 'designs', 'custom', 'bay', 'area', 'city', 'pty', 'ltd', 'limited', 'australia',
+      'roof', 'roofing', 'floor', 'flooring', 'tile', 'tiler', 'tiling', 'clean', 'cleaning', 'repair',
+      'repairs', 'plumb', 'plumber', 'plumbing', 'electric', 'electrician', 'contractor', 'contractors',
+      'builder', 'builders', 'building', 'renovations', 'renovation', 'remodel', 'remodeling', 'handyman',
+      'auto', 'garage', 'dental', 'hvac', 'landscaping', 'lawn', 'sanding'
+    ]);
 
-    if (brandTokens.length > 0) {
-      const hasToken = brandTokens.some(tok => slug.includes(tok));
-      if (!hasToken && slug.length >= 8) {
-        const bTokensAll = bName.split(/[^a-z0-9]+/).filter(w => w.length >= 3);
-        const overlap = bTokensAll.filter(t => slug.includes(t));
-        if (overlap.length === 0) return false;
-      }
+    const allTokens = bName.split(/[^a-z0-9]+/).filter(w => w.length >= 3);
+    const distinctiveTokens = allTokens.filter(w => !genericTradeWords.has(w));
+
+    if (distinctiveTokens.length > 0) {
+      // Must contain at least one distinctive brand token
+      return distinctiveTokens.some(tok => slug.includes(tok));
+    } else {
+      // Generic business name like "Roof Tiler": Never accept search-engine candidates by name alone!
+      return false;
     }
-
-    return true;
   }
 
   /**
@@ -718,6 +812,23 @@ class OsintService {
       else if (existing.includes('youtube.com/')) profiles.youtube = existing;
       else if (existing.includes('linktr.ee/') || existing.includes('bio.link/') || existing.includes('beacons.ai/')) profiles.linktree = existing;
       else if (existing.includes('wa.me/')) profiles.whatsapp = existing;
+    }
+
+    // 1.5 Trust Root: Verified Website Vouching (Tier 1 - directly scrape authentic prospect site)
+    if (lead.website && !lead.has_no_website && !this.isSocialOrDirectory(lead.website)) {
+      try {
+        const resolver = require('./social-resolver-service');
+        const vouched = await resolver.vouchFromVerifiedWebsite(lead.website, lead);
+        if (vouched) {
+          profiles._vouchedByWebsite = profiles._vouchedByWebsite || {};
+          for (const [k, v] of Object.entries(vouched)) {
+            if (v && !profiles[k]) {
+              profiles[k] = v;
+              profiles._vouchedByWebsite[k] = v;
+            }
+          }
+        }
+      } catch (vouchErr) {}
     }
 
     // 2. Multi-Engine Search with Query Distribution
@@ -778,21 +889,28 @@ class OsintService {
           }
         }
 
-        // TikTok Profile
-        if (!profiles.tiktok && lower.includes('tiktok.com/@')) {
-          profiles.tiktok = href.split('?')[0];
+        // TikTok Profile (reject non-profile paths, ensure distinctive candidate relevance)
+        const ttMatch = href.match(/^https?:\/\/(?:www\.)?tiktok\.com\/@([a-zA-Z0-9._-]+)(?:\/.*)?$/i);
+        if (!profiles.tiktok && ttMatch && ttMatch[1] && !['video', 'tag', 'music', 'live', 'discover', 'explore'].includes(ttMatch[1].toLowerCase())) {
+          if (this.isSocialCandidateRelevant(href, lead)) {
+            profiles.tiktok = `https://www.tiktok.com/@${ttMatch[1]}`;
+          }
         }
 
         // Linktree / Bio link
         if (!profiles.linktree && (lower.includes('linktr.ee/') || lower.includes('bio.link/') || lower.includes('beacons.ai/'))) {
-          profiles.linktree = href.split('?')[0];
+          if (this.isSocialCandidateRelevant(href, lead)) {
+            profiles.linktree = href.split('?')[0];
+          }
         }
 
         // Plain business domain surfaced in search results (not social/directory) — candidate for "secretly has a website" check
         if (profiles._candidateWebsiteLinks.length < 5 && !this.isSocialOrDirectory(href)) {
-          const normCand = this.normalizeUrl(href);
-          if (normCand && !profiles._candidateWebsiteLinks.includes(normCand)) {
-            profiles._candidateWebsiteLinks.push(normCand);
+          if (this.isDomainBrandRelevant(href, lead.business_name)) {
+            const normCand = this.normalizeUrl(href);
+            if (normCand && !profiles._candidateWebsiteLinks.includes(normCand)) {
+              profiles._candidateWebsiteLinks.push(normCand);
+            }
           }
         }
       }
@@ -836,7 +954,9 @@ class OsintService {
     const result = {
       platform,
       url: profileUrl,
+      page_name: null,
       bioText: '',
+      addresses: [],
       candidateLinks: [],
       emails: [],
       phones: [],
@@ -852,8 +972,13 @@ class OsintService {
         const socialData = await stealthService.scrapeSocial(profileUrl, { timeout: 8000 });
         if (socialData && socialData.success) {
           result.platform = socialData.platform || platform;
-          result.bioText = socialData.bio || '';
-          result.whatsapp = socialData.whatsapp || null;
+          result.page_name = socialData.page_name || socialData.fields?.page_name || null;
+          result.bioText = socialData.bio || socialData.fields?.bio || '';
+          result.whatsapp = socialData.whatsapp || socialData.fields?.whatsapp || null;
+
+          if (Array.isArray(socialData.addresses || socialData.fields?.addresses)) {
+            result.addresses = socialData.addresses || socialData.fields?.addresses;
+          }
 
           if (Array.isArray(socialData.emails)) {
             for (const em of socialData.emails) {
@@ -1187,7 +1312,30 @@ class OsintService {
           }
         }
 
-        if (phoneContradiction) {
+        // Universal Cross-Check Engine: Score candidate profile against ground truth
+        let scoreResult = null;
+        const isVouched = Boolean(socialProfiles._vouchedByWebsite && socialProfiles._vouchedByWebsite[inspected.platform] === inspected.url);
+        try {
+          const resolver = require('./social-resolver-service');
+          scoreResult = resolver.scoreSocialCandidate(lead, {
+            platform: inspected.platform,
+            url: inspected.url,
+            status: inspected.error ? 'blocked' : 'ok',
+            source: isVouched ? 'website_vouch' : 'search',
+            page_name: inspected.page_name || inspected.bioText?.split('\n')[0] || null,
+            bio: inspected.bioText,
+            website: inspected.candidateLinks?.[0] || null,
+            addresses: inspected.addresses || [],
+            phones: inspected.phones || [],
+            emails: inspected.emails || [],
+            variant: 'www'
+          });
+        } catch (scoreErr) {}
+
+        const isHardRejected = scoreResult && scoreResult.state === 'rejected';
+        const isVerified = scoreResult && scoreResult.state === 'verified';
+
+        if (phoneContradiction || isHardRejected) {
           if (socialProfiles[inspected.platform] === inspected.url) {
             socialProfiles[inspected.platform] = null;
           }
@@ -1195,14 +1343,33 @@ class OsintService {
             platform: inspected.platform,
             url: inspected.url,
             status: 'rejected_contradiction',
-            reason: `Phone contradiction: candidate lists ${inspected.phones.join(', ')} while lead phone is ${lead.phone}`
+            score: scoreResult?.score || 0,
+            reason: scoreResult?.reasons?.join('; ') || `Phone contradiction: candidate lists ${inspected.phones.join(', ')} while lead phone is ${lead.phone}`
           });
           continue; // DROP ALL CANDIDATE LINKS, EMAILS, AND PHONES FROM THIS PROFILE
+        }
+
+        // Verified-Only Enforcement: Profiles with low confidence, missing phone/domain match, or login wall
+        // MUST NEVER be attached to lead's active social columns or trusted for candidate website links!
+        if (scoreResult && !isVerified) {
+          if (socialProfiles[inspected.platform] === inspected.url) {
+            socialProfiles[inspected.platform] = null;
+          }
+          evidence.profiles_inspected.push({
+            platform: inspected.platform,
+            url: inspected.url,
+            status: 'unverified',
+            score: scoreResult.score,
+            reason: scoreResult.reasons?.join('; ') || 'Candidate profile unverified: insufficient matching signals'
+          });
+          continue; // Do not harvest unverified profiles
         }
 
         evidence.profiles_inspected.push({
           platform: inspected.platform,
           url: inspected.url,
+          status: 'verified',
+          score: scoreResult?.score || 100,
           candidateLinks: inspected.candidateLinks,
           emails: inspected.emails,
           phones: inspected.phones,
@@ -1503,15 +1670,31 @@ class OsintService {
     // Save to database
     if (lead.id) {
       // 1. Update Lead
-      const isActualNoWebsite = evidence.decision === 'no_website' && (!lead.website || this.isSocialOrDirectory(lead.website));
-      const preservedWebsite = verifiedWebsiteUrl || (evidence.decision === 'has_website' ? (lead.website || null) : (lead.website && !this.isSocialOrDirectory(lead.website) ? lead.website : null));
+      let computedWebsiteStatus = 'uncertain';
+      if (evidence.decision === 'no_website') {
+        computedWebsiteStatus = (!lead.website || this.isSocialOrDirectory(lead.website)) ? 'no_website' : 'has_website';
+      } else if (evidence.decision === 'has_website') {
+        computedWebsiteStatus = 'has_website';
+      } else {
+        computedWebsiteStatus = 'uncertain';
+      }
+
+      // Consumer safety: Map uncertain -> null (not 0) so 0 strictly means 'has website'
+      const hasNoWeb = computedWebsiteStatus === 'no_website' ? 1 : (computedWebsiteStatus === 'has_website' ? 0 : null);
+      const isNoWebVerified = computedWebsiteStatus === 'no_website' ? 1 : 0;
+      const preservedWebsite = verifiedWebsiteUrl || (computedWebsiteStatus === 'has_website' ? (lead.website || null) : null);
+
+      evidence.schema_version = 1;
 
       const updateData = {
         website: preservedWebsite,
-        has_no_website: isActualNoWebsite ? 1 : 0,
-        no_website_verified: isActualNoWebsite ? 1 : 0,
-        website_status: isActualNoWebsite ? 'no_website' : (evidence.decision === 'no_website' ? 'has_website' : evidence.decision),
+        has_no_website: hasNoWeb,
+        no_website_verified: isNoWebVerified,
+        website_status: computedWebsiteStatus,
+        facebook_url: socialProfiles.facebook || null,
+        instagram_url: socialProfiles.instagram || null,
         social_profiles: JSON.stringify(socialProfiles),
+        social_evidence: JSON.stringify({ schema_version: 1, profiles: evidence.profiles_inspected || [] }),
         osint_evidence: JSON.stringify(evidence),
         phone: primaryPhone || lead.phone,
         phone_type: phoneType,

@@ -157,6 +157,8 @@ class CrawlerService {
       twitter: null,
       youtube: null,
       tiktok: null,
+      snapchat: null,
+      pinterest: null,
       linktree: null
     };
 
@@ -257,10 +259,22 @@ class CrawlerService {
                             (city && snippet.toLowerCase().includes(city.toLowerCase()));
             if (isMatch) {
               if (link.includes('facebook.com') && !currentSocials.facebook && !/sharer|share\.php|dialog|plugins/i.test(link)) {
-                currentSocials.facebook = link;
+                try {
+                  const resolver = require('./social-resolver-service');
+                  const check = await resolver.crossCheckCandidate(lead, link, 'facebook');
+                  if (check.state === 'verified') currentSocials.facebook = link;
+                } catch {
+                  currentSocials.facebook = link;
+                }
               }
               if (link.includes('instagram.com') && !currentSocials.instagram && !/\/p\/|\/reel\//i.test(link)) {
-                currentSocials.instagram = link;
+                try {
+                  const resolver = require('./social-resolver-service');
+                  const check = await resolver.crossCheckCandidate(lead, link, 'instagram');
+                  if (check.state === 'verified') currentSocials.instagram = link;
+                } catch {
+                  currentSocials.instagram = link;
+                }
               }
             }
           }
@@ -329,13 +343,31 @@ class CrawlerService {
                                (city && snipLow.includes(city.toLowerCase()));
             if (isRelevant) {
               if (link.includes('facebook.com') && !currentSocials.facebook && !/sharer|share\.php|dialog|plugins/i.test(link)) {
-                currentSocials.facebook = link;
+                try {
+                  const resolver = require('./social-resolver-service');
+                  const check = await resolver.crossCheckCandidate(lead, link, 'facebook');
+                  if (check.state === 'verified') currentSocials.facebook = link;
+                } catch {
+                  currentSocials.facebook = link;
+                }
               }
               if (link.includes('instagram.com') && !currentSocials.instagram && !/\/p\/|\/reel\//i.test(link)) {
-                currentSocials.instagram = link;
+                try {
+                  const resolver = require('./social-resolver-service');
+                  const check = await resolver.crossCheckCandidate(lead, link, 'instagram');
+                  if (check.state === 'verified') currentSocials.instagram = link;
+                } catch {
+                  currentSocials.instagram = link;
+                }
               }
               if (link.includes('linkedin.com') && !currentSocials.linkedin) {
-                currentSocials.linkedin = link;
+                try {
+                  const resolver = require('./social-resolver-service');
+                  const check = await resolver.crossCheckCandidate(lead, link, 'linkedin');
+                  if (check.state === 'verified') currentSocials.linkedin = link;
+                } catch {
+                  currentSocials.linkedin = link;
+                }
               }
             }
           }

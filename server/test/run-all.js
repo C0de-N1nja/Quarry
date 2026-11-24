@@ -1840,6 +1840,105 @@ async function run() {
     assert.strictEqual(status.model, 'jev-latest');
   });
 
+  // Test 53: Phase 0 OSINT Verification - Hard gate, provenance guard, distinctive brand vouching, and NULL mapping
+  test('Phase 0 OSINT Verification enforces strict hard gate, provenance guard, brand token vouching, and NULL mapping', () => {
+    const socialResolver = require('../services/social-resolver-service');
+
+    // (a) Exact phone + null city + low name overlap -> resolves to verified via hard gate
+    const leadA = {
+      business_name: 'Lone Star Roofing Specialists',
+      phone: '+1 512-555-0199',
+      country: 'US',
+      city: null
+    };
+    const candA = {
+      url: 'https://facebook.com/unrelatedhandle123',
+      phones: ['+1 512-555-0199'],
+      name: 'Completely Different Name'
+    };
+    const resA = socialResolver.scoreSocialCandidate(leadA, candA);
+    assert.strictEqual(resA.features.phone_exact_match, true, 'Phone exact match must be true');
+    assert.strictEqual(resA.state, 'verified', 'Exact phone match must trigger hard rule gate to verified');
+
+    // (b) Fuzzy-window-only phone match (partial 8-10 digits) -> resolves to unverified (cannot trigger hard gate)
+    const leadB = {
+      business_name: 'Acme Flooring Solutions',
+      phone: '+1 512-234-5678', // nationalNumber: 5122345678, last 8 digits: 22345678
+      country: 'US',
+      city: null
+    };
+    const candB = {
+      url: 'https://facebook.com/acmeother',
+      phones: ['+1 912-234-5678'], // nationalNumber: 9122345678, last 8 digits: 22345678
+      name: 'Generic Flooring Co'
+    };
+    const resB = socialResolver.scoreSocialCandidate(leadB, candB);
+    assert.strictEqual(resB.features.phone_exact_match, false, 'National numbers differ so exact match must be false');
+    assert.strictEqual(resB.features.phone_fuzzy_match, true, 'Last 8 digits match so fuzzy match must be true');
+    assert.strictEqual(resB.state, 'unverified', 'Fuzzy phone match alone must not reach verified state');
+
+    // (c) Directory search/category URL -> phone discarded via provenance rule
+    const leadC = {
+      business_name: 'Austin Tree Care',
+      phone: '+1 512-555-0144',
+      country: 'US',
+      city: 'Austin'
+    };
+    const candC = {
+      platform: 'directory',
+      url: 'https://www.yelp.com/search?find_desc=tree+care&find_loc=Austin%2C+TX',
+      phones: ['+1 512-555-0144'],
+      name: 'Austin Tree Care'
+    };
+    const resC = socialResolver.scoreSocialCandidate(leadC, candC);
+    assert.strictEqual(resC.features.phone_match, false, 'Directory search phone must be discarded');
+    assert.strictEqual(resC.reasons.some(r => r.includes('Directory phone discarded')), true, 'Must cite provenance reason');
+    assert.notStrictEqual(resC.state, 'verified', 'Must not verify directory aggregator listing');
+
+    // (d) Vouching override: "Bloom Agency" with facebook.com/bloomagency -> vouched; "Apex Plumbing" -> rejected
+    const mockHtml = `
+      <html>
+        <body>
+          <nav>
+            <a href="https://www.facebook.com/bloomagency">Facebook</a>
+          </nav>
+        </body>
+      </html>
+    `;
+    const vouchedBloom = socialResolver.extractSocialLinksFromHtml(mockHtml, { business_name: 'Bloom Agency' });
+    assert.strictEqual(vouchedBloom.facebook, 'https://www.facebook.com/bloomagency', 'Bloom Agency must vouch facebook.com/bloomagency');
+
+    const vouchedApex = socialResolver.extractSocialLinksFromHtml(mockHtml, { business_name: 'Apex Plumbing' });
+    assert.strictEqual(vouchedApex.facebook, undefined, 'Apex Plumbing must reject facebook.com/bloomagency as external agency link');
+
+    // (e) uncertain decision -> has_no_website is persisted as null
+    const uncertainStatus = 'uncertain';
+    const hasNoWebUncertain = uncertainStatus === 'no_website' ? 1 : (uncertainStatus === 'has_website' ? 0 : null);
+    assert.strictEqual(hasNoWebUncertain, null, 'Uncertain website status must map has_no_website to null');
+
+    const testRow = db.prepare('INSERT INTO leads (business_name, website_status, has_no_website, is_test) VALUES (?, ?, ?, ?) RETURNING id, has_no_website, website_status')
+      .get('Test Null Mapping Lead', 'uncertain', null, 1);
+    assert.strictEqual(testRow.has_no_website, null, 'SQLite leads table must store NULL for has_no_website');
+    assert.strictEqual(testRow.website_status, 'uncertain', 'SQLite leads table must store uncertain website_status');
+    db.prepare('DELETE FROM leads WHERE id = ?').run(testRow.id);
+
+    // (f) Cross-country phone trap: NZ phone (+64 412 345 678) against AU lead (+61 412 345 678) -> does NOT verify
+    const leadAU = {
+      business_name: 'Sydney Commercial Glazing',
+      phone: '+61 412 345 678',
+      country: 'AU',
+      city: 'Sydney'
+    };
+    const candNZ = {
+      url: 'https://facebook.com/sydneyglazingnz',
+      phones: ['+64 412 345 678'],
+      name: 'Sydney Commercial Glazing'
+    };
+    const resF = socialResolver.scoreSocialCandidate(leadAU, candNZ);
+    assert.strictEqual(resF.features.phone_exact_match, false, 'Cross-country phone match must NOT be exact match');
+    assert.notStrictEqual(resF.state, 'verified', 'NZ profile must not verify against AU lead');
+  });
+
 // Cleanup test lead
   Mockup.deleteByLeadId(testLeadId);
   db.prepare('DELETE FROM leads WHERE id = ?').run(testLeadId);

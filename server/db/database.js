@@ -70,12 +70,18 @@ const leadColumns = [
   'contacted_at DATETIME',
   'follow_up_at DATE',
   'follow_up_note TEXT',
-  'last_contact_channel TEXT'
+  'last_contact_channel TEXT',
+  'social_evidence TEXT'
 ];
 
 for (const col of leadColumns) {
   try { db.exec(`ALTER TABLE leads ADD COLUMN ${col}`); } catch (e) {}
 }
+
+// Migration: Recompute legacy has_no_website from website_status so uncertain/unknown rows are NULL
+try {
+  db.prepare(`UPDATE leads SET has_no_website = NULL WHERE (website_status IN ('uncertain', 'unknown') OR website_status IS NULL) AND has_no_website = 0`).run();
+} catch (_) {}
 
 const contactColumns = [
   'whatsapp TEXT',

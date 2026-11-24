@@ -43,7 +43,15 @@ INTL_PHONE_REGEX = re.compile(r'\+?\d{1,4}[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\
 SOCIAL_DOMAINS = [
     'facebook.com', 'fb.com', 'instagram.com', 'instagr.am', 'linkedin.com',
     'twitter.com', 'x.com', 'tiktok.com', 'youtube.com', 'youtu.be', 'pinterest.com',
-    'google.com', 'apple.com', 'sentry.io'
+    'snapchat.com', 'google.com', 'apple.com', 'sentry.io'
+]
+
+DIRECTORY_DOMAINS = [
+    'yelp.com', 'yellowpages.com', 'yellowpages.com.au', 'bbb.org',
+    'truelocal.com.au', 'houzz.com', 'bark.com', 'angi.com', 'thumbtack.com',
+    'manta.com', 'cylex', 'hotfrog.com', 'threebestrated', 'nextdoor.com',
+    'checkatrade.com', 'yell.com', 'whereis.com', 'superpages.com',
+    'citysearch.com', 'merchantcircle.com'
 ]
 
 def is_cloudflare_challenge(status_code: int, html: str) -> bool:
@@ -149,8 +157,18 @@ def search_query(query: str, engine: str = "yahoo", timeout_ms: int = 7000) -> d
         html = extract_body_text(res)
 
         if engine_name == "yahoo":
-            all_links = res.css('a::attr(href)').getall()
-            for l in all_links:
+            # Strictly target algorithmic search results containers (#web, div#results)
+            # Never scan global page links to avoid pulling trending news, sidebar topics, and ads
+            algo_links = res.css(
+                '#web div.algo h3 a::attr(href), '
+                '#web li.algo h3 a::attr(href), '
+                '#web li.algo a.d-ib::attr(href), '
+                'div#results div.compTitle a::attr(href), '
+                'div#results li.algo h3 a::attr(href), '
+                'div#results div.algo a.thmb::attr(href)'
+            ).getall()
+
+            for l in algo_links:
                 m = re.search(r'/RU=([^/]+)', l)
                 if m:
                     try:
@@ -160,8 +178,11 @@ def search_query(query: str, engine: str = "yahoo", timeout_ms: int = 7000) -> d
                                 links.append(target)
                     except Exception:
                         pass
-            
-            raw_snippets = res.css('div.compText, p, div.fc-falcon').getall()
+                elif l.startswith('http') and 'yahoo.com' not in l:
+                    if l not in links:
+                        links.append(l)
+
+            raw_snippets = res.css('#web div.algo div.compText, div#results li div.compText, #web li.algo p').getall()
             for s in raw_snippets:
                 clean_text = re.sub(r'<[^>]+>', ' ', s).strip()
                 if len(clean_text) > 20 and clean_text not in snippets:
@@ -241,124 +262,200 @@ def scrape_social_profile(profile_url: str, timeout_ms: int = 8000) -> dict:
         platform = 'tiktok'
     elif 'youtube.com' in lower:
         platform = 'youtube'
+    elif 'snapchat.com' in lower:
+        platform = 'snapchat'
+    elif 'pinterest.com' in lower:
+        platform = 'pinterest'
+    elif any(d in lower for d in DIRECTORY_DOMAINS):
+        platform = 'directory'
     elif any(d in lower for d in ['linktr.ee', 'bio.link', 'beacons.ai']):
         platform = 'linktree'
 
     result = {
-        "success": False,
+        "status": "empty",
+        "variant": "www",
         "platform": platform,
         "url": clean_url,
-        "page_name": None,
-        "bio": "",
-        "website": None,
-        "emails": [],
-        "phones": [],
-        "whatsapp": None,
-        "candidate_links": [],
-        "engine": "scrapling_social"
+        "final_url": clean_url,
+        "http_status": 0,
+        "fields": {
+            "page_name": None,
+            "bio": "",
+            "website": None,
+            "addresses": [],
+            "emails": [],
+            "phones": [],
+            "whatsapp": None,
+            "candidate_links": []
+        },
+        "source": "scrapling"
     }
 
     try:
         timeout_sec = max(4, int(timeout_ms / 1000))
-        # Use Chrome TLS impersonation
         res = Fetcher.get(clean_url, timeout=timeout_sec, follow_redirects=True)
         html = extract_body_text(res)
+        result["http_status"] = res.status
+        final_url = str(getattr(res, "url", clean_url))
+        result["final_url"] = final_url
 
-        if not html or res.status >= 400:
-            # Fallback to stealth browser if fast HTTP was blocked
-            from scrapling.fetchers import StealthyFetcher
-            page = StealthyFetcher.fetch(clean_url, headless=True, solve_cloudflare=True, timeout=timeout_ms)
-            html = extract_body_text(page)
-
-        if not html:
-            result["error"] = "Empty page content"
+        if res.status in (403, 429):
+            result["status"] = "blocked"
             return result
 
-        result["success"] = True
+        final_lower = final_url.lower()
+        if "/accounts/login" in final_lower or "/login" in final_lower or "checkpoint" in final_lower:
+            result["status"] = "login_wall"
+            return result
 
-        # 1. Extract Title / Page Name
+        if not html or len(html.strip()) < 400:
+            result["status"] = "empty"
+            return result
+
+        # Check for login wall content markers
+        html_lower = html.lower()
+        if ("log in to instagram" in html_lower or "log into facebook" in html_lower) and "og:title" not in html_lower:
+            result["status"] = "login_wall"
+            return result
+
+        result["status"] = "ok"
+        fields = result["fields"]
+
+        # Decode unicode escapes common in embedded JSON (e.g. Facebook comet tiles)
+        decoded_html = html.replace('\\u0040', '@').replace('\\/', '/')
+
+        # 1. Extract Page Name / Title
         title_tag = res.css('meta[property="og:title"]::attr(content), title::text').get()
         if title_tag:
             clean_title = re.sub(r'\s*[\(\|\-–].*$', '', title_tag).strip()
-            result["page_name"] = clean_title or title_tag.strip()
+            fields["page_name"] = clean_title or title_tag.strip()
 
         # 2. Extract Bio Text
         og_desc = res.css('meta[property="og:description"]::attr(content), meta[name="description"]::attr(content)').get()
         body_snippets = res.css('p::text, span::text').getall()
         clean_body = " ".join([b.strip() for b in body_snippets if len(b.strip()) > 15])
-        
         bio_parts = []
         if og_desc:
             bio_parts.append(og_desc.strip())
         if clean_body:
             bio_parts.append(clean_body[:500])
-        result["bio"] = " ".join(bio_parts).strip()
+        fields["bio"] = " ".join(bio_parts).strip()
 
-        # 3. Extract Emails
-        combined = (result["bio"] + " " + html)
-        emails = set(EMAIL_REGEX.findall(combined))
-        clean_emails = [e.lower() for e in emails if not e.endswith(('.png', '.jpg', '.jpeg', '.svg', '.gif', '.webp', '.js', '.css')) and 'example.com' not in e]
-        result["emails"] = list(clean_emails)[:5]
+        # 3. Extract Embedded JSON text tiles (for Facebook & modern reactive pages)
+        text_tiles = re.findall(r'"text":"([^"]+)"', decoded_html)
 
-        # 4. Extract Phones & WhatsApp
+        # Address / Geo extraction
+        addresses = set()
+        for t in text_tiles:
+            if re.search(r',\s*[A-Z]{2}(?:,\s*[A-Z]{2,})?$', t):
+                addresses.add(t.strip())
+        fields["addresses"] = list(addresses)
+
+        # Emails extraction from both JSON tiles and regex over HTML
+        emails = set()
+        for t in text_tiles:
+            if re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', t):
+                emails.add(t.strip().lower())
+        for em in EMAIL_REGEX.findall(decoded_html):
+            clean_em = em.lower()
+            if not clean_em.endswith(('.png', '.jpg', '.jpeg', '.svg', '.gif', '.webp', '.js', '.css')) and 'example.com' not in clean_em:
+                emails.add(clean_em)
+        fields["emails"] = list(emails)[:5]
+
+        # Phone numbers from JSON tiles and regex
         phones = set()
-        for p in INTL_PHONE_REGEX.findall(result["bio"] or ""):
+        for t in text_tiles:
+            if re.match(r'^\+?[0-9\s().-]{8,20}$', t) and any(c.isdigit() for c in t):
+                phones.add(t.strip())
+        for p in INTL_PHONE_REGEX.findall(fields["bio"] or ""):
             digits = re.sub(r'\D', '', p)
             if 7 <= len(digits) <= 15:
                 phones.add(p.strip())
-        result["phones"] = list(phones)[:3]
+        fields["phones"] = list(phones)[:5]
 
-        wa_match = re.search(r'https?://(?:wa\.me|api\.whatsapp\.com/send)[^\s"\'<>]+', html)
+        # WhatsApp link
+        wa_match = re.search(r'https?://(?:wa\.me|api\.whatsapp\.com/send)[^\s"\'<>]+', decoded_html)
         if wa_match:
-            result["whatsapp"] = wa_match.group(0)
+            fields["whatsapp"] = wa_match.group(0)
 
-        # 5. Extract Candidate External Links & Website
+        # For Directory listings (Yelp, YellowPages, BBB, TrueLocal, Houzz, Bark, etc.)
+        if platform == 'directory':
+            tel_links = res.css('a[href^="tel:"]::attr(href)').getall()
+            for tl in tel_links:
+                clean_tel = re.sub(r'^tel:', '', tl).strip()
+                if any(c.isdigit() for c in clean_tel):
+                    phones.add(clean_tel)
+
+            addr_nodes = res.css('address, [itemprop="address"], [class*="address"], [class*="location"]').getall()
+            for an in addr_nodes:
+                clean_an = re.sub(r'<[^>]+>', ' ', an).strip()
+                clean_an = re.sub(r'\s+', ' ', clean_an)
+                if 8 < len(clean_an) < 140 and any(c.isdigit() for c in clean_an):
+                    addresses.add(clean_an)
+
+        # For TikTok profile extraction
+        if platform == 'tiktok':
+            tt_json_match = re.search(r'<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([^<]+)</script>', html)
+            if tt_json_match:
+                try:
+                    tt_data = json.loads(tt_json_match.group(1))
+                    user_data = tt_data.get("__DEFAULT_SCOPE__", {}).get("webapp.user-detail", {}).get("userInfo", {}).get("user", {})
+                    if user_data:
+                        if user_data.get("nickname"):
+                            fields["page_name"] = user_data.get("nickname")
+                        if user_data.get("signature"):
+                            fields["bio"] = user_data.get("signature")
+                        if user_data.get("bioLink", {}).get("link"):
+                            cand_tt = user_data["bioLink"]["link"].strip()
+                            if cand_tt not in candidate_links:
+                                candidate_links.append(cand_tt)
+                except Exception:
+                    pass
+
+        # Outbound Website / Candidate Links (unwrapping l.facebook.com and l.instagram.com)
         candidate_links = []
-        
-        # Check unwrapped Facebook outbound links (l.facebook.com/l.php?u=...)
-        for m in re.finditer(r'l\.facebook\.com/l\.php\?u=([^&"\']+)', html):
+        domain_regex = re.compile(r'^(?:https?://)?(?:www\.)?([a-zA-Z0-9-]+\.[a-zA-Z]{2,})(?:/.*)?$')
+
+        # From embedded tiles
+        for t in text_tiles:
+            m = domain_regex.match(t.strip())
+            if m:
+                dom = m.group(1).lower()
+                if not any(x in dom for x in ['facebook.com', 'instagram.com', 'threads.net', 'meta.com', 'google.com']):
+                    cand = t.strip()
+                    if not cand.startswith('http'):
+                        cand = 'https://' + cand
+                    candidate_links.append(cand)
+
+        # From l.facebook.com unwrapping
+        for m in re.finditer(r'l\.facebook\.com/l\.php\?u=([^&"\']+)', decoded_html):
             target = urllib.parse.unquote(m.group(1))
             if target.startswith('http') and not any(d in target.lower() for d in SOCIAL_DOMAINS):
                 candidate_links.append(target)
 
-        # Check Instagram external bio link
-        for m in re.finditer(r'https?://(?:l\.instagram\.com/\?u=|linktr\.ee/|bio\.link/|beacons\.ai/)[^\s"\'<>]+', html):
-            raw = m.group(0)
-            if 'l.instagram.com/?u=' in raw:
-                q = urllib.parse.parse_qs(urllib.parse.urlparse(raw).query)
-                if 'u' in q and q['u'][0].startswith('http'):
-                    target = q['u'][0]
-                    if not any(d in target.lower() for d in SOCIAL_DOMAINS):
-                        candidate_links.append(target)
-            else:
-                candidate_links.append(raw)
+        # From l.instagram.com unwrapping
+        for m in re.finditer(r'l\.instagram\.com/\?u=([^&"\']+)', decoded_html):
+            target = urllib.parse.unquote(m.group(1))
+            if target.startswith('http') and not any(d in target.lower() for d in SOCIAL_DOMAINS):
+                candidate_links.append(target)
 
-        # Check all other standard links (for Linktree, bio links, or direct profile links)
-        for link in res.css('a::attr(href)').getall():
-            if link.startswith('//'):
-                link = 'https:' + link
-            if link.startswith('http'):
-                clean_l = link.split('?')[0].rstrip('/')
-                lower_l = clean_l.lower()
-                if not any(d in lower_l for d in SOCIAL_DOMAINS):
-                    if not any(x in lower_l for x in ['privacy', 'terms', 'cookie', 'help', 'login', 'signup', 'support']):
-                        candidate_links.append(clean_l)
-
-        # Deduplicate candidates
-        seen = set()
-        deduped = []
+        # Filter out generic login/meta domain leaks
+        filtered_cands = []
         for c in candidate_links:
-            norm = c.rstrip('/')
-            if norm not in seen:
-                seen.add(norm)
-                deduped.append(norm)
+            low = c.lower()
+            if any(bad in low for bad in ['about.meta.com', 'meta.ai', 'threads.com', 'threads.net', 'privacy', 'terms', 'help', 'support']):
+                continue
+            clean_c = c.split('?')[0].rstrip('/')
+            if clean_c not in filtered_cands:
+                filtered_cands.append(clean_c)
 
-        result["candidate_links"] = deduped[:5]
-        if deduped:
-            result["website"] = deduped[0]
+        fields["candidate_links"] = filtered_cands[:5]
+        if filtered_cands:
+            fields["website"] = filtered_cands[0]
 
         return result
     except Exception as e:
+        result["status"] = "error"
         result["error"] = str(e)
         return result
 
@@ -376,6 +473,7 @@ def crawl_site(base_url: str, timeout_ms: int = 10000) -> dict:
     emails = set()
     phones = set()
     socials = {}
+    directories = {}
 
     def harvest_from_html(html_str: str, current_url: str):
         if not html_str:
@@ -387,18 +485,58 @@ def crawl_site(base_url: str, timeout_ms: int = 10000) -> dict:
             digits = re.sub(r'\D', '', p)
             if 7 <= len(digits) <= 15:
                 phones.add(p.strip())
+
+        # Harvest social channels
         if "facebook.com/" in html_str and "facebook" not in socials:
-            fb = re.search(r'https?://(?:www\.)?facebook\.com/[a-zA-Z0-9.\-_]+', html_str)
-            if fb and not any(x in fb.group(0).lower() for x in ['sharer', 'share', 'dialog', 'tr?id=']):
-                socials["facebook"] = fb.group(0)
+            fb = re.search(r'https?://(?:www\.)?facebook\.com/(?:profile\.php\?id=\d+|[a-zA-Z0-9.\-_]+)', html_str)
+            if fb and not any(x in fb.group(0).lower() for x in ['sharer', 'share', 'dialog', 'tr?id=', '/login']):
+                socials["facebook"] = fb.group(0).rstrip('/')
         if "instagram.com/" in html_str and "instagram" not in socials:
-            insta = re.search(r'https?://(?:www\.)?instagram\.com/[a-zA-Z0-9.\-_]+', html_str)
-            if insta and not any(x in insta.group(0).lower() for x in ['p/', 'explore/']):
-                socials["instagram"] = insta.group(0)
+            insta = re.search(r'https?://(?:www\.)?instagram\.com/([a-zA-Z0-9.\-_]+)', html_str)
+            if insta and not any(x in insta.group(1).lower() for x in ['p', 'reel', 'reels', 'explore', 'accounts', 'about']):
+                socials["instagram"] = f"https://www.instagram.com/{insta.group(1)}".rstrip('/')
         if "linkedin.com/" in html_str and "linkedin" not in socials:
             li = re.search(r'https?://(?:www\.)?linkedin\.com/(?:company|in)/[a-zA-Z0-9.\-_]+', html_str)
             if li:
-                socials["linkedin"] = li.group(0)
+                socials["linkedin"] = li.group(0).rstrip('/')
+        if ("twitter.com/" in html_str or "x.com/" in html_str) and "twitter" not in socials:
+            tw = re.search(r'https?://(?:www\.)?(?:twitter|x)\.com/([a-zA-Z0-9_]+)', html_str)
+            if tw and not any(x in tw.group(1).lower() for x in ['intent', 'share', 'home', 'explore']):
+                socials["twitter"] = f"https://x.com/{tw.group(1)}".rstrip('/')
+        if "tiktok.com/" in html_str and "tiktok" not in socials:
+            tt = re.search(r'https?://(?:www\.)?tiktok\.com/@([a-zA-Z0-9.\-_]+)', html_str)
+            if tt:
+                socials["tiktok"] = f"https://www.tiktok.com/@{tt.group(1)}".rstrip('/')
+        if "youtube.com/" in html_str and "youtube" not in socials:
+            yt = re.search(r'https?://(?:www\.)?youtube\.com/(?:c/|channel/|user/|@)[a-zA-Z0-9.\-_]+', html_str)
+            if yt:
+                socials["youtube"] = yt.group(0).rstrip('/')
+        if "snapchat.com/" in html_str and "snapchat" not in socials:
+            sc = re.search(r'https?://(?:www\.)?snapchat\.com/add/([a-zA-Z0-9.\-_]+)', html_str)
+            if sc:
+                socials["snapchat"] = f"https://www.snapchat.com/add/{sc.group(1)}".rstrip('/')
+        if "pinterest.com/" in html_str and "pinterest" not in socials:
+            pin = re.search(r'https?://(?:www\.)?pinterest\.com/([a-zA-Z0-9.\-_]+)', html_str)
+            if pin and not any(x in pin.group(1).lower() for x in ['pin', '_']):
+                socials["pinterest"] = f"https://www.pinterest.com/{pin.group(1)}".rstrip('/')
+        if any(d in html_str for d in ['linktr.ee/', 'bio.link/', 'beacons.ai/']) and "linktree" not in socials:
+            lt = re.search(r'https?://(?:linktr\.ee|bio\.link|beacons\.ai)/[a-zA-Z0-9.\-_]+', html_str)
+            if lt:
+                socials["linktree"] = lt.group(0).rstrip('/')
+
+        # Harvest business directory citations
+        for d_name, d_pat in [
+            ('yelp', r'https?://(?:www\.)?yelp\.com/biz/[a-zA-Z0-9.\-_]+'),
+            ('yellowpages', r'https?://(?:www\.)?yellowpages\.com(?:\.au)?/[a-zA-Z0-9.\-_/]+'),
+            ('bbb', r'https?://(?:www\.)?bbb\.org/[a-zA-Z0-9.\-_/]+'),
+            ('truelocal', r'https?://(?:www\.)?truelocal\.com\.au/business/[a-zA-Z0-9.\-_/]+'),
+            ('houzz', r'https?://(?:www\.)?houzz\.com/pro/[a-zA-Z0-9.\-_]+'),
+            ('bark', r'https?://(?:www\.)?bark\.com/[a-zA-Z0-9.\-_/]+')
+        ]:
+            if d_name not in directories:
+                dm = re.search(d_pat, html_str)
+                if dm:
+                    directories[d_name] = dm.group(0).rstrip('/')
 
     home_fetch = fetch_url(base_url, timeout_ms=timeout_ms)
     visited.add(base_url)
@@ -440,6 +578,7 @@ def crawl_site(base_url: str, timeout_ms: int = 10000) -> dict:
         "emails": list(emails),
         "phones": list(phones)[:5],
         "socials": socials,
+        "directories": directories,
         "pages_scraped": len(visited)
     }
 

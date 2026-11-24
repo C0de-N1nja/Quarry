@@ -6,6 +6,7 @@ process.env.UV_THREADPOOL_SIZE = String(Math.max(8, CPU_COUNT));
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 require('dotenv').config();
 
 const leadsRouter = require('./routes/leads');

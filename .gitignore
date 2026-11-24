@@ -61,3 +61,6 @@ __pycache__/
 *.pyc
 *.pyo
 *.db.bak*
+
+# Test fixtures containing raw scrape dumps
+server/test/fixtures/

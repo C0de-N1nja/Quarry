@@ -57,7 +57,24 @@ const GLOBAL_DIRECTORY_DOMAINS = [
   'tat.net.au',
   'whereis.com',
   'cylex-australia.com',
-  'autocareplus.com.au'
+  'autocareplus.com.au',
+  // News, Media, Publications & Aggregators
+  'reuters.com', 'telegraph.co.uk', 'thenightly.com.au', 'iflscience.com', 'vogue.com',
+  '247sports.com', 'formula1.com', 'nine.com.au', 'theguardian.com', 'bbc.com',
+  'bbc.co.uk', 'cnn.com', 'dailymail.co.uk', 'news.com.au', 'nytimes.com',
+  'washingtonpost.com', 'forbes.com', 'bloomberg.com', 'foxnews.com', 'nbcnews.com',
+  'cbsnews.com', 'abcnews.go.com', 'usatoday.com', 'huffpost.com', 'buzzfeed.com',
+  'newsnationnow.com', 'thecomeback.com', 'carlisleunited.co.uk', 'sheerluxe.com',
+  'smh.com.au', 'theage.com.au', 'theaustralian.com.au', 'abc.net.au', 'sbs.com.au',
+  'heraldsun.com.au', 'couriermail.com.au', 'dailytelegraph.com.au', 'perthnow.com.au',
+  'independent.co.uk', 'standard.co.uk', 'mirror.co.uk', 'express.co.uk',
+  'cleaningsearch.com.au',
+  // Wikis, Knowledge, Q&A, Forums & File-sharing
+  'wikipedia.org', 'wikimedia.org', 'wiktionary.org', 'wikidata.org',
+  'reddit.com', 'quora.com', 'medium.com', 'substack.com', 'zhihu.com',
+  'fandom.com', 'imdb.com', 'picryl.com', 'send-anywhere.com', 'propertyreach.com',
+  'kuleuven.be', 'abridged.org', 'archive.org', 'github.com', 'gitlab.com',
+  'stackoverflow.com', 'stackexchange.com', 'knowyourmeme.com'
 ];
 
 const COUNTRY_DIRECTORY_DOMAINS = {
@@ -217,8 +234,23 @@ function classifyWebsiteUrl(url, countryCode = null) {
 
   const clean = url.trim().toLowerCase();
 
+  let hostname = '';
+  let fullPath = '';
+  try {
+    let toParse = clean;
+    if (!toParse.startsWith('http://') && !toParse.startsWith('https://')) {
+      toParse = 'https://' + toParse;
+    }
+    const parsed = new URL(toParse);
+    hostname = parsed.hostname.replace(/^www\./, '').toLowerCase();
+    fullPath = hostname + parsed.pathname.toLowerCase();
+  } catch {
+    hostname = clean.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+    fullPath = clean;
+  }
+
   // 1. Google Maps / Business Listings
-  if (MAPS_DOMAINS.some(d => clean.includes(d))) {
+  if (MAPS_DOMAINS.some(d => hostname === d || hostname.endsWith('.' + d) || fullPath.includes(d))) {
     return {
       type: 'maps_listing',
       isOfficialWebsite: false,
@@ -230,8 +262,8 @@ function classifyWebsiteUrl(url, countryCode = null) {
 
   // 2. Social Media Profiles
   for (const s of SOCIAL_DOMAINS) {
-    if (clean.includes(s)) {
-      const name = s === 'fb.com' ? 'Facebook' : s.split('.')[0].charAt(0).toUpperCase() + s.split('.')[0].slice(1);
+    if (hostname === s || hostname.endsWith('.' + s)) {
+      const name = s === 'fb.com' ? 'Facebook' : (s === 'x.com' ? 'X' : s.split('.')[0].charAt(0).toUpperCase() + s.split('.')[0].slice(1));
       return {
         type: 'social_profile',
         isOfficialWebsite: false,
@@ -245,7 +277,17 @@ function classifyWebsiteUrl(url, countryCode = null) {
   // 3. Third-Party Directories & Contractor Aggregators (Scoped to country if provided)
   const activeDirectories = getDirectoryDomainsForCountry(countryCode);
   for (const d of activeDirectories) {
-    if (clean.includes(d)) {
+    if (d.includes('/')) {
+      if (fullPath.startsWith(d) || fullPath.includes('/' + d)) {
+        return {
+          type: 'directory_listing',
+          isOfficialWebsite: false,
+          isNoWebsite: true,
+          category: 'Directory Listing',
+          platformName: 'Directory'
+        };
+      }
+    } else if (hostname === d || hostname.endsWith('.' + d)) {
       let name = d.replace(/\.com|\.org|\.net|\.co\.uk|\.com\.au|\.ca|\.ae/g, '');
       if (d.includes('champs.com')) {
         name = d.replace('.com', '').toUpperCase();
@@ -271,6 +313,17 @@ function classifyWebsiteUrl(url, countryCode = null) {
       isNoWebsite: true,
       category: 'Directory Listing',
       platformName: 'Contractor Directory'
+    };
+  }
+
+  // 3.5 Government and Educational Portals (never local business websites)
+  if (/\.(?:gov|edu)(?:\.[a-z]{2})?(?:\/|$)/i.test(clean) || clean.includes('.gov.') || clean.includes('.edu.') || clean.includes('.ac.uk')) {
+    return {
+      type: 'directory_listing',
+      isOfficialWebsite: false,
+      isNoWebsite: true,
+      category: 'Public Institution',
+      platformName: 'Public Institution'
     };
   }
 

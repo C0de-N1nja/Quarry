@@ -587,7 +587,7 @@ class Lead {
       country, timezone, facebook_url, instagram_url,
       maps_rank, in_local_pack, is_unclaimed,
       latitude, longitude, lat, lng,
-      social_profiles, osint_evidence, notes, tags
+      social_profiles, social_evidence, osint_evidence, notes, tags
     } = fields;
 
     if (status !== undefined && status !== null) {
@@ -659,6 +659,7 @@ class Lead {
           lat = COALESCE(?, lat),
           lng = COALESCE(?, lng),
           social_profiles = COALESCE(?, social_profiles),
+          social_evidence = COALESCE(?, social_evidence),
           osint_evidence = COALESCE(?, osint_evidence),
           notes = COALESCE(?, notes),
           tags = COALESCE(?, tags),
@@ -676,6 +677,7 @@ class Lead {
       is_unclaimed !== undefined ? is_unclaimed : null,
       finalLat, finalLng, finalLat, finalLng,
       social_profiles ? (typeof social_profiles==='string'?social_profiles:JSON.stringify(social_profiles)):null,
+      social_evidence ? (typeof social_evidence==='string'?social_evidence:JSON.stringify(social_evidence)):null,
       osint_evidence ? (typeof osint_evidence==='string'?osint_evidence:JSON.stringify(osint_evidence)):null,
       notes !== undefined ? notes : null,
       tags !== undefined ? (Array.isArray(tags) ? tags.join(',') : tags) : null,

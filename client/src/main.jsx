@@ -4,6 +4,7 @@ import { RiAlertLine } from '@remixicon/react';
 import { Button } from '@/components/base/buttons/button';
 import App from './App';
 import '../styles/globals.css';
+import 'leaflet/dist/leaflet.css';
 import './index.css';
 
 class ErrorBoundary extends React.Component {

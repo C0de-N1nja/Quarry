@@ -1134,7 +1134,7 @@ export default function BoardLeadTable({
             >
               <SelectItem id="all" textValue="All Channels">All Channels</SelectItem>
               <SelectItem id="has_email" textValue="Has Email">Has Email</SelectItem>
-              <SelectItem id="has_whatsapp" textValue="WhatsApp Verified">WhatsApp Verified</SelectItem>
+              <SelectItem id="has_whatsapp" textValue="WhatsApp Ready (Formatted)">WhatsApp Ready (Formatted)</SelectItem>
               <SelectItem id="phone_only" textValue="Phone Only">Phone Only</SelectItem>
             </Select>
 
